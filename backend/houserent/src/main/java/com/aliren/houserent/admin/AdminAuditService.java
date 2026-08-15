@@ -6,6 +6,7 @@ import com.aliren.houserent.house.House;
 import com.aliren.houserent.house.HouseMapper;
 import com.aliren.houserent.report.Report;
 import com.aliren.houserent.report.ReportService;
+import com.aliren.houserent.robot.PublishOrchestrator;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,12 +23,14 @@ public class AdminAuditService {
     private final HouseMapper houseMapper;
     private final AuditLogService auditLogService;
     private final ReportService reportService;
+    private final PublishOrchestrator publishOrchestrator;
 
     public AdminAuditService(HouseMapper houseMapper, AuditLogService auditLogService,
-                             ReportService reportService) {
+                             ReportService reportService, PublishOrchestrator publishOrchestrator) {
         this.houseMapper = houseMapper;
         this.auditLogService = auditLogService;
         this.reportService = reportService;
+        this.publishOrchestrator = publishOrchestrator;
     }
 
     /**
@@ -55,6 +58,10 @@ public class AdminAuditService {
         houseMapper.updateById(h);
         auditLogService.record(operatorId, pass ? "AUDIT_PASS" : "AUDIT_REJECT", "house",
                 houseId, pass ? null : reason);
+        if (pass) {
+            // 通过后编排：触发订阅/求租匹配 + 新上架卡片推送（同步，后续可异步化）
+            publishOrchestrator.onHouseAudited(houseId);
+        }
     }
 
     /** 已租出下架：仅发布人本人或管理员可操作 */

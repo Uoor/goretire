@@ -37,3 +37,13 @@ aliren:
     api-key: ${LLM_API_KEY:}
     model: ${LLM_MODEL:qwen-max}
     timeout-seconds: 10
+  robot:
+    # 钉钉推送：enabled=true 且提供凭证后启用真实发送（群卡片/工作通知）；
+    # 未启用时 PushClientStub 仅记录日志，编排与定时任务照常跑通
+    enabled: ${ROBOT_ENABLED:false}
+    webhook: ${ROBOT_WEBHOOK:}
+  schedule:
+    # 定时任务：周五精选周推 / 周一安居故事（缺省开启；真实推送依赖 robot）
+    enabled: ${SCHEDULE_ENABLED:true}
+    weekly-pick-cron: "0 0 19 * * FRI"
+    weekly-story-cron: "0 0 10 * * MON"

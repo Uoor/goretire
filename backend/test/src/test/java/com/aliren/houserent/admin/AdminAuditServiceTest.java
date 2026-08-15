@@ -23,12 +23,14 @@ class AdminAuditServiceTest {
     private com.aliren.houserent.auditlog.AuditLogService auditLogService;
     @Mock
     private com.aliren.houserent.report.ReportService reportService;
+    @Mock
+    private com.aliren.houserent.robot.PublishOrchestrator publishOrchestrator;
 
     private AdminAuditService service;
 
     @BeforeEach
     void setUp() {
-        service = new AdminAuditService(houseMapper, auditLogService, reportService);
+        service = new AdminAuditService(houseMapper, auditLogService, reportService, publishOrchestrator);
     }
 
     @Test
