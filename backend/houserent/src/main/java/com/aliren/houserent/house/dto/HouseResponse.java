@@ -28,6 +28,10 @@ public class HouseResponse {
     private Integer auditStatus;
     private Integer rackStatus;
     private LocalDateTime createdAt;
+    /** 发布人昵称（详情接口附带，仅公开可看信息） */
+    private String publisherName;
+    /** 发布人头像 */
+    private String publisherAvatar;
 
     public static HouseResponse from(House h) {
         HouseResponse r = new HouseResponse();

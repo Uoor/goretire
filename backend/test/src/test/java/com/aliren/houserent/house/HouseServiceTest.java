@@ -24,12 +24,14 @@ class HouseServiceTest {
 
     @Mock
     private HouseMapper houseMapper;
+    @Mock
+    private com.aliren.core.user.UserMapper userMapper;
 
     private HouseService houseService;
 
     @BeforeEach
     void setUp() {
-        houseService = new HouseService(houseMapper);
+        houseService = new HouseService(houseMapper, userMapper);
     }
 
     @Test

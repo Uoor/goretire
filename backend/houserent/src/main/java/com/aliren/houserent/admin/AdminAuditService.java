@@ -1,28 +1,38 @@
 package com.aliren.houserent.admin;
 
 import com.aliren.core.common.BusinessException;
+import com.aliren.houserent.auditlog.AuditLogService;
 import com.aliren.houserent.house.House;
 import com.aliren.houserent.house.HouseMapper;
+import com.aliren.houserent.report.Report;
+import com.aliren.houserent.report.ReportService;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 @Service
 public class AdminAuditService {
 
     private final HouseMapper houseMapper;
+    private final AuditLogService auditLogService;
+    private final ReportService reportService;
 
-    public AdminAuditService(HouseMapper houseMapper) {
+    public AdminAuditService(HouseMapper houseMapper, AuditLogService auditLogService,
+                             ReportService reportService) {
         this.houseMapper = houseMapper;
+        this.auditLogService = auditLogService;
+        this.reportService = reportService;
     }
 
     /**
      * 审核房源：通过(1) / 驳回(2)
-     *
-     * @param operatorId   操作人 user.id
-     * @param operatorRole 操作人角色（1=管理员）
+     * 审核通过后触发「订阅批量匹配 + 求租墙匹配」（match 模块，由上层编排调用）。
      */
     @Transactional
     public void audit(Long operatorId, int operatorRole, Long houseId, boolean pass, String reason) {
@@ -31,28 +41,23 @@ public class AdminAuditService {
         }
         House h = requirePending(houseId);
         if (pass) {
-            h.setAuditStatus(1);
+            h.setAuditStatus(House.AUDIT_ONLINE);
             h.setAuditReason(null);
         } else {
             if (!StringUtils.hasText(reason)) {
                 throw new BusinessException("驳回原因不能为空");
             }
-            h.setAuditStatus(2);
+            h.setAuditStatus(House.AUDIT_REJECTED);
             h.setAuditReason(reason);
         }
         h.setAuditorId(operatorId);
-        h.setAuditTime(LocalDateTime.now());
+        h.setAuditTime(java.time.LocalDateTime.now());
         houseMapper.updateById(h);
-        // TODO(后续任务): 审核通过后触发「机器人推卡片到子群 + 订阅批量匹配」
+        auditLogService.record(operatorId, pass ? "AUDIT_PASS" : "AUDIT_REJECT", "house",
+                houseId, pass ? null : reason);
     }
 
-    /**
-     * 已租出下架：仅发布人本人或管理员可操作
-     *
-     * @param operatorId   操作人 user.id
-     * @param operatorRole 操作人角色
-     * @param houseId      房源 id
-     */
+    /** 已租出下架：仅发布人本人或管理员可操作 */
     @Transactional
     public void offRack(Long operatorId, int operatorRole, Long houseId) {
         House h = houseMapper.selectById(houseId);
@@ -64,13 +69,51 @@ public class AdminAuditService {
         if (!isOwner && !isAdmin) {
             throw new BusinessException(403, "无权限：仅发布人或管理员可下架");
         }
-        h.setRackStatus(1); // 已租出
+        h.setRackStatus(House.RACK_RENTED);
         houseMapper.updateById(h);
+        auditLogService.record(operatorId, "OFF_RACK", "house", houseId, null);
+    }
+
+    /** 待审核队列（含房号等审核敏感字段，仅管理员） */
+    public List<House> pendingList() {
+        QueryWrapper<House> qw = new QueryWrapper<>();
+        qw.eq("audit_status", House.AUDIT_PENDING).orderByAsc("created_at");
+        return houseMapper.selectList(qw);
+    }
+
+    /** 举报列表（按状态过滤，仅管理员） */
+    public List<Report> listReports(Integer status) {
+        return reportService.list(status);
+    }
+
+    /** 处理举报（仅管理员）：状态→已处理，写审计日志 */
+    @Transactional
+    public void handleReport(Long operatorId, int operatorRole, Long reportId, String result) {
+        if (operatorRole != 1) {
+            throw new BusinessException(403, "无权限：仅管理员可处理举报");
+        }
+        reportService.handle(operatorId, reportId, result);
+        auditLogService.record(operatorId, "REPORT_HANDLE", "report", reportId, result);
+    }
+
+    /** 数据看板：房源总数/待审核/已上架/已租出/今日新增 */
+    public Map<String, Object> stats() {
+        Map<String, Object> stats = new LinkedHashMap<>();
+        stats.put("total", houseMapper.selectCount(null));
+        stats.put("pending", houseMapper.selectCount(new QueryWrapper<House>()
+                .eq("audit_status", House.AUDIT_PENDING)));
+        stats.put("online", houseMapper.selectCount(new QueryWrapper<House>()
+                .eq("audit_status", House.AUDIT_ONLINE)));
+        stats.put("rented", houseMapper.selectCount(new QueryWrapper<House>()
+                .eq("rack_status", House.RACK_RENTED)));
+        stats.put("todayNew", houseMapper.selectCount(new QueryWrapper<House>()
+                .ge("created_at", LocalDate.now().atStartOfDay())));
+        return stats;
     }
 
     private House requirePending(Long houseId) {
         House h = houseMapper.selectById(houseId);
-        if (h == null || h.getAuditStatus() != 0) {
+        if (h == null || h.getAuditStatus() != House.AUDIT_PENDING) {
             throw new BusinessException(404, "房源不存在或不在待审核状态");
         }
         return h;

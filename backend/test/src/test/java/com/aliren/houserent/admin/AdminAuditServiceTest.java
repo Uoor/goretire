@@ -19,12 +19,16 @@ class AdminAuditServiceTest {
 
     @Mock
     private HouseMapper houseMapper;
+    @Mock
+    private com.aliren.houserent.auditlog.AuditLogService auditLogService;
+    @Mock
+    private com.aliren.houserent.report.ReportService reportService;
 
     private AdminAuditService service;
 
     @BeforeEach
     void setUp() {
-        service = new AdminAuditService(houseMapper);
+        service = new AdminAuditService(houseMapper, auditLogService, reportService);
     }
 
     @Test
