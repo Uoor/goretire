@@ -21,6 +21,7 @@
     <modules>
         <module>core</module>
         <module>houserent</module>
+        <module>subscribe</module>
         <module>app</module>
         <module>test</module>
     </modules>
@@ -44,6 +45,11 @@
             <dependency>
                 <groupId>com.aliren</groupId>
                 <artifactId>aliren-houserent</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.aliren</groupId>
+                <artifactId>aliren-subscribe</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
