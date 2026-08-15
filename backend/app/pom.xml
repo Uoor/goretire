@@ -23,7 +23,7 @@
         </dependency>
         <dependency>
             <groupId>com.aliren</groupId>
-            <artifactId>aliren-rent</artifactId>
+            <artifactId>aliren-houserent</artifactId>
         </dependency>
     </dependencies>
 

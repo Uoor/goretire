@@ -20,7 +20,7 @@
 
     <modules>
         <module>core</module>
-        <module>rent</module>
+        <module>houserent</module>
         <module>app</module>
         <module>test</module>
     </modules>
@@ -35,7 +35,7 @@
 
     <dependencyManagement>
         <dependencies>
-            <!-- 模块间依赖：新业务模块（demand/subscribe/match/robot...）在此登记版本 -->
+            <!-- 模块间依赖：新能力模块（subscribe/match/robot...）在此登记版本 -->
             <dependency>
                 <groupId>com.aliren</groupId>
                 <artifactId>aliren-core</artifactId>
@@ -43,7 +43,7 @@
             </dependency>
             <dependency>
                 <groupId>com.aliren</groupId>
-                <artifactId>aliren-rent</artifactId>
+                <artifactId>aliren-houserent</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
