@@ -1,6 +1,6 @@
-package com.aliren.subscribe.dto;
+package com.aliren.houserent.subscribe.dto;
 
-import com.aliren.subscribe.Subscribe;
+import com.aliren.houserent.subscribe.Subscribe;
 import lombok.Data;
 
 import java.time.LocalDateTime;

@@ -31,3 +31,9 @@ aliren:
     app-key: ${DING_APP_KEY:}
     app-secret: ${DING_APP_SECRET:}
     corp-id: ${DING_CORP_ID:}
+  llm:
+    # 匹配引擎（一句话找房/订阅匹配/求租墙匹配）：配置 LLM_API_KEY 后启用通义千问，
+    # 否则走本地简单过滤降级
+    api-key: ${LLM_API_KEY:}
+    model: ${LLM_MODEL:qwen-max}
+    timeout-seconds: 10

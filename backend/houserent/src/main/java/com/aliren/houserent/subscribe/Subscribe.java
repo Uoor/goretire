@@ -1,4 +1,4 @@
-package com.aliren.subscribe;
+package com.aliren.houserent.subscribe;
 
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;

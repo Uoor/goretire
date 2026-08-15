@@ -1,9 +1,9 @@
-package com.aliren.subscribe;
+package com.aliren.houserent.subscribe;
 
 import com.aliren.core.common.BusinessException;
-import com.aliren.subscribe.dto.SubscribeCreateRequest;
-import com.aliren.subscribe.dto.SubscribeResponse;
-import com.aliren.subscribe.dto.SubscribeUpdateRequest;
+import com.aliren.houserent.subscribe.dto.SubscribeCreateRequest;
+import com.aliren.houserent.subscribe.dto.SubscribeResponse;
+import com.aliren.houserent.subscribe.dto.SubscribeUpdateRequest;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

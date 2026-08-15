@@ -1,4 +1,4 @@
-package com.aliren.subscribe.dto;
+package com.aliren.houserent.subscribe.dto;
 
 import lombok.Data;
 

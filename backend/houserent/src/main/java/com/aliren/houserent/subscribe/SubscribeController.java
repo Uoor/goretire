@@ -1,10 +1,10 @@
-package com.aliren.subscribe;
+package com.aliren.houserent.subscribe;
 
 import com.aliren.core.auth.UserContext;
 import com.aliren.core.common.ApiResponse;
-import com.aliren.subscribe.dto.SubscribeCreateRequest;
-import com.aliren.subscribe.dto.SubscribeResponse;
-import com.aliren.subscribe.dto.SubscribeUpdateRequest;
+import com.aliren.houserent.subscribe.dto.SubscribeCreateRequest;
+import com.aliren.houserent.subscribe.dto.SubscribeResponse;
+import com.aliren.houserent.subscribe.dto.SubscribeUpdateRequest;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 

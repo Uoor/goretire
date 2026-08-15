@@ -25,10 +25,6 @@
             <groupId>com.aliren</groupId>
             <artifactId>aliren-houserent</artifactId>
         </dependency>
-        <dependency>
-            <groupId>com.aliren</groupId>
-            <artifactId>aliren-subscribe</artifactId>
-        </dependency>
     </dependencies>
 
     <build>
