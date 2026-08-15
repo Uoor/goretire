@@ -13,7 +13,7 @@
 
     <artifactId>aliren-core</artifactId>
     <name>aliren-core</name>
-    <description>校友安居 - 核心公共模块（通用基础设施/认证/用户，含应用启动类与配置）</description>
+    <description>校友安居 - 核心公共模块（通用基础设施/认证/用户，被业务模块依赖的纯库）</description>
 
     <dependencies>
         <!-- Web -->
@@ -72,21 +72,4 @@
             <optional>true</optional>
         </dependency>
     </dependencies>
-
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-maven-plugin</artifactId>
-                <configuration>
-                    <excludes>
-                        <exclude>
-                            <groupId>org.projectlombok</groupId>
-                            <artifactId>lombok</artifactId>
-                        </exclude>
-                    </excludes>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
 </project>

@@ -1,6 +1,6 @@
 package com.aliren;
 
-import com.aliren.core.AlirenApplication;
+import com.aliren.app.AlirenApplication;
 import com.aliren.core.auth.DingTalkClient;
 import com.aliren.core.auth.DingTalkClientStub;
 import com.aliren.core.user.UserMapper;

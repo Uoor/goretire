@@ -13,13 +13,13 @@
 
     <artifactId>aliren-test</artifactId>
     <name>aliren-test</name>
-    <description>校友安居 - 集中测试模块（依赖 rent，间接依赖 core）</description>
+    <description>校友安居 - 集中测试模块（依赖 app，间接获得 core + rent 全部模块）</description>
 
     <dependencies>
-        <!-- 被测业务模块（传递依赖 core） -->
+        <!-- 依赖应用模块（传递依赖 core + rent 等全部业务模块） -->
         <dependency>
             <groupId>com.aliren</groupId>
-            <artifactId>aliren-rent</artifactId>
+            <artifactId>aliren-app</artifactId>
         </dependency>
 
         <!-- Test -->

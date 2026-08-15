@@ -16,27 +16,27 @@
 
 ```
 aliren/
-├── backend/                         # 后端父工程（Maven 多模块，聚合 core/rent/test）
+├── backend/                         # 后端父工程（Maven 多模块，聚合 core/rent/app/test）
 │   ├── pom.xml                      # 父 pom：依赖管理 + 模块聚合
-│   ├── core/                        # 核心公共模块（含启动类，可被所有业务模块依赖）
+│   ├── core/                        # 核心公共模块（纯库，被所有业务模块依赖）
 │   │   ├── pom.xml
-│   │   └── src/main/
-│   │       ├── resources/
-│   │       │   ├── application.yml  # 配置（MySQL/JWT/钉钉）
-│   │       │   └── db/schema.sql    # 建表脚本
-│   │       └── java/com/aliren/core/
-│   │           ├── AlirenApplication.java   # 启动类（scanBasePackages="com.aliren"）
-│   │           ├── common/          # ApiResponse / BusinessException / GlobalExceptionHandler
-│   │           ├── auth/            # 免登换号 / JWT / UserContext / AuthController / AuthService
-│   │           ├── user/            # User 实体 / UserMapper
-│   │           ├── config/          # WebConfig
-│   │           └── interceptor/     # AuthInterceptor
+│   │   └── src/main/java/com/aliren/core/
+│   │       ├── common/              # ApiResponse / BusinessException / GlobalExceptionHandler
+│   │       ├── auth/                # 免登换号 / JWT / UserContext / AuthController / AuthService
+│   │       ├── user/                # User 实体 / UserMapper
+│   │       ├── config/              # WebConfig
+│   │       └── interceptor/         # AuthInterceptor
 │   ├── rent/                        # 租房业务模块（依赖 core）
 │   │   ├── pom.xml
 │   │   └── src/main/java/com/aliren/rent/
 │   │       ├── house/               # House / Mapper / Service / Controller / dto
 │   │       └── admin/               # AdminAuditService / Controller / dto
-│   └── test/                        # 集中测试模块（依赖 rent）
+│   ├── app/                         # 应用入口模块（唯一可执行，依赖 core + rent）
+│   │   ├── pom.xml                  # spring-boot-maven-plugin（fat jar）在此
+│   │   └── src/main/
+│   │       ├── java/com/aliren/app/AlirenApplication.java   # 启动类（scanBasePackages="com.aliren"）
+│   │       └── resources/           # application.yml + db/schema.sql
+│   └── test/                        # 集中测试模块（依赖 app）
 │       ├── pom.xml
 │       └── src/test/
 │           ├── resources/application.yml  # H2 测试配置

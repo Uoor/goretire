@@ -21,6 +21,7 @@
     <modules>
         <module>core</module>
         <module>rent</module>
+        <module>app</module>
         <module>test</module>
     </modules>
 
@@ -43,6 +44,11 @@
             <dependency>
                 <groupId>com.aliren</groupId>
                 <artifactId>aliren-rent</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.aliren</groupId>
+                <artifactId>aliren-app</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
