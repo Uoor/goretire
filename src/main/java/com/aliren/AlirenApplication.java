@@ -5,7 +5,7 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-@MapperScan("com.aliren.**.mapper")
+@MapperScan("com.aliren")
 public class AlirenApplication {
 
     public static void main(String[] args) {

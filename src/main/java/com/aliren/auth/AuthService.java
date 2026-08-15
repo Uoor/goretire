@@ -4,9 +4,12 @@ import com.aliren.auth.dto.AuthResponse;
 import com.aliren.common.BusinessException;
 import com.aliren.user.User;
 import com.aliren.user.UserMapper;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Service
 public class AuthService {
 
@@ -26,6 +29,10 @@ public class AuthService {
         try {
             dingtalkUserId = dingTalkClient.getUserIdByCode(authCode);
         } catch (Exception e) {
+            log.warn("dingtalk getUserIdByCode failed", e);
+            throw new BusinessException(401, "免登失败");
+        }
+        if (dingtalkUserId == null || dingtalkUserId.isBlank()) {
             throw new BusinessException(401, "免登失败");
         }
         User user = userMapper.selectByDingtalkUserId(dingtalkUserId);
@@ -35,7 +42,15 @@ public class AuthService {
             user.setNickname("校友");
             user.setRole(0);
             user.setStatus(1);
-            userMapper.insert(user);
+            try {
+                userMapper.insert(user);
+            } catch (DuplicateKeyException e) {
+                // 并发注册：另一请求已创建该用户，回查后继续
+                user = userMapper.selectByDingtalkUserId(dingtalkUserId);
+                if (user == null) {
+                    throw e;
+                }
+            }
         }
         if (user.getStatus() == null || user.getStatus() != 1) {
             throw new BusinessException(403, "账号已停用");

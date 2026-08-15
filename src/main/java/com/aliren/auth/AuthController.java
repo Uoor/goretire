@@ -1,6 +1,8 @@
 package com.aliren.auth;
 
 import com.aliren.auth.dto.AuthResponse;
+import com.aliren.common.ApiResponse;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -19,8 +21,8 @@ public class AuthController {
     }
 
     @PostMapping
-    public AuthResponse auth(@RequestBody AuthRequest req) {
-        return authService.authenticate(req.getCode());
+    public ApiResponse<AuthResponse> auth(@Valid @RequestBody AuthRequest req) {
+        return ApiResponse.ok(authService.authenticate(req.getCode()));
     }
 
     @Data
