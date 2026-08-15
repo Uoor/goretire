@@ -12,44 +12,37 @@
 
 ---
 
-## 文件结构总览
+## 文件结构总览（2026-08-16 重构后：backend 多模块 + frontend）
 
 ```
 aliren/
-├── pom.xml                          # Maven 依赖
-├── src/main/resources/
-│   ├── application.yml              # 配置（MySQL/Redis/JWT/钉钉）
-│   └── db/schema.sql                # 建表脚本
-├── src/main/java/com/aliren/
-│   ├── AlirenApplication.java       # 启动类
-│   ├── common/
-│   │   ├── ApiResponse.java         # 统一响应 {code,msg,data}
-│   │   ├── BusinessException.java   # 业务异常
-│   │   └── GlobalExceptionHandler.java
-│   ├── auth/
-│   │   ├── AuthController.java      # POST /api/auth
-│   │   ├── AuthService.java         # 免登换号 + 签发 JWT
-│   │   ├── JwtUtil.java             # 生成/解析 token
-│   │   ├── LoginUser.java           # 当前用户上下文
-│   │   └── UserContext.java
-│   ├── user/
-│   │   ├── User.java                # 实体
-│   │   └── UserMapper.java
-│   ├── house/
-│   │   ├── House.java               # 实体
-│   │   ├── HouseMapper.java
-│   │   ├── HouseController.java     # 发布/列表/详情/下架
-│   │   ├── HouseService.java
-│   │   └── dto/
-│   │       ├── HouseCreateRequest.java
-│   │       ├── HouseResponse.java
-│   │       └── HouseListQuery.java
-│   ├── admin/
-│   │   ├── AdminAuditController.java
-│   │   └── AdminAuditService.java   # 审核通过/驳回 + 状态流转
-│   └── interceptor/
-│       └── AuthInterceptor.java     # JWT 鉴权 + 角色校验
-└── src/test/java/com/aliren/         # 各模块测试
+├── backend/                         # 后端父工程（Maven 多模块，聚合 core/rent/test）
+│   ├── pom.xml                      # 父 pom：依赖管理 + 模块聚合
+│   ├── core/                        # 核心公共模块（含启动类，可被所有业务模块依赖）
+│   │   ├── pom.xml
+│   │   └── src/main/
+│   │       ├── resources/
+│   │       │   ├── application.yml  # 配置（MySQL/JWT/钉钉）
+│   │       │   └── db/schema.sql    # 建表脚本
+│   │       └── java/com/aliren/core/
+│   │           ├── AlirenApplication.java   # 启动类（scanBasePackages="com.aliren"）
+│   │           ├── common/          # ApiResponse / BusinessException / GlobalExceptionHandler
+│   │           ├── auth/            # 免登换号 / JWT / UserContext / AuthController / AuthService
+│   │           ├── user/            # User 实体 / UserMapper
+│   │           ├── config/          # WebConfig
+│   │           └── interceptor/     # AuthInterceptor
+│   ├── rent/                        # 租房业务模块（依赖 core）
+│   │   ├── pom.xml
+│   │   └── src/main/java/com/aliren/rent/
+│   │       ├── house/               # House / Mapper / Service / Controller / dto
+│   │       └── admin/               # AdminAuditService / Controller / dto
+│   └── test/                        # 集中测试模块（依赖 rent）
+│       ├── pom.xml
+│       └── src/test/
+│           ├── resources/application.yml  # H2 测试配置
+│           └── java/com/aliren/     # 各模块测试（包名跟随被测代码）
+└── frontend/                        # 前端目录（占位，后续 Vue3 H5）
+    └── README.md
 ```
 
 ---

@@ -23,7 +23,8 @@
 hs_err_pid*
 
 # Build & IDE
-/target/
+**/target/
 /.idea/
 *.iml
 /.vscode/
+.DS_Store
