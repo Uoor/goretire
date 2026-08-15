@@ -3,6 +3,7 @@ package com.aliren.auth;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -10,6 +11,7 @@ import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
 
+@Slf4j
 @Component
 public class JwtUtil {
 
@@ -30,7 +32,7 @@ public class JwtUtil {
                 .claim("role", role)
                 .issuedAt(now)
                 .expiration(new Date(now.getTime() + expireMillis))
-                .signWith(key)
+                .signWith(key, Jwts.SIG.HS256)
                 .compact();
     }
 
@@ -44,6 +46,7 @@ public class JwtUtil {
             u.setRole(claims.get("role", Integer.class));
             return u;
         } catch (Exception e) {
+            log.debug("jwt parse failed: {}", e.getMessage());
             return null;
         }
     }
