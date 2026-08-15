@@ -1,4 +1,4 @@
-package com.aliren.common;
+package com.aliren.core.common;
 
 import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;

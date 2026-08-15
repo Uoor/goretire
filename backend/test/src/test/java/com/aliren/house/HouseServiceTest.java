@@ -1,8 +1,8 @@
-package com.aliren.house;
+package com.aliren.rent.house;
 
-import com.aliren.common.BusinessException;
-import com.aliren.house.dto.HouseCreateRequest;
-import com.aliren.house.dto.HouseResponse;
+import com.aliren.core.common.BusinessException;
+import com.aliren.rent.house.dto.HouseCreateRequest;
+import com.aliren.rent.house.dto.HouseResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -86,7 +86,7 @@ class HouseServiceTest {
     @Test
     void list_auditedOnly() {
         when(houseMapper.selectList(any())).thenReturn(List.of());
-        List<HouseResponse> list = houseService.list(new com.aliren.house.dto.HouseListQuery());
+        List<HouseResponse> list = houseService.list(new com.aliren.rent.house.dto.HouseListQuery());
         assertThat(list).isEmpty();
     }
 }

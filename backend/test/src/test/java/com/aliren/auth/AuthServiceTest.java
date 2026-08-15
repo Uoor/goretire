@@ -1,9 +1,9 @@
-package com.aliren.auth;
+package com.aliren.core.auth;
 
-import com.aliren.auth.dto.AuthResponse;
-import com.aliren.common.BusinessException;
-import com.aliren.user.User;
-import com.aliren.user.UserMapper;
+import com.aliren.core.auth.dto.AuthResponse;
+import com.aliren.core.common.BusinessException;
+import com.aliren.core.user.User;
+import com.aliren.core.user.UserMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

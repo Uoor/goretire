@@ -1,7 +1,7 @@
-package com.aliren.interceptor;
+package com.aliren.core.interceptor;
 
-import com.aliren.auth.JwtUtil;
-import com.aliren.auth.UserContext;
+import com.aliren.core.auth.JwtUtil;
+import com.aliren.core.auth.UserContext;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.junit.jupiter.api.BeforeEach;
