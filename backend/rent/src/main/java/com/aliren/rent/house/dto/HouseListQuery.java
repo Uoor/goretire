@@ -1,4 +1,4 @@
-package com.aliren.house.dto;
+package com.aliren.rent.house.dto;
 
 import lombok.Data;
 

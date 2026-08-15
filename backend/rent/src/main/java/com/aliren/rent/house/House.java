@@ -1,4 +1,4 @@
-package com.aliren.house;
+package com.aliren.rent.house;
 
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;

@@ -1,4 +1,4 @@
-package com.aliren.house.dto;
+package com.aliren.rent.house.dto;
 
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;

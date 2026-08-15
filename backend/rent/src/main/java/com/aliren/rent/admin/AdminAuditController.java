@@ -1,8 +1,8 @@
-package com.aliren.admin;
+package com.aliren.rent.admin;
 
-import com.aliren.admin.dto.AuditRequest;
-import com.aliren.auth.UserContext;
-import com.aliren.common.ApiResponse;
+import com.aliren.rent.admin.dto.AuditRequest;
+import com.aliren.core.auth.UserContext;
+import com.aliren.core.common.ApiResponse;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 

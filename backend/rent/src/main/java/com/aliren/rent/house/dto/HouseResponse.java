@@ -1,6 +1,6 @@
-package com.aliren.house.dto;
+package com.aliren.rent.house.dto;
 
-import com.aliren.house.House;
+import com.aliren.rent.house.House;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.Data;

@@ -1,8 +1,8 @@
-package com.aliren.admin;
+package com.aliren.rent.admin;
 
-import com.aliren.common.BusinessException;
-import com.aliren.house.House;
-import com.aliren.house.HouseMapper;
+import com.aliren.core.common.BusinessException;
+import com.aliren.rent.house.House;
+import com.aliren.rent.house.HouseMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;

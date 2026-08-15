@@ -1,9 +1,9 @@
-package com.aliren.house;
+package com.aliren.rent.house;
 
-import com.aliren.common.BusinessException;
-import com.aliren.house.dto.HouseCreateRequest;
-import com.aliren.house.dto.HouseListQuery;
-import com.aliren.house.dto.HouseResponse;
+import com.aliren.core.common.BusinessException;
+import com.aliren.rent.house.dto.HouseCreateRequest;
+import com.aliren.rent.house.dto.HouseListQuery;
+import com.aliren.rent.house.dto.HouseResponse;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;

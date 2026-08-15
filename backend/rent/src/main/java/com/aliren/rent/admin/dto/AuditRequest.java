@@ -1,4 +1,4 @@
-package com.aliren.admin.dto;
+package com.aliren.rent.admin.dto;
 
 import lombok.Data;
 
