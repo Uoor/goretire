@@ -1,7 +1,19 @@
 <template>
-  <router-view />
+  <div class="app-shell">
+    <router-view />
+    <TabBar v-if="route.meta.tab" />
+  </div>
 </template>
 
 <script setup>
-// 根组件：仅承载路由出口；底部 TabBar 在页面实现阶段引入
+import { useRoute } from 'vue-router'
+import TabBar from '@/modules/houserent/components/TabBar.vue'
+
+const route = useRoute()
 </script>
+
+<style scoped>
+.app-shell {
+  min-height: 100vh;
+}
+</style>

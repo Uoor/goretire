@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.stereotype.Component;
 
 import java.net.URI;
@@ -25,7 +25,7 @@ import java.time.Duration;
  */
 @Slf4j
 @Component
-@ConditionalOnProperty(prefix = "aliren.dingtalk", name = "app-key")
+@ConditionalOnExpression("'${aliren.dingtalk.app-key:}' != ''")
 public class DingTalkClientImpl implements DingTalkClient {
 
     private static final String GET_TOKEN_URL = "https://oapi.dingtalk.com/gettoken";

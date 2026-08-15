@@ -6,7 +6,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.stereotype.Component;
 
 import java.net.URI;
@@ -21,7 +21,7 @@ import java.time.Duration;
  */
 @Slf4j
 @Component
-@ConditionalOnProperty(prefix = "aliren.llm", name = "api-key")
+@ConditionalOnExpression("'${aliren.llm.api-key:}' != ''")
 public class QwenMatchClient implements MatchClient {
 
     private static final String CHAT_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions";

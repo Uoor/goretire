@@ -14,7 +14,8 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/api': {
-        target: 'http://localhost:8080',
+        // 本机 8080 被占用，后端以 --server.port=8081 启动
+        target: 'http://localhost:8081',
         changeOrigin: true
       }
     }

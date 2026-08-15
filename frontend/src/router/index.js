@@ -1,15 +1,18 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
+import { getAuthCode } from '@/utils/dd'
+import { authApi } from '@/api'
+import { useUserStore } from '@/store/user'
 
 // 路由壳：懒加载业务模块页面（src/modules/<module>/views/）
-// 未来新增业务模块：在此追加路由，页面放在对应模块目录
+// meta.tab = true 的页面显示底部 TabBar（见 App.vue）
 const routes = [
-  { path: '/', name: 'home', component: () => import('@/modules/houserent/views/HomeView.vue'), meta: { title: '首页' } },
+  { path: '/', name: 'home', component: () => import('@/modules/houserent/views/HomeView.vue'), meta: { title: '首页', tab: true } },
   { path: '/house/:id', name: 'house-detail', component: () => import('@/modules/houserent/views/HouseDetailView.vue'), meta: { title: '房源详情' } },
-  { path: '/demand', name: 'demand', component: () => import('@/modules/houserent/views/DemandView.vue'), meta: { title: '求租' } },
-  { path: '/publish', name: 'publish', component: () => import('@/modules/houserent/views/PublishView.vue'), meta: { title: '发布' } },
-  { path: '/subscribe', name: 'subscribe', component: () => import('@/modules/houserent/views/SubscribeView.vue'), meta: { title: '订阅' } },
-  { path: '/me', name: 'me', component: () => import('@/modules/houserent/views/MeView.vue'), meta: { title: '我的' } },
-  { path: '/admin', name: 'admin', component: () => import('@/modules/houserent/views/admin/AdminView.vue'), meta: { title: '管理后台', admin: true } },
+  { path: '/demand', name: 'demand', component: () => import('@/modules/houserent/views/DemandView.vue'), meta: { title: '求租', tab: true } },
+  { path: '/publish', name: 'publish', component: () => import('@/modules/houserent/views/PublishView.vue'), meta: { title: '发布', tab: true } },
+  { path: '/subscribe', name: 'subscribe', component: () => import('@/modules/houserent/views/SubscribeView.vue'), meta: { title: '订阅', tab: true } },
+  { path: '/me', name: 'me', component: () => import('@/modules/houserent/views/MeView.vue'), meta: { title: '我的', tab: true } },
+  { path: '/admin', name: 'admin', component: () => import('@/modules/houserent/views/admin/AdminView.vue'), meta: { title: '管理后台' } },
   { path: '/:pathMatch(.*)*', redirect: '/' }
 ]
 
@@ -18,10 +21,27 @@ const router = createRouter({
   routes
 })
 
-// 守卫骨架：当前仅设置标题；
-// TODO(免登接入): 无 token → 触发钉钉免登；meta.admin 路由校验 role==1
-router.beforeEach((to) => {
+/** 免登：浏览器联调取 dev-code 桩，钉钉内走 requestAuthCode */
+async function ensureLogin() {
+  const store = useUserStore()
+  if (store.isLoggedIn) return
+  const code = await getAuthCode()
+  const data = await authApi.login(code)
+  store.setSession(data.token, data.user)
+}
+
+router.beforeEach(async (to) => {
   document.title = to.meta.title ? `校友安居 · ${to.meta.title}` : '校友安居'
+  try {
+    await ensureLogin()
+  } catch (e) {
+    // 免登失败：放行到页面，页面级请求会 401 提示
+    console.warn('[router] login failed:', e)
+  }
+  // 管理后台角色校验（dev-code 种子用户为管理员，可直接访问）
+  if (to.meta.admin && !useUserStore().isAdmin) {
+    return { name: 'home' }
+  }
   return true
 })
 
