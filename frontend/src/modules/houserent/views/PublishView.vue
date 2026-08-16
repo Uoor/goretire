@@ -1,6 +1,6 @@
 <template>
   <div class="publish-page">
-    <TopBar back title="发布房源" />
+    <TopBar back :title="editId ? '修改房源' : '发布房源'" />
 
     <div class="form-sec">
       <div class="form-label"><span>房源照片</span><span class="hint">最多 9 张，第一张为主图</span></div>
@@ -129,7 +129,7 @@
 
     <div class="submit-wrap fixed-shell">
       <button class="btn-primary" :disabled="submitting" @click="submit">
-        {{ submitting ? '提交中…' : '提交审核' }}
+        {{ submitting ? '提交中…' : (editId ? '修改并重新提交' : '提交审核') }}
       </button>
       <p class="submit-tip">提交后预计 2 小时内完成审核</p>
     </div>
@@ -137,18 +137,21 @@
 </template>
 
 <script setup>
-import { reactive, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { onMounted, reactive, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { showToast, showSuccessToast } from 'vant'
 import TopBar from '@/modules/houserent/components/TopBar.vue'
 import { houseApi } from '@/modules/houserent/api'
 import { uploadApi } from '@/api'
 import { formatMoney } from '@/utils/format'
 
+const route = useRoute()
 const router = useRouter()
 const submitting = ref(false)
 const fileList = ref([])
 const priceTip = ref(null)
+const editId = ref(null) // 编辑模式：null=发布，有值=修改重新提交
+const editLoading = ref(false)
 
 const houseTypes = ['1室0厅', '1室1厅', '2室1厅', '2室2厅', '3室1厅', '3室2厅', '主卧', '次卧', '整租']
 const payTypes = ['押一付一', '押一付三', '押二付一', '半年付', '年付']
@@ -259,12 +262,15 @@ async function submit() {
   const images = fileList.value.map((f) => f.url).filter(Boolean)
   submitting.value = true
   try {
-    const id = await houseApi.publish({
-      ...form,
-      images: JSON.stringify(images)
-    })
-    showSuccessToast('已提交审核，预计 2 小时内上架')
-    // 新房源为待审核状态，详情页对其 404；跳「我的发布」查看审核状态
+    const payload = { ...form, images: JSON.stringify(images) }
+    if (editId.value) {
+      await houseApi.update(editId.value, payload)
+      showSuccessToast('已修改并重新提交审核')
+    } else {
+      await houseApi.publish(payload)
+      showSuccessToast('已提交审核，预计 2 小时内上架')
+    }
+    // 新房源/修改后为待审核状态，详情页对其 404；跳「我的发布」查看审核状态
     router.push({ name: 'me' })
   } catch (e) {
     showToast(e.message || '发布失败')
@@ -272,6 +278,50 @@ async function submit() {
     submitting.value = false
   }
 }
+
+/** 编辑模式：加载原数据回填（mine 接口返回房号等完整字段） */
+async function loadForEdit(id) {
+  editLoading.value = true
+  try {
+    const list = await houseApi.mine()
+    const h = list.find((x) => x.id === Number(id))
+    if (!h) {
+      showToast('房源不存在')
+      return
+    }
+    Object.assign(form, {
+      community: h.community || '',
+      roomNo: h.roomNo || '',
+      region: h.region || '',
+      houseType: h.houseType || '',
+      area: h.area ?? null,
+      rent: h.rent ?? null,
+      depositPay: h.depositPay || '',
+      leaseTerm: h.leaseTerm || '',
+      label: h.label ?? null,
+      petOk: h.petOk ?? 0,
+      commute: h.commute || '',
+      utilities: h.utilities || '',
+      description: h.description || ''
+    })
+    if (Array.isArray(h.images)) {
+      fileList.value = h.images.map((url) => ({ url, status: 'done', name: url.split('/').pop() }))
+    }
+    if (h.region) loadRegionPrice()
+  } catch (e) {
+    showToast(e.message || '加载房源失败')
+  } finally {
+    editLoading.value = false
+  }
+}
+
+onMounted(() => {
+  const id = route.query.edit
+  if (id) {
+    editId.value = id
+    loadForEdit(id)
+  }
+})
 </script>
 
 <style scoped>

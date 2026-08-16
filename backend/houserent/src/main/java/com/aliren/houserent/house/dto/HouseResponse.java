@@ -15,6 +15,8 @@ public class HouseResponse {
 
     private Long id;
     private String community;
+    /** 房号：仅发布人自己（mine 接口）可见，普通详情不含（审核敏感） */
+    private String roomNo;
     private String region;
     private String houseType;
     private Integer area;

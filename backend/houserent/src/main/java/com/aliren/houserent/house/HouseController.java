@@ -57,6 +57,13 @@ public class HouseController {
         return ApiResponse.ok(id);
     }
 
+    /** 编辑房源（仅发布人）：修改后重新送审 */
+    @PutMapping("/{id}")
+    public ApiResponse<Void> update(@PathVariable Long id, @Valid @RequestBody HouseCreateRequest req) {
+        houseService.update(UserContext.requireUserId(), id, req);
+        return ApiResponse.ok(null);
+    }
+
     /** 轻问句回答（下架时选填，仅发布人）：0=跳过 1=找到新家 2=暂无 */
     @PostMapping("/{id}/feedback")
     public ApiResponse<Void> feedback(@PathVariable Long id, @RequestBody FeedbackRequest req) {

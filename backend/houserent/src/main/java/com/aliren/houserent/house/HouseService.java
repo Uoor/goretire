@@ -34,6 +34,35 @@ public class HouseService {
         }
         House h = new House();
         h.setPublisherId(publisherId);
+        applyFields(h, req);
+        h.setAuditStatus(House.AUDIT_PENDING);
+        h.setRackStatus(House.RACK_RENTING);
+        h.setFeedbackAnswer(0);
+        houseMapper.insert(h);
+        return h.getId();
+    }
+
+    /**
+     * 编辑房源（仅发布人本人）：更新字段并重新置为待审核（驳回后修改重提 / 上架后改内容）。
+     * 保留发布人、房号；审核状态回待审核，需管理员重新审核。
+     */
+    public void update(Long userId, Long id, HouseCreateRequest req) {
+        if (req.getRent() == null || req.getRent().signum() <= 0) {
+            throw new BusinessException("租金不合法");
+        }
+        House h = houseMapper.selectById(id);
+        if (h == null) {
+            throw new BusinessException(404, "房源不存在");
+        }
+        if (!h.getPublisherId().equals(userId)) {
+            throw new BusinessException(403, "无权限：仅发布人可修改");
+        }
+        applyFields(h, req);
+        h.setAuditStatus(House.AUDIT_PENDING); // 修改后重新送审
+        houseMapper.updateById(h);
+    }
+
+    private void applyFields(House h, HouseCreateRequest req) {
         h.setCommunity(req.getCommunity());
         h.setRoomNo(req.getRoomNo());
         h.setRegion(req.getRegion());
@@ -48,11 +77,6 @@ public class HouseService {
         h.setUtilities(req.getUtilities());
         h.setImages(req.getImages());
         h.setDescription(req.getDescription());
-        h.setAuditStatus(House.AUDIT_PENDING);
-        h.setRackStatus(House.RACK_RENTING);
-        h.setFeedbackAnswer(0);
-        houseMapper.insert(h);
-        return h.getId();
     }
 
     /** 列表：仅已上架(1)且在租(0)的房源，支持筛选 + 分页 */
@@ -141,7 +165,11 @@ public class HouseService {
     public List<HouseResponse> mine(Long userId) {
         QueryWrapper<House> qw = new QueryWrapper<>();
         qw.eq("publisher_id", userId).orderByDesc("created_at");
-        return houseMapper.selectList(qw).stream().map(HouseResponse::from).toList();
+        return houseMapper.selectList(qw).stream().map(h -> {
+            HouseResponse r = HouseResponse.from(h);
+            r.setRoomNo(h.getRoomNo()); // 仅本人可见
+            return r;
+        }).toList();
     }
 
     /**

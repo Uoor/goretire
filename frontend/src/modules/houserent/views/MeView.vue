@@ -49,6 +49,7 @@
         <div class="mh-ops">
           <button v-if="canOffRack(h)" class="op-btn" @click.stop="offRack(h)">标记已租出</button>
           <button v-else-if="h.auditStatus === 1 && h.rackStatus !== 0" class="op-btn ghost-op" @click.stop="relist(h)">重新出租</button>
+          <button v-if="h.auditStatus === 2" class="op-btn ghost-op" @click.stop="editRejected(h)">修改重新提交</button>
           <button v-if="canDelete(h)" class="op-btn del-op" @click.stop="removeHouse(h)">删除</button>
         </div>
       </div>
@@ -131,6 +132,11 @@ function offRack(h) {
 /** 可删除：任意状态均可直接删除（房东完全处置权，删除前有二次确认） */
 function canDelete() {
   return true
+}
+
+/** 被驳回 → 修改重新提交（跳发布页编辑模式，改完重新送审） */
+function editRejected(h) {
+  router.push({ name: 'publish', query: { edit: h.id } })
 }
 
 /** 重新出租：已租出/已下架 → 在租中（状态反转，二次确认） */

@@ -32,6 +32,7 @@
         </div>
         <div v-if="h.description" class="ac-desc">{{ h.description }}</div>
         <div class="ac-ops">
+          <button class="op ghost-view" @click="viewPendingDetail(h)">查看详情</button>
           <button class="op pass" @click="audit(h, true, '')">通过</button>
           <button class="op reject" @click="openReject(h)">驳回</button>
         </div>
@@ -95,6 +96,34 @@
       <img v-if="previewUrl" :src="previewUrl" class="preview-img" alt="" @click="showPreview = false" />
     </van-popup>
 
+    <!-- 审核详情弹层 -->
+    <van-popup v-model:show="showPendingDetail" position="bottom" round :safe-area-inset-bottom="true">
+      <div class="mini-panel" v-if="pendingDetail">
+        <div class="pd-head">
+          <h4>审核详情</h4>
+          <i class="ph ph-x" @click="showPendingDetail = false"></i>
+        </div>
+        <div class="pd-title">{{ pendingDetail.community }} · {{ pendingDetail.houseType }} {{ pendingDetail.area }}㎡</div>
+        <div class="ac-price num">{{ pendingDetail.rent }} 元/月（{{ pendingDetail.depositPay }}）</div>
+        <div class="pd-grid">
+          <div><span class="k">区域</span><span class="v">{{ pendingDetail.region }}</span></div>
+          <div><span class="k">房号</span><span class="v">{{ pendingDetail.roomNo || '—' }}</span></div>
+          <div><span class="k">租期</span><span class="v">{{ pendingDetail.leaseTerm || '—' }}</span></div>
+          <div><span class="k">标签</span><span class="v">{{ labelText(pendingDetail.label) }}{{ pendingDetail.petOk === 1 ? ' · 可养宠' : '' }}</span></div>
+          <div><span class="k">通勤</span><span class="v">{{ pendingDetail.commute || '—' }}</span></div>
+          <div><span class="k">发布人</span><span class="v">{{ pendingDetail.publisherName || ('校友 #' + pendingDetail.publisherId) }}</span></div>
+        </div>
+        <div v-if="hImages(pendingDetail).length" class="pd-imgs">
+          <img v-for="(img, i) in hImages(pendingDetail)" :key="i" :src="img" alt="" @click="openPreview(img)" />
+        </div>
+        <div v-if="pendingDetail.description" class="pd-desc"><b>描述</b><p>{{ pendingDetail.description }}</p></div>
+        <div class="ac-ops">
+          <button class="op pass" @click="audit(pendingDetail, true, '')">通过</button>
+          <button class="op reject" @click="openReject(pendingDetail)">驳回</button>
+        </div>
+      </div>
+    </van-popup>
+
     <!-- 被举报房源信息 -->
     <van-popup v-model:show="showReported" position="bottom" round>
       <div class="mini-panel" v-if="reportedHouse">
@@ -140,6 +169,8 @@ const handleTarget = ref(null)
 const handleResult = ref('')
 const showPreview = ref(false)
 const previewUrl = ref('')
+const showPendingDetail = ref(false)
+const pendingDetail = ref(null)
 const showReported = ref(false)
 const reportedHouse = ref(null)
 const reportedError = ref('')
@@ -156,6 +187,17 @@ function hImages(h) {
 function openPreview(img) {
   previewUrl.value = img
   showPreview.value = true
+}
+
+/** 打开审核详情弹层 */
+function viewPendingDetail(h) {
+  pendingDetail.value = h
+  showPendingDetail.value = true
+}
+
+function closePendingDetail() {
+  showPendingDetail.value = false
+  pendingDetail.value = null
 }
 function labelText(label) {
   return { 1: '房东直租', 2: '校友转租', 3: '合租拼室友' }[label] || ''
@@ -451,6 +493,67 @@ onMounted(loadAudit)
   background: #fff;
   color: var(--destructive);
   border: 1px solid #fecaca;
+}
+.op.ghost-view {
+  background: #fff;
+  color: var(--fg2);
+  border: 1px solid var(--border);
+}
+.pd-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.pd-head i {
+  font-size: 1.1rem;
+  color: var(--fg3);
+  cursor: pointer;
+}
+.pd-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+.pd-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px 16px;
+  margin: 10px 0;
+}
+.pd-grid .k {
+  display: block;
+  font-size: 0.66rem;
+  color: var(--fg3);
+}
+.pd-grid .v {
+  font-size: 0.8rem;
+  color: var(--fg);
+}
+.pd-imgs {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 10px 0;
+}
+.pd-imgs img {
+  width: 84px;
+  height: 84px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+.pd-desc {
+  margin: 10px 0;
+}
+.pd-desc b {
+  font-size: 0.72rem;
+  color: var(--fg3);
+}
+.pd-desc p {
+  font-size: 0.8rem;
+  color: var(--fg2);
+  line-height: 1.6;
+  margin-top: 4px;
 }
 .stats-grid {
   display: grid;

@@ -14,6 +14,7 @@ export const houseApi = {
   detail: (id) => request.get(`/houses/${id}`),
   mine: () => request.get('/houses/mine'),
   publish: (data) => request.post('/houses', data),
+  update: (id, data) => request.put(`/houses/${id}`, data),
   offRack: (id) => request.post(`/houses/${id}/off-rack`),
   relist: (id) => request.post(`/houses/${id}/relist`),
   remove: (id) => request.delete(`/houses/${id}`),
