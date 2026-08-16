@@ -12,6 +12,7 @@ export const houseApi = {
   publish: (data) => request.post('/houses', data),
   offRack: (id) => request.post(`/houses/${id}/off-rack`),
   relist: (id) => request.post(`/houses/${id}/relist`),
+  remove: (id) => request.delete(`/houses/${id}`),
   feedback: (id, answer) => request.post(`/houses/${id}/feedback`, { answer }),
   report: (id, reason) => request.post(`/houses/${id}/reports`, { reason }),
   contact: (id) => request.post(`/houses/${id}/contact`),

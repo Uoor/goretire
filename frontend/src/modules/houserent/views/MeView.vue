@@ -49,6 +49,7 @@
         <div class="mh-ops">
           <button v-if="canOffRack(h)" class="op-btn" @click.stop="offRack(h)">标记已租出</button>
           <button v-else-if="h.auditStatus === 1 && h.rackStatus !== 0" class="op-btn ghost-op" @click.stop="relist(h)">重新出租</button>
+          <button v-if="canDelete(h)" class="op-btn del-op" @click.stop="removeHouse(h)">删除</button>
         </div>
       </div>
     </div>
@@ -75,7 +76,7 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { showToast, showSuccessToast } from 'vant'
+import { showConfirmDialog, showToast, showSuccessToast } from 'vant'
 import TopBar from '@/modules/houserent/components/TopBar.vue'
 import { useUserStore } from '@/store/user'
 import { houseApi } from '@/modules/houserent/api'
@@ -127,14 +128,50 @@ function offRack(h) {
   showFeedback.value = true
 }
 
-/** 重新出租：已租出/已下架 → 在租中（状态反转） */
+/** 可删除：非"上架在租"状态（在租中须先下架） */
+function canDelete(h) {
+  return !(h.auditStatus === 1 && h.rackStatus === 0)
+}
+
+/** 重新出租：已租出/已下架 → 在租中（状态反转，二次确认） */
 async function relist(h) {
+  try {
+    await showConfirmDialog({
+      title: '重新出租',
+      message: `确认将「${h.community}」重新上架出租吗？`,
+      confirmButtonText: '确认重新出租',
+      confirmButtonColor: '#FF6A00'
+    })
+  } catch {
+    return // 用户取消
+  }
   try {
     await houseApi.relist(h.id)
     showSuccessToast('已重新出租，房源重新上架')
     load()
   } catch (e) {
     showToast(e.message || '操作失败')
+  }
+}
+
+/** 删除房源（二次确认；在租中后端会拒绝） */
+async function removeHouse(h) {
+  try {
+    await showConfirmDialog({
+      title: '删除房源',
+      message: `删除后不可恢复，确认删除「${h.community}」吗？`,
+      confirmButtonText: '确认删除',
+      confirmButtonColor: '#DC2626'
+    })
+  } catch {
+    return
+  }
+  try {
+    await houseApi.remove(h.id)
+    showSuccessToast('已删除')
+    load()
+  } catch (e) {
+    showToast(e.message || '删除失败')
   }
 }
 
@@ -329,6 +366,10 @@ onMounted(load)
 .op-btn.ghost-op {
   color: var(--fg2);
   background: var(--bg);
+}
+.op-btn.del-op {
+  color: var(--destructive);
+  background: #fee2e2;
 }
 .op-btn:active {
   opacity: 0.8;

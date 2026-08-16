@@ -85,6 +85,13 @@ public class HouseController {
         return ApiResponse.ok(null);
     }
 
+    /** 删除房源（仅发布人或管理员；在租中不可删） */
+    @DeleteMapping("/{id}")
+    public ApiResponse<Void> remove(@PathVariable Long id) {
+        adminAuditService.deleteHouse(UserContext.requireUserId(), UserContext.requireRole(), id);
+        return ApiResponse.ok(null);
+    }
+
     /** 重新出租（状态反转）：已租出/已下架 → 在租中 */
     @PostMapping("/{id}/relist")
     public ApiResponse<Void> reList(@PathVariable Long id) {
