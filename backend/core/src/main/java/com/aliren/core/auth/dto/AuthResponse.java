@@ -14,5 +14,7 @@ public class AuthResponse {
         private Long userId;
         private String nickname;
         private int role;
+        /** 钉钉 userId（staffId）；dev-code 表示浏览器联调桩身份 */
+        private String dingtalkUserId;
     }
 }

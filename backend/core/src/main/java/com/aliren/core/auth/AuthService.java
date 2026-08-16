@@ -60,6 +60,7 @@ public class AuthService {
         info.setUserId(user.getId());
         info.setNickname(user.getNickname());
         info.setRole(user.getRole());
+        info.setDingtalkUserId(user.getDingtalkUserId());
         return new AuthResponse(token, info);
     }
 }

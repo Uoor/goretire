@@ -1,5 +1,5 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
-import { getAuthCode, configDingtalk } from '@/utils/dd'
+import { getAuthCode, configDingtalk, isDingTalk } from '@/utils/dd'
 import { authApi } from '@/api'
 import { useUserStore } from '@/store/user'
 
@@ -23,9 +23,21 @@ const router = createRouter({
   routes
 })
 
-/** 免登：浏览器联调取 dev-code 桩，钉钉内走 requestAuthCode */
+/**
+ * 免登：
+ * - 浏览器联调：取 dev-code 桩（后端放行），token 持久化后复用；
+ * - 钉钉容器内：先 dd.config 授权 JSAPI，再 requestAuthCode 真实免登。
+ *   关键：钉钉内若残留 dev-code 桩身份（浏览器联调遗留的 localStorage），
+ *   必须清除后重新真实免登，否则 staffId 是 dev-code、单聊无法唤起。
+ */
 async function ensureLogin() {
   const store = useUserStore()
+  const inDingTalk = isDingTalk()
+  // 钉钉内：dev-code 桩身份（或旧 token 缺 dingtalkUserId 字段）一律重登
+  if (inDingTalk && store.isLoggedIn) {
+    const uid = store.userInfo?.dingtalkUserId
+    if (!uid || uid === 'dev-code') store.clear()
+  }
   if (store.isLoggedIn) return
   // 钉钉容器内先 dd.config 授权 JSAPI，再取免登 code；浏览器联调直接跳过
   await configDingtalk()
@@ -39,7 +51,7 @@ router.beforeEach(async (to) => {
   try {
     await ensureLogin()
   } catch (e) {
-    // 免登失败：放行到页面，页面级请求会 401 提示
+    // 免登失败：放行到页面，页面级请求会 401 提示（如钉钉容器内 http 环境被拦）
     console.warn('[router] login failed:', e)
   }
   // 管理后台角色校验（dev-code 种子用户为管理员，可直接访问）
