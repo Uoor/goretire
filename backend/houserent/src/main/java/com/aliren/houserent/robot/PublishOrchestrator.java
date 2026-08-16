@@ -8,6 +8,8 @@ import com.aliren.houserent.match.MatchService;
 import com.aliren.houserent.match.dto.DemandHit;
 import com.aliren.houserent.match.dto.SubscriptionHit;
 import com.aliren.houserent.pushlog.PushLogService;
+import com.aliren.core.user.User;
+import com.aliren.core.user.UserMapper;
 import com.aliren.houserent.subscribe.Subscribe;
 import com.aliren.houserent.subscribe.SubscribeMapper;
 import lombok.extern.slf4j.Slf4j;
@@ -22,7 +24,7 @@ import java.util.List;
  * 3) 命中者私聊提醒（工作通知）+ 推送历史落库（push_log）
  *
  * 注意：当前同步执行；接入真实 LLM 与推送后，建议将匹配+推送异步化（@Async / 消息队列），
- * 避免拖慢审核接口。TODO(凭证就绪)：私聊目标需由 subscribe/demand.owner 映射为钉钉 userid。
+ * 避免拖慢审核接口。
  */
 @Slf4j
 @Service
@@ -34,16 +36,18 @@ public class PublishOrchestrator {
     private final PushLogService pushLogService;
     private final SubscribeMapper subscribeMapper;
     private final DemandMapper demandMapper;
+    private final UserMapper userMapper;
 
     public PublishOrchestrator(HouseMapper houseMapper, MatchService matchService, PushClient pushClient,
                                PushLogService pushLogService, SubscribeMapper subscribeMapper,
-                               DemandMapper demandMapper) {
+                               DemandMapper demandMapper, UserMapper userMapper) {
         this.houseMapper = houseMapper;
         this.matchService = matchService;
         this.pushClient = pushClient;
         this.pushLogService = pushLogService;
         this.subscribeMapper = subscribeMapper;
         this.demandMapper = demandMapper;
+        this.userMapper = userMapper;
     }
 
     /** 房源审核通过后编排（幂等：仅对已上架房源生效） */
@@ -58,22 +62,31 @@ public class PublishOrchestrator {
         for (SubscriptionHit hit : subHits) {
             String content = "你订阅的房源上新了：「" + h.getCommunity() + "」" + h.getHouseType()
                     + " " + h.getRent() + "元/月 —— " + hit.getReason();
-            pushClient.sendWorkNotice("subscribe#" + hit.getSubscribeId(), content);
             Subscribe s = subscribeMapper.selectById(hit.getSubscribeId());
             if (s != null) {
+                pushClient.sendWorkNotice(dingtalkUserId(s.getUserId()), content);
                 pushLogService.record(s.getUserId(), s.getId(), null, content);
             }
         }
         for (DemandHit hit : demandHits) {
             String content = "你挂在求租墙的需求有新房源：「" + h.getCommunity() + "」" + h.getHouseType()
                     + " " + h.getRent() + "元/月 —— " + hit.getReason();
-            pushClient.sendWorkNotice("demand#" + hit.getDemandId(), content);
             Demand d = demandMapper.selectById(hit.getDemandId());
             if (d != null) {
+                pushClient.sendWorkNotice(dingtalkUserId(d.getPublisherId()), content);
                 pushLogService.record(d.getPublisherId(), null, d.getId(), content);
             }
         }
         log.info("house {} audited: {} subscription hits, {} demand hits", houseId, subHits.size(), demandHits.size());
+    }
+
+    /** 业务用户 id → 钉钉 userid（工作通知目标；dev 桩用户返回其自身，真实钉钉用户返回钉钉身份） */
+    private String dingtalkUserId(Long userId) {
+        if (userId == null) {
+            return "";
+        }
+        User u = userMapper.selectById(userId);
+        return u == null ? "" : u.getDingtalkUserId();
     }
 
     private String buildHouseCard(House h) {
