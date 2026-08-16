@@ -45,7 +45,8 @@ class PublishOrchestratorTest {
     @BeforeEach
     void setUp() {
         orchestrator = new PublishOrchestrator(houseMapper, matchService, pushClient,
-                pushLogService, subscribeMapper, demandMapper, userMapper, "https://h5.example.com");
+                pushLogService, subscribeMapper, demandMapper, userMapper,
+                "https://h5.example.com", 3);
     }
 
     private House onlineHouse(Long id) {

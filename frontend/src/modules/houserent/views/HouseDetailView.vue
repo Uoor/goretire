@@ -33,6 +33,12 @@
           <div class="d-spec"><div class="v">{{ house.commute || '—' }}</div><div class="k">通勤</div></div>
         </div>
 
+        <!-- 水电网物业（产品 4.2 价格明细） -->
+        <div v-if="house.utilities" class="d-sec d-utils">
+          <h5>水电网物业</h5>
+          <div class="d-desc">{{ house.utilities }}</div>
+        </div>
+
         <div class="d-sec">
           <h5>房源描述</h5>
           <div class="d-desc">{{ house.description || '房东还没有写描述，快联系 TA 问问吧。' }}</div>

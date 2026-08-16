@@ -24,6 +24,8 @@ public class HouseResponse {
     private Integer label;
     private Integer petOk;
     private String commute;
+    /** 水电网物业说明 */
+    private String utilities;
     private List<String> images;
     private String description;
     private Integer auditStatus;
@@ -47,6 +49,7 @@ public class HouseResponse {
         r.setLabel(h.getLabel());
         r.setPetOk(h.getPetOk());
         r.setCommute(h.getCommute());
+        r.setUtilities(h.getUtilities());
         r.setDescription(h.getDescription());
         r.setAuditStatus(h.getAuditStatus());
         r.setRackStatus(h.getRackStatus());

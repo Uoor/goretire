@@ -45,6 +45,7 @@ public class HouseService {
         h.setLabel(req.getLabel());
         h.setPetOk(req.getPetOk() == null ? 0 : req.getPetOk());
         h.setCommute(req.getCommute());
+        h.setUtilities(req.getUtilities());
         h.setImages(req.getImages());
         h.setDescription(req.getDescription());
         h.setAuditStatus(House.AUDIT_PENDING);

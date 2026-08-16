@@ -112,6 +112,10 @@
       <div class="form-field">
         <input v-model="form.commute" placeholder="如：西溪园区 15 分钟" />
       </div>
+      <div class="form-label"><span>水电网物业</span><span class="hint">如：含水电网 / 物业自理，可空</span></div>
+      <div class="form-field">
+        <input v-model="form.utilities" placeholder="如：含水电网，物业费 2 元/㎡" />
+      </div>
       <div class="form-label"><span>可养宠</span></div>
       <div class="seg">
         <div class="seg-item" :class="{ on: form.petOk === 1 }" @click="form.petOk = 1">可以</div>
@@ -179,6 +183,7 @@ const form = reactive({
   label: null,
   petOk: 0,
   commute: '',
+  utilities: '',
   description: ''
 })
 

@@ -41,6 +41,8 @@ public class House {
     private Integer label;
     private Integer petOk;
     private String commute;
+    /** 水电网物业说明（如"含水电网"） */
+    private String utilities;
     private String images;
     private String description;
     private Integer auditStatus;

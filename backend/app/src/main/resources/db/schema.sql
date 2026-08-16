@@ -43,6 +43,7 @@ CREATE TABLE IF NOT EXISTS `house` (
   `label`           TINYINT       NOT NULL COMMENT '房源标签：1=房东直租 2=校友转租 3=合租拼室友',
   `pet_ok`          TINYINT       NOT NULL DEFAULT 0 COMMENT '是否允许宠物',
   `commute`         VARCHAR(64)   NOT NULL DEFAULT '' COMMENT '通勤说明',
+  `utilities`       VARCHAR(128)  NOT NULL DEFAULT '' COMMENT '水电网物业说明（如：含水电网，物业自理）',
   `images`          JSON          NULL COMMENT '房源图片（JSON数组）',
   `description`     TEXT          NULL COMMENT '房源描述',
   `audit_status`    TINYINT       NOT NULL DEFAULT 0 COMMENT '审核状态：0=待审核 1=已上架 2=已驳回',

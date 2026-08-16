@@ -53,6 +53,9 @@ aliren:
     webhook: ${ROBOT_WEBHOOK:}
     # 工作通知（私聊）需要应用 agentId（数字），配置后启用；未配置降级为日志
     agent-id: ${ROBOT_AGENT_ID:}
+  push:
+    # 防骚扰：单订阅每日推送上限（条/天），超限当天不再私聊提醒
+    daily-sub-limit: ${DAILY_SUB_LIMIT:3}
   schedule:
     # 定时任务：周五精选周推 / 周一安居故事（缺省开启；真实推送依赖 robot）
     enabled: ${SCHEDULE_ENABLED:true}

@@ -3,6 +3,7 @@ package com.aliren.houserent.pushlog;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.util.List;
 
 /**
@@ -24,6 +25,12 @@ public class PushLogService {
         log.setDemandId(demandId);
         log.setContent(content);
         pushLogMapper.insert(log);
+    }
+
+    /** 某订阅当天已推送条数（防骚扰每日上限判断） */
+    public long countTodayBySubscribe(Long subscribeId) {
+        LocalDate today = LocalDate.now();
+        return pushLogMapper.countTodayBySubscribe(subscribeId, today.atStartOfDay(), today.plusDays(1).atStartOfDay());
     }
 
     /** 某订阅的推送历史（按时间倒序） */

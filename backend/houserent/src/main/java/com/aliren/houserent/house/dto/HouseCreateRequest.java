@@ -28,6 +28,8 @@ public class HouseCreateRequest {
     private Integer label;
     private Integer petOk;
     private String commute;
+    /** 水电网物业说明（如"含水电网"），可选 */
+    private String utilities;
     private String images;
     private String description;
 }

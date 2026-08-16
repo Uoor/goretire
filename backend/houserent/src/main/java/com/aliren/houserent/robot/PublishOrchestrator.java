@@ -41,12 +41,15 @@ public class PublishOrchestrator {
     private final UserMapper userMapper;
     /** H5 访问地址（配置 aliren.h5.base-url），用于卡片跳转；未配置时卡片不带跳转按钮 */
     private final String h5BaseUrl;
+    /** 订阅每日推送上限（aliren.push.daily-sub-limit，默认 3）：防骚扰，超限当日不再私聊 */
+    private final int dailySubLimit;
     private final com.fasterxml.jackson.databind.ObjectMapper objectMapper = new com.fasterxml.jackson.databind.ObjectMapper();
 
     public PublishOrchestrator(HouseMapper houseMapper, MatchService matchService, PushClient pushClient,
-                               PushLogService pushLogService, SubscribeMapper subscribeMapper,
-                               DemandMapper demandMapper, UserMapper userMapper,
-                               @Value("${aliren.h5.base-url:}") String h5BaseUrl) {
+            PushLogService pushLogService, SubscribeMapper subscribeMapper,
+            DemandMapper demandMapper, UserMapper userMapper,
+            @Value("${aliren.h5.base-url:}") String h5BaseUrl,
+            @Value("${aliren.push.daily-sub-limit:3}") int dailySubLimit) {
         this.houseMapper = houseMapper;
         this.matchService = matchService;
         this.pushClient = pushClient;
@@ -55,6 +58,7 @@ public class PublishOrchestrator {
         this.demandMapper = demandMapper;
         this.userMapper = userMapper;
         this.h5BaseUrl = h5BaseUrl == null ? "" : h5BaseUrl.trim();
+        this.dailySubLimit = dailySubLimit <= 0 ? 3 : dailySubLimit;
     }
 
     /** 房源审核通过后编排（幂等：仅对已上架房源生效） */
@@ -71,6 +75,11 @@ public class PublishOrchestrator {
         for (SubscriptionHit hit : subHits) {
             Subscribe s = subscribeMapper.selectById(hit.getSubscribeId());
             if (s != null) {
+                // 防骚扰：该订阅今日推送已达上限则跳过私聊（仍不落库，避免误导"已推送"）
+                if (pushLogService.countTodayBySubscribe(s.getId()) >= dailySubLimit) {
+                    log.info("subscribe {} daily push limit reached ({}), skip", s.getId(), dailySubLimit);
+                    continue;
+                }
                 pushClient.sendWorkNotice(dingtalkUserId(s.getUserId()),
                         buildNoticeCard("🎯 订阅新匹配", h, detailUrl, hit.getReason()));
                 String content = "你订阅的房源上新了：「" + h.getCommunity() + "」" + h.getHouseType()
@@ -103,11 +112,12 @@ public class PublishOrchestrator {
 
     /**
      * 结构化房源卡片（钉钉 markdown）。
-     * 注意：钉钉 Webhook markdown 的单个 \n 不换行，必须用 <br/> 做行内换行，空行用 \n\n。
+     * 注意：钉钉 Webhook markdown 的单个 \n 不换行，必须用 <br/>
+     * 做行内换行，空行用 \n\n。
      * 封面图用 ![alt](url)，相对路径（/uploads/）按 h5BaseUrl 拼绝对地址。
      */
     private String buildHouseCard(House h) {
-        return buildCardBody(h) + "<br/>✅ 已通过管理员审核，欢迎看房";
+        return buildCardBody(h) + "✅ 已通过管理员审核，欢迎看房";
     }
 
     /**
@@ -136,7 +146,8 @@ public class PublishOrchestrator {
         }
         sb.append("**小区**：").append(h.getCommunity()).append("<br/>");
         sb.append("**户型**：").append(h.getHouseType()).append(" · ").append(h.getArea()).append("㎡<br/>");
-        sb.append("**月租**：**").append(rentText(h.getRent())).append(" 元/月**（").append(h.getDepositPay()).append("）<br/>");
+        sb.append("**月租**：**").append(rentText(h.getRent())).append(" 元/月**（").append(h.getDepositPay())
+                .append("）<br/>");
         sb.append("**区域**：").append(h.getRegion()).append("<br/>");
         sb.append("**标签**：`").append(labelText(h.getLabel())).append("`");
         if (h.getPetOk() != null && h.getPetOk() == 1) {
