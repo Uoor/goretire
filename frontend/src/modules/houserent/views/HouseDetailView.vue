@@ -57,7 +57,11 @@
 
       <div class="action-bar fixed-shell">
         <button class="icon-btn" @click="showReport = true"><i class="ph ph-flag"></i></button>
-        <button class="btn-primary" @click="contact">钉钉内联系房东</button>
+        <!-- 在租中：可联系房东；已租出/已下架：禁用并提示（房源已不可租） -->
+        <button v-if="house.rackStatus === 0" class="btn-primary" @click="contact">钉钉内联系房东</button>
+        <button v-else class="btn-primary btn-disabled" @click="showToast('该房源已' + (house.rackStatus === 1 ? '租出' : '下架'))">
+          已{{ house.rackStatus === 1 ? '租出' : '下架' }}，暂不可联系
+        </button>
       </div>
     </div>
 
@@ -205,12 +209,13 @@ onMounted(load)
   color: var(--fg2);
 }
 .tag.status-rented {
-  background: var(--bg);
-  color: var(--fg2);
+  /* 已租出 = 成交（正向），用成功绿；已下架才是终止灰 */
+  background: var(--accent-soft);
+  color: var(--accent);
 }
 .tag.status-off {
-  background: #fee2e2;
-  color: var(--destructive);
+  background: var(--bg);
+  color: var(--fg2);
 }
 .d-title {
   font-size: 1rem;
@@ -340,6 +345,13 @@ onMounted(load)
 }
 .action-bar .btn-primary {
   flex: 1;
+}
+/* 已租出/已下架的禁用态按钮：灰底，无立体边，不可点 */
+.action-bar .btn-disabled {
+  background: var(--bg);
+  color: var(--fg2);
+  box-shadow: none;
+  font-weight: 500;
 }
 .icon-btn {
   width: 46px;
