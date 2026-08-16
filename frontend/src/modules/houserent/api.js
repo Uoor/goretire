@@ -30,7 +30,8 @@ export const demandApi = {
   detail: (id) => request.get(`/demands/${id}`),
   create: (data) => request.post('/demands', data),
   withdraw: (id) => request.post(`/demands/${id}/withdraw`),
-  complete: (id) => request.post(`/demands/${id}/complete`)
+  complete: (id) => request.post(`/demands/${id}/complete`),
+  rematch: (id) => request.post(`/demands/${id}/rematch`)
 }
 
 export const subscribeApi = {

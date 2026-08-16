@@ -281,7 +281,11 @@ public class MatchService {
     }
 
     private Object toHit(Object target, String reason) {
-        if (target instanceof House h) return new HouseMatch(h.getId(), reason);
+        if (target instanceof House h) {
+            HouseMatch m = new HouseMatch(h.getId(), reason, h.getCommunity(), h.getHouseType(),
+                    h.getArea(), h.getRent(), h.getRegion());
+            return m;
+        }
         if (target instanceof Subscribe s) return new SubscriptionHit(s.getId(), reason);
         if (target instanceof Demand d) return new DemandHit(d.getId(), reason);
         return null;
@@ -300,7 +304,8 @@ public class MatchService {
             if (region != null && !h.getRegion().contains(region)) {
                 continue;
             }
-            result.add(new HouseMatch(h.getId(), buildFallbackReason(h, maxRent, region)));
+            result.add(new HouseMatch(h.getId(), buildFallbackReason(h, maxRent, region),
+                    h.getCommunity(), h.getHouseType(), h.getArea(), h.getRent(), h.getRegion()));
             if (result.size() >= MAX_RESULTS) {
                 break;
             }

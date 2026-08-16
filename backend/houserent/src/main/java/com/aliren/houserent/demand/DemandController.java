@@ -57,4 +57,10 @@ public class DemandController {
         demandService.complete(UserContext.requireUserId(), id);
         return ApiResponse.ok(null);
     }
+
+    /** 手动重新匹配：用需求原文对现有在架房源再匹配一轮（仅本人） */
+    @PostMapping("/{id}/rematch")
+    public ApiResponse<com.aliren.houserent.match.dto.MatchSearchResponse> rematch(@PathVariable Long id) {
+        return ApiResponse.ok(demandService.rematch(UserContext.requireUserId(), id));
+    }
 }

@@ -47,11 +47,41 @@ public class DemandService {
         // 立即匹配现有房源：用需求要素拼一句话（区域+户型+预算+要求）
         String queryText = buildMatchQuery(req);
         MatchSearchResponse matched = matchService.searchHouses(queryText);
+        // 有匹配 → 状态置为"已匹配"，前端可见；无匹配保持"待匹配"
+        if (matched.getMatches() != null && !matched.getMatches().isEmpty()) {
+            d.setMatchStatus(Demand.STATUS_MATCHED);
+            demandMapper.updateById(d);
+        }
         DemandCreateResult result = new DemandCreateResult();
         result.setDemandId(d.getId());
         result.setMatches(matched.getMatches());
         result.setDegraded(matched.isDegraded());
         return result;
+    }
+
+    /**
+     * 手动重新匹配：用需求原文重新对现有在架房源匹配一轮。
+     * 有结果 → 状态置已匹配；无结果 → 置回待匹配。返回匹配结果供展示。
+     */
+    public MatchSearchResponse rematch(Long userId, Long id) {
+        Demand d = requireDemand(id);
+        if (!d.getPublisherId().equals(userId)) {
+            throw new BusinessException(403, "无权限：仅发布人可操作");
+        }
+        DemandCreateRequest req = new DemandCreateRequest();
+        req.setRegion(d.getRegion());
+        req.setHouseType(d.getHouseType());
+        req.setBudget(d.getBudget());
+        req.setRequirements(d.getRequirements());
+        req.setDescription(d.getDescription());
+        MatchSearchResponse matched = matchService.searchHouses(buildMatchQuery(req));
+        if (matched.getMatches() != null && !matched.getMatches().isEmpty()) {
+            d.setMatchStatus(Demand.STATUS_MATCHED);
+        } else {
+            d.setMatchStatus(Demand.STATUS_PENDING);
+        }
+        demandMapper.updateById(d);
+        return matched;
     }
 
     /** 需求 → 一句话匹配文本（喂给一句话找房） */

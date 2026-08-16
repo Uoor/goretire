@@ -49,6 +49,7 @@
         <div v-if="d.description" class="mc-desc">{{ d.description }}</div>
         <div class="mc-ops">
           <button v-if="d.matchStatus !== 2" class="op-btn ghost" @click="complete(d)">标记已成交</button>
+          <button class="op-btn" @click="rematch(d)">重新匹配</button>
           <button class="op-btn" @click="withdraw(d)">撤回</button>
         </div>
       </div>
@@ -88,7 +89,11 @@
           class="mp-card"
           @click="goHouse(m.houseId)"
         >
-          <div class="mp-line"><b>房源 #{{ m.houseId }}</b><span class="mp-why">{{ m.reason }}</span></div>
+          <div class="mp-line">
+            <b>{{ m.community || ('房源 ' + m.houseId) }}</b>
+            <span class="mp-meta">{{ m.houseType || '' }}{{ m.area ? ' ' + m.area + '㎡' : '' }} · {{ m.rent ? formatMoney(m.rent) + ' 元/月' : '' }}</span>
+            <span class="mp-why">{{ m.reason }}</span>
+          </div>
         </div>
         <div v-if="immediateDegraded" class="mp-deg">（本地降级匹配）</div>
         <button class="btn-primary mp-done" @click="showMatchResult = false">知道了</button>
@@ -104,6 +109,7 @@ import { showToast, showSuccessToast } from 'vant'
 import TopBar from '@/modules/houserent/components/TopBar.vue'
 import EmptyState from '@/modules/houserent/components/EmptyState.vue'
 import { demandApi } from '@/modules/houserent/api'
+import { formatMoney } from '@/utils/format'
 
 const router = useRouter()
 
@@ -145,6 +151,19 @@ function statusText(s) {
 }
 function statusClass(s) {
   return s === 2 ? 's-done' : s === 1 ? 's-matched' : ''
+}
+
+/** 手动重新匹配：用需求原文再匹配一轮现有房源，弹结果 */
+async function rematch(d) {
+  try {
+    const res = await demandApi.rematch(d.id)
+    d.matchStatus = res?.matches?.length ? 1 : 0
+    immediateMatches.value = res?.matches || []
+    immediateDegraded.value = !!res?.degraded
+    showMatchResult.value = true
+  } catch (e) {
+    showToast(e.message || '匹配失败')
+  }
 }
 
 async function loadWall() {
@@ -467,6 +486,12 @@ onMounted(() => {
   font-size: 0.72rem;
   color: var(--primary-deep);
   flex: 1;
+  text-align: right;
+}
+.mp-meta {
+  font-size: 0.68rem;
+  color: var(--fg3);
+  white-space: nowrap;
 }
 .mp-deg {
   font-size: 0.68rem;
