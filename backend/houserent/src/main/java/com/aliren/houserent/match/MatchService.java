@@ -355,10 +355,22 @@ public class MatchService {
     }
 
     private String extractRegion(String text, List<House> candidates) {
+        // 精确匹配优先：文本完整包含候选区域名（如"上海张江"）
         for (House h : candidates) {
             String region = h.getRegion();
             if (region != null && !region.isBlank() && text.contains(region)) {
                 return region;
+            }
+        }
+        // 模糊匹配兜底：候选区域包含文本词（如"张江" → "上海张江"，"西溪" → "杭州西溪"）
+        for (House h : candidates) {
+            String region = h.getRegion();
+            if (region == null || region.isBlank()) continue;
+            for (int len = Math.min(text.trim().length(), 4); len >= 2; len--) {
+                String part = text.trim().substring(0, len);
+                if (region.contains(part)) {
+                    return region;
+                }
             }
         }
         return null;
