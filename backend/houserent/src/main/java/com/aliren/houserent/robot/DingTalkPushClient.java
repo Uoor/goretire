@@ -62,21 +62,55 @@ public class DingTalkPushClient implements PushClient {
             ObjectNode md = body.putObject("markdown");
             md.put("title", title);
             md.put("text", markdown);
-            HttpRequest request = HttpRequest.newBuilder(URI.create(robotWebhook))
-                    .timeout(TIMEOUT)
-                    .header("Content-Type", "application/json")
-                    .POST(HttpRequest.BodyPublishers.ofString(objectMapper.writeValueAsString(body)))
-                    .build();
-            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-            JsonNode json = objectMapper.readTree(response.body());
-            int errCode = json.path("errcode").asInt(-1);
-            if (errCode != 0) {
-                log.warn("[dingtalk-push] 群推送失败: errcode={} errmsg={}", errCode, json.path("errmsg").asText(""));
-            } else {
-                log.info("[dingtalk-push] 群推送成功: {}", title);
-            }
+            send(body);
         } catch (Exception e) {
             log.warn("[dingtalk-push] 群推送异常", e);
+        }
+    }
+
+    /** actionCard：带跳转按钮的卡片（如新上架"查看详情"）；actionUrl 为空退化纯 markdown */
+    @Override
+    public void sendGroupCardAction(String title, String markdown, String actionUrl) {
+        if (actionUrl == null || actionUrl.isBlank()) {
+            sendGroupCard(title, markdown);
+            return;
+        }
+        if (robotWebhook == null || robotWebhook.isBlank()) {
+            log.warn("[dingtalk-push] webhook 未配置，跳过群推送: {}", title);
+            return;
+        }
+        try {
+            ObjectNode body = objectMapper.createObjectNode();
+            body.put("msgtype", "actionCard");
+            ObjectNode card = body.putObject("actionCard");
+            card.put("title", title);
+            card.put("text", markdown);
+            card.put("btnOrientation", "1"); // 按钮竖向排列
+            ArrayNode btns = card.putArray("btns");
+            ObjectNode btn = btns.addObject();
+            btn.put("title", "查看详情");
+            btn.put("actionURL", actionUrl);
+            send(body);
+        } catch (Exception e) {
+            log.warn("[dingtalk-push] actionCard 推送异常", e);
+        }
+    }
+
+    private void send(ObjectNode body) throws Exception {
+        HttpRequest request = HttpRequest.newBuilder(URI.create(robotWebhook))
+                .timeout(TIMEOUT)
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(objectMapper.writeValueAsString(body)))
+                .build();
+        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        JsonNode json = objectMapper.readTree(response.body());
+        int errCode = json.path("errcode").asInt(-1);
+        if (errCode != 0) {
+            log.warn("[dingtalk-push] 群推送失败: errcode={} errmsg={}", errCode, json.path("errmsg").asText(""));
+        } else {
+            String _t = body.path("title").asText("");
+            if (_t.isEmpty()) _t = body.path("actionCard").path("title").asText("");
+            log.info("[dingtalk-push] 群推送成功: {}", _t);
         }
     }
 

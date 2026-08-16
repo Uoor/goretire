@@ -13,6 +13,7 @@ import com.aliren.core.user.UserMapper;
 import com.aliren.houserent.subscribe.Subscribe;
 import com.aliren.houserent.subscribe.SubscribeMapper;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -37,10 +38,13 @@ public class PublishOrchestrator {
     private final SubscribeMapper subscribeMapper;
     private final DemandMapper demandMapper;
     private final UserMapper userMapper;
+    /** H5 访问地址（配置 aliren.h5.base-url），用于卡片跳转；未配置时卡片不带跳转按钮 */
+    private final String h5BaseUrl;
 
     public PublishOrchestrator(HouseMapper houseMapper, MatchService matchService, PushClient pushClient,
                                PushLogService pushLogService, SubscribeMapper subscribeMapper,
-                               DemandMapper demandMapper, UserMapper userMapper) {
+                               DemandMapper demandMapper, UserMapper userMapper,
+                               @Value("${aliren.h5.base-url:}") String h5BaseUrl) {
         this.houseMapper = houseMapper;
         this.matchService = matchService;
         this.pushClient = pushClient;
@@ -48,6 +52,7 @@ public class PublishOrchestrator {
         this.subscribeMapper = subscribeMapper;
         this.demandMapper = demandMapper;
         this.userMapper = userMapper;
+        this.h5BaseUrl = h5BaseUrl == null ? "" : h5BaseUrl.trim();
     }
 
     /** 房源审核通过后编排（幂等：仅对已上架房源生效） */
@@ -58,7 +63,9 @@ public class PublishOrchestrator {
         }
         List<SubscriptionHit> subHits = matchService.matchSubscriptions(houseId);
         List<DemandHit> demandHits = matchService.matchDemands(houseId);
-        pushClient.sendGroupCard("新上架", buildHouseCard(h));
+        // 新上架卡片：结构化 markdown + 「查看详情」按钮（配置 H5 地址后生效）
+        String detailUrl = h5BaseUrl.isBlank() ? "" : h5BaseUrl + "/#/house/" + houseId;
+        pushClient.sendGroupCardAction("🏠 新上架 · " + h.getCommunity(), buildHouseCard(h), detailUrl);
         for (SubscriptionHit hit : subHits) {
             String content = "你订阅的房源上新了：「" + h.getCommunity() + "」" + h.getHouseType()
                     + " " + h.getRent() + "元/月 —— " + hit.getReason();
@@ -89,13 +96,31 @@ public class PublishOrchestrator {
         return u == null ? "" : u.getDingtalkUserId();
     }
 
+    /** 结构化房源卡片（钉钉 markdown：加粗/分割线/引用），按钮由 actionCard 提供 */
     private String buildHouseCard(House h) {
-        return "🏠 **" + h.getCommunity() + "** " + h.getHouseType() + " " + h.getArea() + "㎡\n"
-                + "月租 " + h.getRent() + " 元 · " + h.getDepositPay() + " · " + h.getRegion() + "\n"
-                + "标签：" + labelText(h.getLabel())
-                + (h.getPetOk() != null && h.getPetOk() == 1 ? " · 可养宠" : "")
-                + "\n通勤：" + (h.getCommute() == null ? "" : h.getCommute())
-                + "\n[查看详情 →]";
+        StringBuilder sb = new StringBuilder();
+        sb.append("**小区**：").append(h.getCommunity()).append("\n");
+        sb.append("**户型**：").append(h.getHouseType()).append(" · ").append(h.getArea()).append("㎡\n");
+        sb.append("**月租**：**").append(rentText(h.getRent())).append(" 元/月**（").append(h.getDepositPay()).append("）\n");
+        sb.append("**区域**：").append(h.getRegion()).append("\n");
+        sb.append("**标签**：`").append(labelText(h.getLabel())).append("`");
+        if (h.getPetOk() != null && h.getPetOk() == 1) {
+            sb.append(" · `可养宠`");
+        }
+        sb.append("\n");
+        if (h.getCommute() != null && !h.getCommute().isBlank()) {
+            sb.append("**通勤**：🚲 ").append(h.getCommute()).append("\n");
+        }
+        sb.append("\n> ✅ 已通过管理员审核，欢迎看房\n");
+        return sb.toString();
+    }
+
+    /** 金额去尾零：6000.00 → 6000 */
+    private String rentText(java.math.BigDecimal rent) {
+        if (rent == null) {
+            return "";
+        }
+        return rent.stripTrailingZeros().toPlainString();
     }
 
     private String labelText(Integer label) {

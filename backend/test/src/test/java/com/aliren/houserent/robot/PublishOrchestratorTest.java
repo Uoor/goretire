@@ -17,6 +17,7 @@ import java.math.BigDecimal;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -44,7 +45,7 @@ class PublishOrchestratorTest {
     @BeforeEach
     void setUp() {
         orchestrator = new PublishOrchestrator(houseMapper, matchService, pushClient,
-                pushLogService, subscribeMapper, demandMapper, userMapper);
+                pushLogService, subscribeMapper, demandMapper, userMapper, "https://h5.example.com");
     }
 
     private House onlineHouse(Long id) {
@@ -88,7 +89,7 @@ class PublishOrchestratorTest {
 
         orchestrator.onHouseAudited(1L);
 
-        verify(pushClient).sendGroupCard(anyString(), anyString());
+        verify(pushClient).sendGroupCardAction(anyString(), anyString(), eq("https://h5.example.com/#/house/1"));
         verify(pushClient).sendWorkNotice("ding-user-7", "你订阅的房源上新了：「西溪八方城」2室1厅 5800元/月 —— 区域预算都符合");
         verify(pushClient).sendWorkNotice("ding-user-8", "你挂在求租墙的需求有新房源：「西溪八方城」2室1厅 5800元/月 —— 目标区域一致");
     }
@@ -100,6 +101,6 @@ class PublishOrchestratorTest {
         when(houseMapper.selectById(1L)).thenReturn(h);
 
         orchestrator.onHouseAudited(1L);
-        verify(pushClient, never()).sendGroupCard(anyString(), anyString());
+        verify(pushClient, never()).sendGroupCardAction(anyString(), anyString(), anyString());
     }
 }

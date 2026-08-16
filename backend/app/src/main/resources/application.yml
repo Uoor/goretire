@@ -37,6 +37,9 @@ aliren:
     api-key: ${LLM_API_KEY:}
     model: ${LLM_MODEL:qwen-max}
     timeout-seconds: 10
+  h5:
+    # H5 访问地址（部署后配置，用于钉钉卡片"查看详情"按钮跳转；本地联调可留空）
+    base-url: ${H5_BASE_URL:}
   upload:
     # 图片上传（MVP 本地静态目录，后续可切 OSS）：目录相对 backend 启动位置
     dir: ${UPLOAD_DIR:./uploads}
