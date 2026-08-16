@@ -100,6 +100,7 @@ import TopBar from '@/modules/houserent/components/TopBar.vue'
 import EmptyState from '@/modules/houserent/components/EmptyState.vue'
 import { houseApi } from '@/modules/houserent/api'
 import { formatMoney, parseImages } from '@/utils/format'
+import { openSingleChat } from '@/utils/dd'
 
 const route = useRoute()
 const router = useRouter()
@@ -135,10 +136,12 @@ async function load() {
 
 async function contact() {
   try {
-    const ownerName = await houseApi.contact(route.params.id)
-    showSuccessToast(`已通知${ownerName || '房东'}，请留意钉钉消息回复`)
+    const owner = await houseApi.contact(route.params.id)
+    // 唤起钉钉单聊（产品 4.1：不留手机号，钉钉内直接开聊）
+    await openSingleChat(owner.staffId)
+    showToast(`已打开与${owner.nickname || '房东'}的钉钉会话`)
   } catch (e) {
-    showToast(e.message || '通知失败，请稍后再试')
+    showToast(e.message || '无法打开钉钉会话，请稍后再试')
   }
 }
 

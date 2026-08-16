@@ -71,11 +71,10 @@ public class HouseController {
         return ApiResponse.ok(reportId);
     }
 
-    /** 钉钉内联系房东：工作通知转达 */
+    /** 钉钉内联系房东：返回房东钉钉身份（staffId），前端唤起单聊 */
     @PostMapping("/{id}/contact")
-    public ApiResponse<String> contact(@PathVariable Long id) {
-        String ownerName = contactService.contact(UserContext.requireUserId(), id);
-        return ApiResponse.ok(ownerName);
+    public ApiResponse<com.aliren.houserent.house.dto.ContactResponse> contact(@PathVariable Long id) {
+        return ApiResponse.ok(contactService.contact(UserContext.requireUserId(), id));
     }
 
     /** 已租出下架（发布人本人操作；管理员走 /api/admin/houses/{id}/off-rack） */

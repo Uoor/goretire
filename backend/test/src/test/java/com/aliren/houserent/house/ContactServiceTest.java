@@ -3,8 +3,8 @@ package com.aliren.houserent.house;
 import com.aliren.core.common.BusinessException;
 import com.aliren.core.user.User;
 import com.aliren.core.user.UserMapper;
+import com.aliren.houserent.house.dto.ContactResponse;
 import com.aliren.houserent.pushlog.PushLogService;
-import com.aliren.houserent.robot.PushClient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -24,15 +24,13 @@ class ContactServiceTest {
     @Mock
     private UserMapper userMapper;
     @Mock
-    private PushClient pushClient;
-    @Mock
     private PushLogService pushLogService;
 
     private ContactService service;
 
     @BeforeEach
     void setUp() {
-        service = new ContactService(houseMapper, userMapper, pushClient, pushLogService);
+        service = new ContactService(houseMapper, userMapper, pushLogService);
     }
 
     private House onlineHouse() {
@@ -49,7 +47,7 @@ class ContactServiceTest {
     }
 
     @Test
-    void contact_sendsWorkNoticeToOwner() {
+    void contact_returnsOwnerStaffId() {
         when(houseMapper.selectById(1L)).thenReturn(onlineHouse());
         User owner = new User();
         owner.setId(3L);
@@ -57,10 +55,12 @@ class ContactServiceTest {
         owner.setDingtalkUserId("ding-owner-1");
         when(userMapper.selectById(3L)).thenReturn(owner);
 
-        String name = service.contact(9L, 1L);
-        assertThat(name).isEqualTo("房东老王");
-        verify(pushClient).sendWorkNotice("ding-owner-1", "有校友对你的房源感兴趣：「西溪八方城」2室1厅 89㎡ 5800元/月（杭州西溪），可在钉钉内与对方沟通。");
-        verify(pushLogService).record(3L, null, null, "有校友对你的房源感兴趣：「西溪八方城」2室1厅 89㎡ 5800元/月（杭州西溪），可在钉钉内与对方沟通。");
+        ContactResponse resp = service.contact(9L, 1L);
+        assertThat(resp.getNickname()).isEqualTo("房东老王");
+        assertThat(resp.getStaffId()).isEqualTo("ding-owner-1");
+        // 联系动作留痕（记录发起人）
+        verify(pushLogService).record(9L, null, null,
+                "发起联系房源：「西溪八方城」2室1厅（房东 房东老王）");
     }
 
     @Test
@@ -81,6 +81,6 @@ class ContactServiceTest {
         when(userMapper.selectById(3L)).thenReturn(owner);
         assertThatThrownBy(() -> service.contact(9L, 1L))
                 .isInstanceOf(BusinessException.class)
-                .hasMessageContaining("钉钉通知");
+                .hasMessageContaining("钉钉身份");
     }
 }
