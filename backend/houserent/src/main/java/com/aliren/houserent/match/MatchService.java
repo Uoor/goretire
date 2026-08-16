@@ -35,6 +35,8 @@ public class MatchService {
     private static final int MAX_RESULTS = 5;
     private static final Pattern PRICE_PATTERN = Pattern.compile("(\\d{3,6})\\s*(元|以内|以下|内)");
     private static final String[] LABEL_KEYWORDS = {"直租", "转租", "合租"};
+    /** 户型口语关键词：文本出现即作为硬条件（命中 house_type 含关键词的房源） */
+    private static final String[] TYPE_KEYWORDS = {"一居", "两居", "三居", "四居", "主卧", "次卧", "合租", "整租"};
 
     private final HouseMapper houseMapper;
     private final DemandMapper demandMapper;
@@ -50,7 +52,10 @@ public class MatchService {
         this.matchClient = matchClient;
     }
 
-    /** 一句话找房：自然语言 → 3-5 套房源 + 匹配理由 */
+    /** 一句话找房：自然语言 → 3-5 套房源 + 匹配理由。
+     * 策略：先本地硬过滤（区域/价格/户型），只把少量候选交给 LLM 排序+理由——
+     * 候选少时 LLM 不再乱选（实测全量候选易出现区域/户型看错）。
+     */
     public MatchSearchResponse searchHouses(String text) {
         List<House> candidates = houseMapper.selectList(new QueryWrapper<House>()
                 .eq("audit_status", House.AUDIT_ONLINE)
@@ -59,13 +64,62 @@ public class MatchService {
         if (candidates.isEmpty()) {
             return MatchSearchResponse.of(List.of(), false);
         }
-        String out = matchClient.complete(buildSearchPrompt(text, candidates));
-        List<Object> parsed = parseHits(out, candidates, "houseId");
+        // 本地硬过滤：先剔除明显不符的（区域/价格/户型），候选交 LLM 排序
+        List<House> filtered = prefilterSearch(text, candidates);
+        // 过滤后仍有候选 → LLM 排序 + 理由；过滤后为空 → 放宽到全量交 LLM（保底），仍失败则本地降级
+        List<House> llmCandidates = filtered.isEmpty() ? candidates : filtered;
+        String out = matchClient.complete(buildSearchPrompt(text, llmCandidates));
+        List<Object> parsed = parseHits(out, llmCandidates, "houseId");
         if (parsed == null) {
-            return MatchSearchResponse.of(degradeSearch(text, candidates), true);
+            return MatchSearchResponse.of(degradeSearch(text, llmCandidates), true);
         }
         List<HouseMatch> matches = parsed.stream().map(m -> (HouseMatch) m).toList();
         return MatchSearchResponse.of(matches.size() > MAX_RESULTS ? matches.subList(0, MAX_RESULTS) : matches, false);
+    }
+
+    /**
+     * 本地硬过滤：从需求文本提取可判定的约束，剔除明显不符的房源。
+     * 只过滤"确定违反"的项（区域指定且不匹配、价格超上限、户型关键词不含），
+     * 未指定的维度不设限，避免误杀。
+     */
+    private List<House> prefilterSearch(String text, List<House> candidates) {
+        Integer maxRent = extractPrice(text);
+        String region = extractRegion(text, candidates);
+        String typeKeyword = extractTypeKeyword(text);
+        List<House> out = new ArrayList<>();
+        for (House h : candidates) {
+            if (maxRent != null && h.getRent() != null && h.getRent().compareTo(java.math.BigDecimal.valueOf(maxRent)) > 0) {
+                continue;
+            }
+            if (region != null && !region.isBlank() && !h.getRegion().contains(region)) {
+                continue;
+            }
+            if (typeKeyword != null && h.getHouseType() != null && !h.getHouseType().contains(typeKeyword)) {
+                continue;
+            }
+            out.add(h);
+        }
+        return out;
+    }
+
+    /**
+     * 提取户型硬条件并归一化为可匹配的关键词：
+     * "一居/两居/三居" → "1室/2室/3室"（命中 1室1厅 等）；
+     * "主卧/次卧/合租/整租" 保持原词。无则 null 不设限。
+     */
+    private String extractTypeKeyword(String text) {
+        for (String kw : TYPE_KEYWORDS) {
+            if (text.contains(kw)) {
+                return switch (kw) {
+                    case "一居" -> "1室";
+                    case "两居" -> "2室";
+                    case "三居" -> "3室";
+                    case "四居" -> "4室";
+                    default -> kw;
+                };
+            }
+        }
+        return null;
     }
 
     /** 订阅批量匹配：新房源 → 一次调用处理全部活跃订阅（命中订阅 ID + 理由） */
@@ -120,6 +174,7 @@ public class MatchService {
                     .append("\n");
         }
         sb.append("请选出最匹配的 3-5 套，只输出 JSON 数组，每项形如 {\"houseId\": 数字, \"reason\": \"简短中文理由\"}，不要输出其他文字。");
+        sb.append("注意：候选房源全部为已审核在租状态，理由中不要编造房源状态（如已租出/已下架），只依据给定的字段描述。");
         return sb.toString();
     }
 
