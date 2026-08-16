@@ -55,7 +55,7 @@
 
     <!-- CTA 栏（底部固定，一键加入） -->
     <div class="join-cta">
-      <a class="cta-btn" :href="inviteUrl">🎟️ 一键加入社群</a>
+      <a class="cta-btn" :href="inviteUrl">一键加入社群</a>
     </div>
   </div>
 </template>
@@ -245,7 +245,7 @@ const inviteUrl =
   left: 0;
   right: 0;
   background: #fff;
-  padding: 12px 16px;
+  padding: 10px 16px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -253,26 +253,21 @@ const inviteUrl =
   box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.06);
 }
 .cta-btn {
-  display: block;
-  width: 100%;
-  max-width: 360px;
-  text-align: center;
+  display: inline-block;
   background: var(--primary);
   color: #fff;
   border: none;
-  padding: 13px 0;
-  border-radius: 10px;
-  font-weight: 700;
-  font-size: 0.92rem;
+  padding: 8px 24px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.8rem;
   cursor: pointer;
   text-decoration: none;
-  box-shadow: 0 2px 0 var(--primary-deep);
 }
 .cta-btn:hover {
   background: #ff8533;
 }
 .cta-btn:active {
-  transform: translateY(1px);
-  box-shadow: none;
+  opacity: 0.9;
 }
 </style>
