@@ -19,10 +19,10 @@
           <b>{{ h.community }} · {{ h.houseType }} {{ h.area }}㎡</b>
           <span class="ac-price num">{{ h.rent }} 元/月</span>
         </div>
-        <div class="ac-meta">{{ h.region }} · {{ h.depositPay }}{{ h.leaseTerm ? ' · ' + h.leaseTerm : '' }} · 房号 {{ h.roomNo || '—' }} · 发布人#{{ h.publisherId }}</div>
+        <div class="ac-meta">{{ h.region }} · {{ h.depositPay }}{{ h.leaseTerm ? ' · ' + h.leaseTerm : '' }} · 房号 {{ h.roomNo || '—' }} · 发布人 {{ h.publisherName || ('校友 #' + h.publisherId) }}</div>
         <!-- 图片预览（审核必须看图） -->
         <div v-if="hImages(h).length" class="ac-imgs">
-          <img v-for="(img, i) in hImages(h).slice(0, 6)" :key="i" :src="img" alt="" @click="preview = img" />
+          <img v-for="(img, i) in hImages(h).slice(0, 6)" :key="i" :src="img" alt="" @click="openPreview(img)" />
         </div>
         <div class="ac-tags">
           <span class="ac-tag">{{ labelText(h.label) }}</span>
@@ -91,8 +91,8 @@
     </van-popup>
 
     <!-- 审核图大图预览 -->
-    <van-popup v-model:show="preview" position="center" round>
-      <img v-if="preview" :src="preview" class="preview-img" alt="" />
+    <van-popup v-model:show="showPreview" position="center" round>
+      <img v-if="previewUrl" :src="previewUrl" class="preview-img" alt="" @click="showPreview = false" />
     </van-popup>
 
     <!-- 被举报房源信息 -->
@@ -138,7 +138,8 @@ const rejectReason = ref('')
 const showHandle = ref(false)
 const handleTarget = ref(null)
 const handleResult = ref('')
-const preview = ref('')
+const showPreview = ref(false)
+const previewUrl = ref('')
 const showReported = ref(false)
 const reportedHouse = ref(null)
 const reportedError = ref('')
@@ -149,6 +150,12 @@ function targetText(t) {
 
 function hImages(h) {
   return parseImages(h.images)
+}
+
+/** 打开大图预览：show 用独立布尔，避免字符串绑定 Boolean prop 的坑 */
+function openPreview(img) {
+  previewUrl.value = img
+  showPreview.value = true
 }
 function labelText(label) {
   return { 1: '房东直租', 2: '校友转租', 3: '合租拼室友' }[label] || ''

@@ -3,7 +3,6 @@ package com.aliren.houserent.admin;
 import com.aliren.houserent.admin.dto.AuditRequest;
 import com.aliren.core.auth.UserContext;
 import com.aliren.core.common.ApiResponse;
-import com.aliren.houserent.house.House;
 import com.aliren.houserent.report.Report;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -23,9 +22,9 @@ public class AdminAuditController {
         this.adminAuditService = adminAuditService;
     }
 
-    /** 待审核队列（含房号等审核敏感字段，仅管理员） */
+    /** 待审核队列（含房号等审核敏感字段 + 发布人昵称，仅管理员） */
     @GetMapping("/audit/pending")
-    public ApiResponse<List<House>> pendingList() {
+    public ApiResponse<List<Map<String, Object>>> pendingList() {
         return ApiResponse.ok(adminAuditService.pendingList());
     }
 

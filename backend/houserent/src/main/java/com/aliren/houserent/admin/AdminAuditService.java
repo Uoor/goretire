@@ -24,13 +24,16 @@ public class AdminAuditService {
     private final AuditLogService auditLogService;
     private final ReportService reportService;
     private final PublishOrchestrator publishOrchestrator;
+    private final com.aliren.core.user.UserMapper userMapper;
 
     public AdminAuditService(HouseMapper houseMapper, AuditLogService auditLogService,
-                             ReportService reportService, PublishOrchestrator publishOrchestrator) {
+                             ReportService reportService, PublishOrchestrator publishOrchestrator,
+                             com.aliren.core.user.UserMapper userMapper) {
         this.houseMapper = houseMapper;
         this.auditLogService = auditLogService;
         this.reportService = reportService;
         this.publishOrchestrator = publishOrchestrator;
+        this.userMapper = userMapper;
     }
 
     /**
@@ -124,11 +127,39 @@ public class AdminAuditService {
         auditLogService.record(operatorId, "DELETE_HOUSE", "house", houseId, null);
     }
 
-    /** 待审核队列（含房号等审核敏感字段，仅管理员） */
-    public List<House> pendingList() {
+    /** 待审核队列（含房号等审核敏感字段 + 发布人昵称，仅管理员） */
+    public List<Map<String, Object>> pendingList() {
         QueryWrapper<House> qw = new QueryWrapper<>();
         qw.eq("audit_status", House.AUDIT_PENDING).orderByAsc("created_at");
-        return houseMapper.selectList(qw);
+        return houseMapper.selectList(qw).stream().map(h -> {
+            Map<String, Object> m = new java.util.LinkedHashMap<>();
+            m.put("id", h.getId());
+            m.put("community", h.getCommunity());
+            m.put("roomNo", h.getRoomNo());
+            m.put("region", h.getRegion());
+            m.put("houseType", h.getHouseType());
+            m.put("area", h.getArea());
+            m.put("rent", h.getRent());
+            m.put("depositPay", h.getDepositPay());
+            m.put("leaseTerm", h.getLeaseTerm());
+            m.put("label", h.getLabel());
+            m.put("petOk", h.getPetOk());
+            m.put("commute", h.getCommute());
+            m.put("images", h.getImages());
+            m.put("description", h.getDescription());
+            m.put("auditStatus", h.getAuditStatus());
+            m.put("createdAt", h.getCreatedAt());
+            m.put("publisherId", h.getPublisherId());
+            m.put("publisherName", publisherName(h.getPublisherId()));
+            return m;
+        }).toList();
+    }
+
+    /** 发布人昵称（查不到返回 null，前端兜底显示"校友"） */
+    private String publisherName(Long userId) {
+        if (userId == null) return null;
+        com.aliren.core.user.User u = userMapper.selectById(userId);
+        return u == null ? null : u.getNickname();
     }
 
     /** 举报列表（按状态过滤，仅管理员） */
