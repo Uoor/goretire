@@ -4,6 +4,8 @@ import com.aliren.core.common.BusinessException;
 import com.aliren.houserent.demand.dto.DemandCreateRequest;
 import com.aliren.houserent.demand.dto.DemandListQuery;
 import com.aliren.houserent.demand.dto.DemandResponse;
+import com.aliren.houserent.match.MatchService;
+import com.aliren.houserent.match.dto.MatchSearchResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -16,6 +18,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -24,16 +27,18 @@ class DemandServiceTest {
 
     @Mock
     private DemandMapper demandMapper;
+    @Mock
+    private MatchService matchService;
 
     private DemandService demandService;
 
     @BeforeEach
     void setUp() {
-        demandService = new DemandService(demandMapper);
+        demandService = new DemandService(demandMapper, matchService);
     }
 
     @Test
-    void create_initializesPendingStatus() {
+    void create_initializesPendingStatusAndImmediateMatch() {
         DemandCreateRequest req = new DemandCreateRequest();
         req.setRegion("杭州西溪");
         req.setHouseType("2室1厅");
@@ -42,15 +47,19 @@ class DemandServiceTest {
             inv.getArgument(0, Demand.class).setId(5L);
             return 1;
         });
+        when(matchService.searchHouses(anyString()))
+                .thenReturn(MatchSearchResponse.of(List.of(), false));
 
-        Long id = demandService.create(7L, req);
-        assertThat(id).isEqualTo(5L);
+        DemandService.DemandCreateResult result = demandService.create(7L, req);
+        assertThat(result.getDemandId()).isEqualTo(5L);
 
         ArgumentCaptor<Demand> captor = ArgumentCaptor.forClass(Demand.class);
         verify(demandMapper).insert(captor.capture());
         Demand saved = captor.getValue();
         assertThat(saved.getPublisherId()).isEqualTo(7L);
         assertThat(saved.getMatchStatus()).isZero(); // 待匹配
+        // 发布即用现有房源匹配一轮
+        verify(matchService).searchHouses(anyString());
     }
 
     @Test

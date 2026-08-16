@@ -20,9 +20,9 @@ public class DemandController {
         this.demandService = demandService;
     }
 
-    /** 发布求租需求 */
+    /** 发布求租需求：返回需求 ID + 即时匹配的现有房源 */
     @PostMapping
-    public ApiResponse<Long> create(@Valid @RequestBody DemandCreateRequest req) {
+    public ApiResponse<DemandService.DemandCreateResult> create(@Valid @RequestBody DemandCreateRequest req) {
         return ApiResponse.ok(demandService.create(UserContext.requireUserId(), req));
     }
 

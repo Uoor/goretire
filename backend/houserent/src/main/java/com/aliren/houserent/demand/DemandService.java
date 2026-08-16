@@ -4,6 +4,8 @@ import com.aliren.core.common.BusinessException;
 import com.aliren.houserent.demand.dto.DemandCreateRequest;
 import com.aliren.houserent.demand.dto.DemandListQuery;
 import com.aliren.houserent.demand.dto.DemandResponse;
+import com.aliren.houserent.match.MatchService;
+import com.aliren.houserent.match.dto.MatchSearchResponse;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,13 +21,18 @@ import java.util.List;
 public class DemandService {
 
     private final DemandMapper demandMapper;
+    private final MatchService matchService;
 
-    public DemandService(DemandMapper demandMapper) {
+    public DemandService(DemandMapper demandMapper, MatchService matchService) {
         this.demandMapper = demandMapper;
+        this.matchService = matchService;
     }
 
-    /** 发布求租需求：初始状态待匹配(0) */
-    public Long create(Long publisherId, DemandCreateRequest req) {
+    /**
+     * 发布求租需求：初始状态待匹配(0)，并立即用现有在架房源匹配一轮，
+     * 返回匹配结果供前端展示（"现在就有 X 套合适"），不必干等新房源。
+     */
+    public DemandCreateResult create(Long publisherId, DemandCreateRequest req) {
         Demand d = new Demand();
         d.setPublisherId(publisherId);
         d.setBudget(req.getBudget());
@@ -37,7 +44,46 @@ public class DemandService {
         d.setDescription(req.getDescription());
         d.setMatchStatus(Demand.STATUS_PENDING);
         demandMapper.insert(d);
-        return d.getId();
+        // 立即匹配现有房源：用需求要素拼一句话（区域+户型+预算+要求）
+        String queryText = buildMatchQuery(req);
+        MatchSearchResponse matched = matchService.searchHouses(queryText);
+        DemandCreateResult result = new DemandCreateResult();
+        result.setDemandId(d.getId());
+        result.setMatches(matched.getMatches());
+        result.setDegraded(matched.isDegraded());
+        return result;
+    }
+
+    /** 需求 → 一句话匹配文本（喂给一句话找房） */
+    private String buildMatchQuery(DemandCreateRequest req) {
+        StringBuilder sb = new StringBuilder();
+        if (StringUtils.hasText(req.getRegion())) sb.append(req.getRegion()).append(" ");
+        if (StringUtils.hasText(req.getHouseType())) sb.append(req.getHouseType()).append(" ");
+        if (StringUtils.hasText(req.getBudget())) {
+            // budget 是 JSON {"min":4000,"max":6000} → "4000-6000元"
+            sb.append(req.getBudget().replaceAll("[^0-9]", "")).append("元以内 ");
+        }
+        if (StringUtils.hasText(req.getRequirements())) {
+            String r = req.getRequirements();
+            if (r.contains("养宠") || r.contains("宠物")) sb.append("可养宠 ");
+            if (r.contains("车位")) sb.append("带车位 ");
+        }
+        if (StringUtils.hasText(req.getDescription())) sb.append(req.getDescription());
+        return sb.toString().trim();
+    }
+
+    /** 发布响应：需求 ID + 即时匹配结果 */
+    public static class DemandCreateResult {
+        private Long demandId;
+        private List<com.aliren.houserent.match.dto.HouseMatch> matches;
+        private boolean degraded;
+
+        public Long getDemandId() { return demandId; }
+        public void setDemandId(Long demandId) { this.demandId = demandId; }
+        public List<com.aliren.houserent.match.dto.HouseMatch> getMatches() { return matches; }
+        public void setMatches(List<com.aliren.houserent.match.dto.HouseMatch> matches) { this.matches = matches; }
+        public boolean isDegraded() { return degraded; }
+        public void setDegraded(boolean degraded) { this.degraded = degraded; }
     }
 
     /** 求租墙：仅待匹配/已匹配（不含已成交），按创建倒序，支持区域过滤 */

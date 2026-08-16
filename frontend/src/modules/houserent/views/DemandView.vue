@@ -72,21 +72,54 @@
         </button>
       </div>
     </van-popup>
+
+    <!-- 发布后的即时匹配结果 -->
+    <van-popup v-model:show="showMatchResult" position="bottom" round :safe-area-inset-bottom="true">
+      <div class="match-panel">
+        <div class="mp-head">
+          <b>{{ immediateMatches.length ? '🎯 现在就有一套适合你' : '📡 已挂上求租墙' }}</b>
+          <i class="ph ph-x" @click="showMatchResult = false"></i>
+        </div>
+        <div v-if="immediateMatches.length" class="mp-sub">根据你的需求，以下在租房源当前即可联系房东：</div>
+        <div v-else class="mp-sub">暂时没有完全匹配的在租房源，新房源上架会自动提醒你</div>
+        <div
+          v-for="m in immediateMatches"
+          :key="m.houseId"
+          class="mp-card"
+          @click="goHouse(m.houseId)"
+        >
+          <div class="mp-line"><b>房源 #{{ m.houseId }}</b><span class="mp-why">{{ m.reason }}</span></div>
+        </div>
+        <div v-if="immediateDegraded" class="mp-deg">（本地降级匹配）</div>
+        <button class="btn-primary mp-done" @click="showMatchResult = false">知道了</button>
+      </div>
+    </van-popup>
   </div>
 </template>
 
 <script setup>
 import { onMounted, reactive, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { showToast, showSuccessToast } from 'vant'
 import TopBar from '@/modules/houserent/components/TopBar.vue'
 import EmptyState from '@/modules/houserent/components/EmptyState.vue'
 import { demandApi } from '@/modules/houserent/api'
+
+const router = useRouter()
+
+function goHouse(id) {
+  showMatchResult.value = false
+  router.push({ name: 'house-detail', params: { id } })
+}
 
 const tab = ref('wall')
 const wall = ref([])
 const loading = ref(false)
 const mine = ref([])
 const showCreate = ref(false)
+const showMatchResult = ref(false)
+const immediateMatches = ref([])
+const immediateDegraded = ref(false)
 const creating = ref(false)
 const createForm = reactive({ region: '', houseType: '', budget: '', moveInDate: '', leaseTerm: '', requirements: '', description: '' })
 
@@ -151,7 +184,7 @@ async function create() {
     const requirements = createForm.requirements
       ? JSON.stringify(createForm.requirements.split(/[,，]/).map((s) => s.trim()).filter(Boolean))
       : null
-    await demandApi.create({
+    const res = await demandApi.create({
       region: createForm.region.trim(),
       houseType: createForm.houseType.trim(),
       budget,
@@ -160,7 +193,10 @@ async function create() {
       requirements,
       description: createForm.description.trim()
     })
-    showSuccessToast('已发布到求租墙')
+    // 发布后即时匹配：有结果展示，无结果提示等待新房源
+    immediateMatches.value = res?.matches || []
+    immediateDegraded.value = !!res?.degraded
+    showMatchResult.value = true
     showCreate.value = false
     Object.keys(createForm).forEach((k) => (createForm[k] = ''))
     loadWall()
@@ -392,5 +428,54 @@ onMounted(() => {
 .btn-primary:disabled {
   opacity: 0.5;
   box-shadow: none;
+}
+.match-panel {
+  padding: 16px;
+}
+.mp-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.92rem;
+  margin-bottom: 6px;
+}
+.mp-head i {
+  color: var(--fg3);
+  font-size: 1.1rem;
+  cursor: pointer;
+}
+.mp-sub {
+  font-size: 0.75rem;
+  color: var(--fg3);
+  margin-bottom: 12px;
+}
+.mp-card {
+  background: var(--primary-soft);
+  border: 1px solid rgba(255, 106, 0, 0.25);
+  border-radius: 10px;
+  padding: 12px;
+  margin-bottom: 8px;
+  cursor: pointer;
+}
+.mp-line {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 0.82rem;
+}
+.mp-why {
+  font-size: 0.72rem;
+  color: var(--primary-deep);
+  flex: 1;
+}
+.mp-deg {
+  font-size: 0.68rem;
+  color: var(--fg3);
+  text-align: center;
+  margin: 4px 0;
+}
+.mp-done {
+  width: 100%;
+  margin-top: 10px;
 }
 </style>
