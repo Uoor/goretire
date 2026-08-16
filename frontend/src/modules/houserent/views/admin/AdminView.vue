@@ -119,7 +119,7 @@
 
 <script setup>
 import { onMounted, ref } from 'vue'
-import { showToast, showSuccessToast } from 'vant'
+import { showConfirmDialog, showToast, showSuccessToast } from 'vant'
 import TopBar from '@/modules/houserent/components/TopBar.vue'
 import EmptyState from '@/modules/houserent/components/EmptyState.vue'
 import { adminApi, houseApi } from '@/modules/houserent/api'
@@ -228,6 +228,19 @@ function switchTab(t) {
 }
 
 async function audit(h, pass, reason) {
+  // 状态变更（审核通过 → 上架并推送）：二次确认
+  if (pass) {
+    try {
+      await showConfirmDialog({
+        title: '审核通过',
+        message: `确认通过「${h.community}」？通过后将立即上架并推送到群与匹配订阅。`,
+        confirmButtonText: '确认通过',
+        confirmButtonColor: '#FF6A00'
+      })
+    } catch {
+      return // 用户取消
+    }
+  }
   try {
     await adminApi.audit(h.id, pass, reason)
     showSuccessToast(pass ? '已通过' : '已驳回')

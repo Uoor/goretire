@@ -105,7 +105,7 @@
 <script setup>
 import { onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { showToast, showSuccessToast } from 'vant'
+import { showConfirmDialog, showToast, showSuccessToast } from 'vant'
 import TopBar from '@/modules/houserent/components/TopBar.vue'
 import EmptyState from '@/modules/houserent/components/EmptyState.vue'
 import { demandApi } from '@/modules/houserent/api'
@@ -228,6 +228,17 @@ async function create() {
 }
 
 async function complete(d) {
+  // 状态变更：二次确认
+  try {
+    await showConfirmDialog({
+      title: '标记已成交',
+      message: '确认将这条求租需求标记为已成交吗？标记后将从求租墙移除。',
+      confirmButtonText: '确认成交',
+      confirmButtonColor: '#FF6A00'
+    })
+  } catch {
+    return // 用户取消
+  }
   try {
     await demandApi.complete(d.id)
     showSuccessToast('已标记成交')
@@ -239,6 +250,17 @@ async function complete(d) {
 }
 
 async function withdraw(d) {
+  // 状态变更：二次确认
+  try {
+    await showConfirmDialog({
+      title: '撤回需求',
+      message: '确认撤回这条求租需求吗？撤回后将从求租墙移除，且不再接收新房源提醒。',
+      confirmButtonText: '确认撤回',
+      confirmButtonColor: '#FF6A00'
+    })
+  } catch {
+    return // 用户取消
+  }
   try {
     await demandApi.withdraw(d.id)
     showSuccessToast('已撤回')
