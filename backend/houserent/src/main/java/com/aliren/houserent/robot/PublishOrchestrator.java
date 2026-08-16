@@ -123,7 +123,7 @@ public class PublishOrchestrator {
             sb.append("**通勤**：🚲 ").append(h.getCommute()).append("<br/>");
         }
         sb.append("<br/>");
-        sb.append("> ✅ 已通过管理员审核，欢迎看房\n");
+        sb.append("✅ 已通过管理员审核，欢迎看房");
         return sb.toString();
     }
 
