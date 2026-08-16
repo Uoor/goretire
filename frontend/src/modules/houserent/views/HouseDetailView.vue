@@ -43,12 +43,13 @@
           </div>
         </div>
 
-        <div class="guide-strip">
+        <div class="guide-strip" @click="router.push({ name: 'guide' })">
           <i class="ph ph-shield-check"></i>
           <div class="tx">
             <b>避坑提醒</b>：签约前先看《合同模板》与《押金避坑清单》<br />
             <span>所有房源均经管理员核实 · 举报入口在下方</span>
           </div>
+          <i class="ph ph-caret-right guide-arr"></i>
         </div>
       </div>
 
@@ -82,7 +83,7 @@
 
 <script setup>
 import { computed, onMounted, ref } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { showToast, showSuccessToast } from 'vant'
 import TopBar from '@/modules/houserent/components/TopBar.vue'
 import EmptyState from '@/modules/houserent/components/EmptyState.vue'
@@ -90,6 +91,7 @@ import { houseApi } from '@/modules/houserent/api'
 import { formatMoney, parseImages } from '@/utils/format'
 
 const route = useRoute()
+const router = useRouter()
 const house = ref(null)
 const loading = ref(true)
 const showReport = ref(false)
@@ -277,6 +279,7 @@ onMounted(load)
   white-space: nowrap;
 }
 .guide-strip {
+  cursor: pointer;
   background: #fffbe6;
   border: 1px solid #ffe58f;
   border-radius: 12px;
@@ -291,12 +294,19 @@ onMounted(load)
   font-size: 1.3rem;
   flex-shrink: 0;
 }
+.guide-arr {
+  margin-left: auto;
+  color: #d48806;
+  font-size: 1rem;
+  flex-shrink: 0;
+}
 .guide-strip .tx {
   font-size: 0.74rem;
   color: #874d00;
   line-height: 1.5;
 }
 .guide-strip .tx b {
+  color: #d48806;
   color: #d48806;
 }
 .action-bar {

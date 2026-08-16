@@ -29,6 +29,10 @@
         <i class="ph ph-magnifying-glass"></i><span>我的求租需求</span>
         <i class="ph ph-caret-right arr"></i>
       </div>
+      <div class="me-row" @click="router.push({ name: 'guide' })">
+        <i class="ph ph-book-open-text"></i><span>避坑指南</span>
+        <i class="ph ph-caret-right arr"></i>
+      </div>
     </div>
 
     <div class="me-list me-houses">

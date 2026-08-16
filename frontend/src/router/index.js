@@ -12,6 +12,7 @@ const routes = [
   { path: '/publish', name: 'publish', component: () => import('@/modules/houserent/views/PublishView.vue'), meta: { title: '发布', tab: true } },
   { path: '/subscribe', name: 'subscribe', component: () => import('@/modules/houserent/views/SubscribeView.vue'), meta: { title: '订阅', tab: true } },
   { path: '/me', name: 'me', component: () => import('@/modules/houserent/views/MeView.vue'), meta: { title: '我的', tab: true } },
+  { path: '/guide', name: 'guide', component: () => import('@/modules/houserent/views/GuideView.vue'), meta: { title: '避坑指南' } },
   { path: '/admin', name: 'admin', component: () => import('@/modules/houserent/views/admin/AdminView.vue'), meta: { title: '管理后台' } },
   { path: '/:pathMatch(.*)*', redirect: '/' }
 ]

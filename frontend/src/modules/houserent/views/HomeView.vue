@@ -32,6 +32,13 @@
 
     <FilterChips :chips="chips" v-model="activeChip" />
 
+    <!-- 避坑指南引导条 -->
+    <div class="home-guide" @click="router.push({ name: 'guide' })">
+      <i class="ph ph-book-open-text"></i>
+      <span>签约前必读：合同模板 · 押金清单 · 骗局案例</span>
+      <i class="ph ph-caret-right"></i>
+    </div>
+
     <div class="feed">
       <HouseCard
         v-for="(h, i) in houses"
@@ -221,5 +228,26 @@ onMounted(async () => {
   border-radius: 6px;
   padding: 6px 8px;
   line-height: 1.5;
+}
+.home-guide {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 10px 16px 0;
+  padding: 10px 12px;
+  background: #fffbe6;
+  border: 1px solid #ffe58f;
+  border-radius: 12px;
+  font-size: 0.72rem;
+  color: #874d00;
+  cursor: pointer;
+}
+.home-guide > i:first-child {
+  color: var(--warning);
+  font-size: 1.1rem;
+}
+.home-guide > i:last-child {
+  margin-left: auto;
+  color: #d48806;
 }
 </style>
