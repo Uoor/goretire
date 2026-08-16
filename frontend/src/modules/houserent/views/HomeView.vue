@@ -11,10 +11,11 @@
           ref="searchRef"
           placeholder="预算 6000 以内，西溪附近，能养猫…"
           @keyup.enter="doSearch"
-          @blur="showSearch = false"
+          @blur="onSearchBlur"
         />
       </div>
-      <button v-if="showSearch" class="search-go" @click="doSearch">找房</button>
+      <!-- mousedown.prevent：在 input blur 触发前执行，避免点击按钮时按钮因 blur 消失导致 click 丢失 -->
+      <button v-if="showSearch" class="search-go" @mousedown.prevent="doSearch">找房</button>
     </div>
 
     <!-- 一句话找房结果 -->
@@ -114,6 +115,13 @@ async function doSearch() {
   } catch (e) {
     showToast(e.message || '找房失败')
   }
+}
+
+/** 点击页面其他区域时收起搜索框（延迟避免与按钮 mousedown 冲突） */
+function onSearchBlur() {
+  setTimeout(() => {
+    showSearch.value = false
+  }, 120)
 }
 
 function openHouse(id) {

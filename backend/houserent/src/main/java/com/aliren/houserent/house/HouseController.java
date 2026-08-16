@@ -2,6 +2,7 @@ package com.aliren.houserent.house;
 
 import com.aliren.core.auth.UserContext;
 import com.aliren.core.common.ApiResponse;
+import com.aliren.houserent.admin.AdminAuditService;
 import com.aliren.houserent.house.dto.HouseCreateRequest;
 import com.aliren.houserent.house.dto.HouseListQuery;
 import com.aliren.houserent.house.dto.HouseResponse;
@@ -20,11 +21,14 @@ public class HouseController {
     private final HouseService houseService;
     private final ReportService reportService;
     private final ContactService contactService;
+    private final AdminAuditService adminAuditService;
 
-    public HouseController(HouseService houseService, ReportService reportService, ContactService contactService) {
+    public HouseController(HouseService houseService, ReportService reportService, ContactService contactService,
+                           AdminAuditService adminAuditService) {
         this.houseService = houseService;
         this.reportService = reportService;
         this.contactService = contactService;
+        this.adminAuditService = adminAuditService;
     }
 
     /** 房源列表：仅已上架+在租 */
@@ -72,6 +76,13 @@ public class HouseController {
     public ApiResponse<String> contact(@PathVariable Long id) {
         String ownerName = contactService.contact(UserContext.requireUserId(), id);
         return ApiResponse.ok(ownerName);
+    }
+
+    /** 已租出下架（发布人本人操作；管理员走 /api/admin/houses/{id}/off-rack） */
+    @PostMapping("/{id}/off-rack")
+    public ApiResponse<Void> offRack(@PathVariable Long id) {
+        adminAuditService.offRack(UserContext.requireUserId(), UserContext.requireRole(), id);
+        return ApiResponse.ok(null);
     }
 
     @Data

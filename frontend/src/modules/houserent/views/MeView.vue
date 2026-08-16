@@ -38,7 +38,7 @@
     <div class="me-list me-houses">
       <div class="list-title">我的发布</div>
       <div v-if="myHouses.length === 0" class="me-none">还没有发布过房源</div>
-      <div v-for="h in myHouses" :key="h.id" class="my-house" @click="router.push({ name: 'house-detail', params: { id: h.id } })">
+      <div v-for="h in myHouses" :key="h.id" class="my-house" @click="openMyHouse(h)">
         <div class="mh-main">
           <div class="mh-title">{{ h.community }} · {{ h.houseType }} {{ h.area }}㎡</div>
           <div class="mh-meta">
@@ -98,6 +98,15 @@ function statusClass(h) {
 }
 function canOffRack(h) {
   return h.auditStatus === 1 && h.rackStatus === 0
+}
+
+/** 点击我的房源：仅已上架可进详情；待审核/驳回给状态提示（详情接口对未上架返回 404） */
+function openMyHouse(h) {
+  if (h.auditStatus !== 1) {
+    showToast(h.auditStatus === 0 ? '该房源待审核，上架后可查看' : `已驳回：${h.auditReason || '未通过审核'}`)
+    return
+  }
+  router.push({ name: 'house-detail', params: { id: h.id } })
 }
 
 async function load() {
