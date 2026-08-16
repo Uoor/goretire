@@ -10,6 +10,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Service
@@ -67,6 +68,9 @@ public class HouseService {
         }
         if (query.getPetOk() != null) {
             qw.eq("pet_ok", query.getPetOk());
+        }
+        if (Boolean.TRUE.equals(query.getNewOnly())) {
+            qw.ge("created_at", LocalDate.now().minusDays(7).atStartOfDay());
         }
         qw.orderByDesc("created_at");
         return houseMapper.selectList(qw).stream().map(HouseResponse::from).toList();

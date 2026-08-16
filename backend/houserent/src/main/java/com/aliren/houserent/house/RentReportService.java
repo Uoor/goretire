@@ -25,6 +25,38 @@ public class RentReportService {
         this.houseMapper = houseMapper;
     }
 
+    /** 单区域统计（AI 定价参考用）：在租已上架房源的平均/最低/最高月租 */
+    public RentReportResponse.RegionStat regionStat(String region) {
+        if (region == null || region.isBlank()) {
+            return null;
+        }
+        List<House> houses = houseMapper.selectList(new QueryWrapper<House>()
+                .eq("audit_status", House.AUDIT_ONLINE)
+                .eq("rack_status", House.RACK_RENTING)
+                .eq("region", region));
+        if (houses.isEmpty()) {
+            return null;
+        }
+        RentReportResponse.RegionStat stat = new RentReportResponse.RegionStat();
+        stat.setRegion(region);
+        stat.setCount(houses.size());
+        BigDecimal min = null;
+        BigDecimal max = null;
+        BigDecimal sum = BigDecimal.ZERO;
+        for (House h : houses) {
+            if (h.getRent() == null) {
+                continue;
+            }
+            sum = sum.add(h.getRent());
+            if (min == null || h.getRent().compareTo(min) < 0) min = h.getRent();
+            if (max == null || h.getRent().compareTo(max) > 0) max = h.getRent();
+        }
+        stat.setAvgRent(sum.divide(BigDecimal.valueOf(houses.size()), 0, RoundingMode.HALF_UP));
+        stat.setMinRent(min);
+        stat.setMaxRent(max);
+        return stat;
+    }
+
     public RentReportResponse weekly() {
         LocalDate monday = LocalDate.now().with(java.time.DayOfWeek.MONDAY);
 

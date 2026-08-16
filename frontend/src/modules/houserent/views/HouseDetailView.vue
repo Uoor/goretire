@@ -113,8 +113,13 @@ async function load() {
   }
 }
 
-function contact() {
-  showToast('真实联系方式需在钉钉内开放（MVP 预留）')
+async function contact() {
+  try {
+    const ownerName = await houseApi.contact(route.params.id)
+    showSuccessToast(`已通知${ownerName || '房东'}，请留意钉钉消息回复`)
+  } catch (e) {
+    showToast(e.message || '通知失败，请稍后再试')
+  }
 }
 
 async function submitReport() {

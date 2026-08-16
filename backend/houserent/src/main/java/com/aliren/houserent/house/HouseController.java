@@ -19,10 +19,12 @@ public class HouseController {
 
     private final HouseService houseService;
     private final ReportService reportService;
+    private final ContactService contactService;
 
-    public HouseController(HouseService houseService, ReportService reportService) {
+    public HouseController(HouseService houseService, ReportService reportService, ContactService contactService) {
         this.houseService = houseService;
         this.reportService = reportService;
+        this.contactService = contactService;
     }
 
     /** 房源列表：仅已上架+在租 */
@@ -63,6 +65,13 @@ public class HouseController {
         Long reportId = reportService.create(com.aliren.houserent.report.Report.TYPE_HOUSE,
                 id, UserContext.requireUserId(), req.getReason());
         return ApiResponse.ok(reportId);
+    }
+
+    /** 钉钉内联系房东：工作通知转达 */
+    @PostMapping("/{id}/contact")
+    public ApiResponse<String> contact(@PathVariable Long id) {
+        String ownerName = contactService.contact(UserContext.requireUserId(), id);
+        return ApiResponse.ok(ownerName);
     }
 
     @Data

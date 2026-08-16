@@ -22,6 +22,8 @@ public class RentReportResponse {
     public static class RegionStat {
         private String region;
         private BigDecimal avgRent;
+        private BigDecimal minRent;
+        private BigDecimal maxRent;
         private long count;
     }
 }

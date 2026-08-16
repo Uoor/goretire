@@ -96,6 +96,7 @@ async function load() {
     const params = {}
     if (/^label\d$/.test(activeChip.value)) params.label = Number(activeChip.value.slice(5))
     if (activeChip.value === 'pet') params.petOk = 1
+    if (activeChip.value === 'new') params.newOnly = true
     houses.value = await houseApi.list(params)
   } catch (e) {
     showToast(e.message || '加载失败')

@@ -28,7 +28,11 @@
       </div>
       <div class="form-label"><span>区域</span><span class="req">*</span></div>
       <div class="form-field">
-        <input v-model="form.region" placeholder="如：杭州西溪" />
+        <input v-model="form.region" placeholder="如：杭州西溪" @blur="loadRegionPrice" @input="priceTip = null" />
+      </div>
+      <div v-if="priceTip" class="ai-tip price-tip">
+        <i class="ph ph-sparkle"></i>
+        <span>AI 定价参考：{{ priceTip }}</span>
       </div>
     </div>
 
@@ -111,10 +115,12 @@ import { showToast, showSuccessToast } from 'vant'
 import TopBar from '@/modules/houserent/components/TopBar.vue'
 import { houseApi } from '@/modules/houserent/api'
 import { uploadApi } from '@/api'
+import { formatMoney } from '@/utils/format'
 
 const router = useRouter()
 const submitting = ref(false)
 const fileList = ref([])
+const priceTip = ref(null)
 
 const houseTypes = ['1室0厅', '1室1厅', '2室1厅', '2室2厅', '3室1厅', '3室2厅', '主卧', '次卧', '整租']
 const payTypes = ['押一付一', '押一付三', '押二付一', '半年付', '年付']
@@ -137,6 +143,26 @@ const form = reactive({
   commute: '',
   description: ''
 })
+
+/** 区域失焦：拉取该区域参考租金（AI 定价参考） */
+async function loadRegionPrice() {
+  const region = form.region.trim()
+  if (!region) {
+    priceTip.value = null
+    return
+  }
+  try {
+    const stat = await houseApi.regionReport(region)
+    if (stat && stat.count > 0) {
+      priceTip.value = `${region} 在租 ${stat.count} 套，均价 ${formatMoney(stat.avgRent)} 元/月`
+        + (stat.minRent && stat.maxRent ? `（区间 ${formatMoney(stat.minRent)} - ${formatMoney(stat.maxRent)} 元）` : '')
+    } else {
+      priceTip.value = `${region} 暂无在租房源数据，可参考附近区域定价`
+    }
+  } catch {
+    priceTip.value = null
+  }
+}
 
 /** 选图后上传到后端，成功替换为服务端 URL */
 async function afterRead(item) {

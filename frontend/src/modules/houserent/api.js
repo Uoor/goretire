@@ -13,7 +13,9 @@ export const houseApi = {
   offRack: (id) => request.post(`/houses/${id}/off-rack`),
   feedback: (id, answer) => request.post(`/houses/${id}/feedback`, { answer }),
   report: (id, reason) => request.post(`/houses/${id}/reports`, { reason }),
-  reportWeekly: () => request.get('/houses/report/weekly')
+  contact: (id) => request.post(`/houses/${id}/contact`),
+  reportWeekly: () => request.get('/houses/report/weekly'),
+  regionReport: (region) => request.get('/houses/report/region', { params: { region } })
 }
 
 export const demandApi = {

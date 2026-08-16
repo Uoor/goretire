@@ -31,7 +31,8 @@ public class RateLimitInterceptor implements HandlerInterceptor {
     private static final List<Rule> RULES = List.of(
             new Rule("POST", "/api/houses", 10, 3600_000L),
             new Rule("POST", "/api/houses/*/reports", 5, 3600_000L),
-            new Rule("POST", "/api/match/search", 20, 3600_000L)
+            new Rule("POST", "/api/match/search", 20, 3600_000L),
+            new Rule("POST", "/api/houses/*/contact", 10, 3600_000L)
     );
 
     private final Map<String, Deque<Long>> buckets = new ConcurrentHashMap<>();
