@@ -1,6 +1,8 @@
 package com.aliren.houserent.subscribe;
 
 import com.aliren.core.common.BusinessException;
+import com.aliren.houserent.pushlog.PushLog;
+import com.aliren.houserent.pushlog.PushLogService;
 import com.aliren.houserent.subscribe.dto.SubscribeCreateRequest;
 import com.aliren.houserent.subscribe.dto.SubscribeResponse;
 import com.aliren.houserent.subscribe.dto.SubscribeUpdateRequest;
@@ -12,16 +14,18 @@ import org.springframework.util.StringUtils;
 import java.util.List;
 
 /**
- * 订阅：创建（自然语言）/ 我的订阅 / 修改（条件、免打扰、暂停恢复）/ 软删。
+ * 订阅：创建（自然语言）/ 我的订阅 / 修改（条件、免打扰、暂停恢复）/ 软删 / 推送历史。
  * LLM 解析结构化条件由 match 模块接入，MVP 阶段直接保存原文与可选条件。
  */
 @Service
 public class SubscribeService {
 
     private final SubscribeMapper subscribeMapper;
+    private final PushLogService pushLogService;
 
-    public SubscribeService(SubscribeMapper subscribeMapper) {
+    public SubscribeService(SubscribeMapper subscribeMapper, PushLogService pushLogService) {
         this.subscribeMapper = subscribeMapper;
+        this.pushLogService = pushLogService;
     }
 
     /** 创建订阅：初始状态活跃(0)，pushCount=0 */
@@ -86,6 +90,12 @@ public class SubscribeService {
         }
         s.setPushCount(s.getPushCount() == null ? 1 : s.getPushCount() + 1);
         subscribeMapper.updateById(s);
+    }
+
+    /** 推送历史（仅本人）：订阅收到的匹配提醒记录 */
+    public List<PushLog> listPushes(Long userId, Long id) {
+        requireOwned(userId, id);
+        return pushLogService.listBySubscribe(id);
     }
 
     private Subscribe requireOwned(Long userId, Long id) {

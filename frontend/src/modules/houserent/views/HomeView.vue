@@ -39,6 +39,13 @@
       <i class="ph ph-caret-right"></i>
     </div>
 
+    <!-- 租金周报入口 -->
+    <div class="home-guide report-strip" @click="router.push({ name: 'report' })">
+      <i class="ph ph-chart-line-up"></i>
+      <span>区域租金行情 · 本周新上架与安居故事</span>
+      <i class="ph ph-caret-right"></i>
+    </div>
+
     <div class="feed">
       <HouseCard
         v-for="(h, i) in houses"
@@ -249,5 +256,16 @@ onMounted(async () => {
 .home-guide > i:last-child {
   margin-left: auto;
   color: #d48806;
+}
+.report-strip {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+  color: #1e40af;
+}
+.report-strip > i:first-child {
+  color: #2563eb;
+}
+.report-strip > i:last-child {
+  color: #2563eb;
 }
 </style>

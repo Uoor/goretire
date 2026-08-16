@@ -121,3 +121,18 @@ CREATE TABLE IF NOT EXISTS `audit_log` (
   `created_at`  DATETIME    DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='审核日志表';
+
+-- ------------------------------------------------------------
+-- 7. 推送日志表（订阅/求租匹配推送历史）
+-- ------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `push_log` (
+  `id`            BIGINT      NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `subscribe_id`  BIGINT      NULL COMMENT '订阅ID（订阅推送）',
+  `demand_id`     BIGINT      NULL COMMENT '需求ID（求租墙推送）',
+  `user_id`       BIGINT      NOT NULL COMMENT '接收人ID（user.id）',
+  `content`       VARCHAR(500) NOT NULL COMMENT '推送内容摘要',
+  `created_at`    DATETIME    DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_subscribe` (`subscribe_id`),
+  KEY `idx_demand` (`demand_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='推送日志表';

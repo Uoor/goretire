@@ -22,20 +22,53 @@
     </div>
 
     <div class="list">
-      <div v-for="s in subs" :key="s.id" class="sub-item">
+      <div v-for="s in subs" :key="s.id" class="sub-item" @click="openDetail(s)">
         <div class="txt">
           <div class="q">{{ s.rawText }}</div>
           <div class="st">{{ typeText(s.type) }} · 已推送 {{ s.pushCount || 0 }} 次</div>
+          <div v-if="s.quietHours" class="qh">🔕 免打扰 {{ quietText(s.quietHours) }}</div>
         </div>
-        <div class="sw" :class="{ on: s.status === 0 }" @click="toggle(s)"></div>
+        <div class="sw" :class="{ on: s.status === 0 }" @click.stop="toggle(s)"></div>
       </div>
       <EmptyState v-if="subs.length === 0" icon="ph ph-bell" text="还没有订阅，创建一条试试" />
     </div>
+
+    <!-- 订阅详情：编辑 / 免打扰 / 推送历史 -->
+    <van-popup v-model:show="showDetail" position="bottom" round>
+      <div class="detail-panel" v-if="current">
+        <div class="dp-head">
+          <h4>订阅管理</h4>
+          <i class="ph ph-x" @click="showDetail = false"></i>
+        </div>
+
+        <div class="form-label">订阅内容</div>
+        <div class="form-field"><input v-model="edit.rawText" /></div>
+
+        <div class="form-label">免打扰时段 <span class="hint">该时段内不推送提醒</span></div>
+        <div class="qh-row">
+          <input v-model="edit.qStart" type="time" />
+          <span>至</span>
+          <input v-model="edit.qEnd" type="time" />
+          <button v-if="current.quietHours" class="qh-clear" @click="clearQuiet">清除</button>
+        </div>
+
+        <button class="btn-primary" @click="saveDetail">保存设置</button>
+
+        <div class="form-label pushes-label">推送历史（{{ pushes.length }}）</div>
+        <div v-if="pushes.length === 0" class="push-none">暂无推送记录，新房源匹配时会提醒你</div>
+        <div v-for="p in pushes" :key="p.id" class="push-item">
+          <div class="pi-content">{{ p.content }}</div>
+          <div class="pi-time">{{ p.createdAt }}</div>
+        </div>
+
+        <button class="del-btn" @click="remove">删除订阅</button>
+      </div>
+    </van-popup>
   </div>
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { showToast, showSuccessToast } from 'vant'
 import TopBar from '@/modules/houserent/components/TopBar.vue'
 import EmptyState from '@/modules/houserent/components/EmptyState.vue'
@@ -46,8 +79,79 @@ const rawText = ref('')
 const type = ref(1)
 const creating = ref(false)
 
+const showDetail = ref(false)
+const current = ref(null)
+const pushes = ref([])
+const edit = reactive({ rawText: '', qStart: '', qEnd: '' })
+
 function typeText(t) {
   return t === 2 ? '找租客' : '找房源'
+}
+
+function quietText(qh) {
+  try {
+    const q = JSON.parse(qh)
+    return `${q.start || '--'} - ${q.end || '--'}`
+  } catch {
+    return qh
+  }
+}
+
+function openDetail(s) {
+  current.value = s
+  edit.rawText = s.rawText
+  let q = { start: '', end: '' }
+  try {
+    q = s.quietHours ? JSON.parse(s.quietHours) : q
+  } catch {
+    /* ignore */
+  }
+  edit.qStart = q.start || ''
+  edit.qEnd = q.end || ''
+  pushes.value = []
+  loadPushes(s.id)
+  showDetail.value = true
+}
+
+async function loadPushes(id) {
+  try {
+    pushes.value = await subscribeApi.pushes(id)
+  } catch (e) {
+    pushes.value = []
+  }
+}
+
+async function saveDetail() {
+  const payload = { rawText: edit.rawText.trim() }
+  if (edit.qStart && edit.qEnd) {
+    payload.quietHours = JSON.stringify({ start: edit.qStart, end: edit.qEnd })
+  }
+  try {
+    const updated = await subscribeApi.update(current.value.id, payload)
+    current.value.rawText = updated.rawText
+    current.value.quietHours = updated.quietHours
+    load()
+    showToast('已保存')
+    showDetail.value = false
+  } catch (e) {
+    showToast(e.message || '保存失败')
+  }
+}
+
+function clearQuiet() {
+  edit.qStart = ''
+  edit.qEnd = ''
+}
+
+async function remove() {
+  try {
+    await subscribeApi.remove(current.value.id)
+    showSuccessToast('已删除订阅')
+    showDetail.value = false
+    load()
+  } catch (e) {
+    showToast(e.message || '删除失败')
+  }
 }
 
 async function load() {
@@ -186,6 +290,7 @@ onMounted(load)
   display: flex;
   align-items: center;
   gap: 10px;
+  cursor: pointer;
 }
 .sub-item .txt {
   flex: 1;
@@ -202,6 +307,11 @@ onMounted(load)
   font-size: 0.66rem;
   color: var(--fg3);
   margin-top: 2px;
+}
+.sub-item .txt .qh {
+  font-size: 0.64rem;
+  color: var(--warning);
+  margin-top: 3px;
 }
 .sw {
   width: 40px;
@@ -230,5 +340,131 @@ onMounted(load)
 }
 .sw.on::after {
   left: 21px;
+}
+.detail-panel {
+  padding: 20px 16px 28px;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+.dp-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+.dp-head h4 {
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+.dp-head i {
+  color: var(--fg3);
+  font-size: 1.1rem;
+}
+.form-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  margin: 12px 0 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.form-label .hint {
+  font-weight: 400;
+  font-size: 0.66rem;
+  color: var(--fg3);
+}
+.form-field {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+}
+.form-field input {
+  border: none;
+  outline: none;
+  flex: 1;
+  font-size: 0.8rem;
+  font-family: inherit;
+  color: var(--fg);
+  background: transparent;
+}
+.qh-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.qh-row input {
+  flex: 1;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 9px 10px;
+  font-size: 0.8rem;
+  font-family: inherit;
+  color: var(--fg);
+  background: #fff;
+}
+.qh-row span {
+  font-size: 0.72rem;
+  color: var(--fg3);
+}
+.qh-clear {
+  font-size: 0.68rem;
+  color: var(--destructive);
+  background: none;
+  border: none;
+  white-space: nowrap;
+}
+.btn-primary {
+  width: 100%;
+  margin-top: 14px;
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 12px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 2px 0 var(--primary-deep);
+}
+.btn-primary:active {
+  transform: translateY(1px);
+  box-shadow: none;
+}
+.pushes-label {
+  margin-top: 18px;
+}
+.push-none {
+  font-size: 0.74rem;
+  color: var(--fg3);
+  padding: 10px 0;
+}
+.push-item {
+  background: var(--bg);
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+}
+.pi-content {
+  font-size: 0.74rem;
+  color: var(--fg2);
+  line-height: 1.5;
+}
+.pi-time {
+  font-size: 0.62rem;
+  color: var(--fg3);
+  margin-top: 4px;
+}
+.del-btn {
+  width: 100%;
+  margin-top: 16px;
+  padding: 11px;
+  border-radius: 10px;
+  border: 1px solid #fecaca;
+  background: #fff;
+  color: var(--destructive);
+  font-size: 0.82rem;
+  cursor: pointer;
 }
 </style>

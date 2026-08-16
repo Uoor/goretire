@@ -98,3 +98,12 @@ CREATE TABLE audit_log (
   detail      JSON,
   created_at  TIMESTAMP   DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TABLE IF NOT EXISTS push_log (
+  id            BIGINT AUTO_INCREMENT PRIMARY KEY,
+  subscribe_id  BIGINT,
+  demand_id     BIGINT,
+  user_id       BIGINT      NOT NULL,
+  content       VARCHAR(500) NOT NULL,
+  created_at    TIMESTAMP   DEFAULT CURRENT_TIMESTAMP
+);

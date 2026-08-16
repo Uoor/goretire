@@ -1,10 +1,15 @@
 package com.aliren.houserent.robot;
 
+import com.aliren.houserent.demand.Demand;
+import com.aliren.houserent.demand.DemandMapper;
 import com.aliren.houserent.house.House;
 import com.aliren.houserent.house.HouseMapper;
 import com.aliren.houserent.match.MatchService;
 import com.aliren.houserent.match.dto.DemandHit;
 import com.aliren.houserent.match.dto.SubscriptionHit;
+import com.aliren.houserent.pushlog.PushLogService;
+import com.aliren.houserent.subscribe.Subscribe;
+import com.aliren.houserent.subscribe.SubscribeMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -14,7 +19,7 @@ import java.util.List;
  * 发布编排：房源审核通过后触发——
  * 1) 订阅批量匹配 + 求租墙匹配（LLM 或降级）
  * 2) 新上架卡片推送子群
- * 3) 命中者私聊提醒（工作通知）
+ * 3) 命中者私聊提醒（工作通知）+ 推送历史落库（push_log）
  *
  * 注意：当前同步执行；接入真实 LLM 与推送后，建议将匹配+推送异步化（@Async / 消息队列），
  * 避免拖慢审核接口。TODO(凭证就绪)：私聊目标需由 subscribe/demand.owner 映射为钉钉 userid。
@@ -26,11 +31,19 @@ public class PublishOrchestrator {
     private final HouseMapper houseMapper;
     private final MatchService matchService;
     private final PushClient pushClient;
+    private final PushLogService pushLogService;
+    private final SubscribeMapper subscribeMapper;
+    private final DemandMapper demandMapper;
 
-    public PublishOrchestrator(HouseMapper houseMapper, MatchService matchService, PushClient pushClient) {
+    public PublishOrchestrator(HouseMapper houseMapper, MatchService matchService, PushClient pushClient,
+                               PushLogService pushLogService, SubscribeMapper subscribeMapper,
+                               DemandMapper demandMapper) {
         this.houseMapper = houseMapper;
         this.matchService = matchService;
         this.pushClient = pushClient;
+        this.pushLogService = pushLogService;
+        this.subscribeMapper = subscribeMapper;
+        this.demandMapper = demandMapper;
     }
 
     /** 房源审核通过后编排（幂等：仅对已上架房源生效） */
@@ -43,14 +56,22 @@ public class PublishOrchestrator {
         List<DemandHit> demandHits = matchService.matchDemands(houseId);
         pushClient.sendGroupCard("新上架", buildHouseCard(h));
         for (SubscriptionHit hit : subHits) {
-            pushClient.sendWorkNotice("subscribe#" + hit.getSubscribeId(),
-                    "你订阅的房源上新了：「" + h.getCommunity() + "」" + h.getHouseType()
-                            + " " + h.getRent() + "元/月 —— " + hit.getReason());
+            String content = "你订阅的房源上新了：「" + h.getCommunity() + "」" + h.getHouseType()
+                    + " " + h.getRent() + "元/月 —— " + hit.getReason();
+            pushClient.sendWorkNotice("subscribe#" + hit.getSubscribeId(), content);
+            Subscribe s = subscribeMapper.selectById(hit.getSubscribeId());
+            if (s != null) {
+                pushLogService.record(s.getUserId(), s.getId(), null, content);
+            }
         }
         for (DemandHit hit : demandHits) {
-            pushClient.sendWorkNotice("demand#" + hit.getDemandId(),
-                    "你挂在求租墙的需求有新房源：「" + h.getCommunity() + "」" + h.getHouseType()
-                            + " " + h.getRent() + "元/月 —— " + hit.getReason());
+            String content = "你挂在求租墙的需求有新房源：「" + h.getCommunity() + "」" + h.getHouseType()
+                    + " " + h.getRent() + "元/月 —— " + hit.getReason();
+            pushClient.sendWorkNotice("demand#" + hit.getDemandId(), content);
+            Demand d = demandMapper.selectById(hit.getDemandId());
+            if (d != null) {
+                pushLogService.record(d.getPublisherId(), null, d.getId(), content);
+            }
         }
         log.info("house {} audited: {} subscription hits, {} demand hits", houseId, subHits.size(), demandHits.size());
     }

@@ -28,12 +28,19 @@ class PublishOrchestratorTest {
     private MatchService matchService;
     @Mock
     private PushClient pushClient;
+    @Mock
+    private com.aliren.houserent.pushlog.PushLogService pushLogService;
+    @Mock
+    private com.aliren.houserent.subscribe.SubscribeMapper subscribeMapper;
+    @Mock
+    private com.aliren.houserent.demand.DemandMapper demandMapper;
 
     private PublishOrchestrator orchestrator;
 
     @BeforeEach
     void setUp() {
-        orchestrator = new PublishOrchestrator(houseMapper, matchService, pushClient);
+        orchestrator = new PublishOrchestrator(houseMapper, matchService, pushClient,
+                pushLogService, subscribeMapper, demandMapper);
     }
 
     private House onlineHouse(Long id) {

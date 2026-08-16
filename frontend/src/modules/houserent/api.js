@@ -12,7 +12,8 @@ export const houseApi = {
   publish: (data) => request.post('/houses', data),
   offRack: (id) => request.post(`/houses/${id}/off-rack`),
   feedback: (id, answer) => request.post(`/houses/${id}/feedback`, { answer }),
-  report: (id, reason) => request.post(`/houses/${id}/reports`, { reason })
+  report: (id, reason) => request.post(`/houses/${id}/reports`, { reason }),
+  reportWeekly: () => request.get('/houses/report/weekly')
 }
 
 export const demandApi = {
@@ -28,7 +29,8 @@ export const subscribeApi = {
   list: () => request.get('/subscriptions'),
   create: (data) => request.post('/subscriptions', data),
   update: (id, data) => request.put(`/subscriptions/${id}`, data),
-  remove: (id) => request.delete(`/subscriptions/${id}`)
+  remove: (id) => request.delete(`/subscriptions/${id}`),
+  pushes: (id) => request.get(`/subscriptions/${id}/pushes`)
 }
 
 export const matchApi = {

@@ -2,6 +2,7 @@ package com.aliren.houserent.subscribe;
 
 import com.aliren.core.auth.UserContext;
 import com.aliren.core.common.ApiResponse;
+import com.aliren.houserent.pushlog.PushLog;
 import com.aliren.houserent.subscribe.dto.SubscribeCreateRequest;
 import com.aliren.houserent.subscribe.dto.SubscribeResponse;
 import com.aliren.houserent.subscribe.dto.SubscribeUpdateRequest;
@@ -44,5 +45,11 @@ public class SubscribeController {
     public ApiResponse<Void> delete(@PathVariable Long id) {
         subscribeService.delete(UserContext.requireUserId(), id);
         return ApiResponse.ok(null);
+    }
+
+    /** 推送历史（仅本人） */
+    @GetMapping("/{id}/pushes")
+    public ApiResponse<List<PushLog>> pushes(@PathVariable Long id) {
+        return ApiResponse.ok(subscribeService.listPushes(UserContext.requireUserId(), id));
     }
 }

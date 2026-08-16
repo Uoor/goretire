@@ -24,12 +24,14 @@ class SubscribeServiceTest {
 
     @Mock
     private SubscribeMapper subscribeMapper;
+    @Mock
+    private com.aliren.houserent.pushlog.PushLogService pushLogService;
 
     private SubscribeService subscribeService;
 
     @BeforeEach
     void setUp() {
-        subscribeService = new SubscribeService(subscribeMapper);
+        subscribeService = new SubscribeService(subscribeMapper, pushLogService);
     }
 
     @Test
