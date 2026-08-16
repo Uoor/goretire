@@ -132,9 +132,27 @@ public class PublishOrchestrator {
         }
         sb.append(buildCardBody(h));
         if (detailUrl != null && !detailUrl.isBlank()) {
-            sb.append("👉 [查看房源详情](").append(detailUrl).append(")");
+            // 工作通知内打开：用钉钉协议让移动端在钉钉内置浏览器打开（默认跳系统浏览器）
+            sb.append("👉 [查看房源详情](").append(dingtalkPageLink(detailUrl)).append(")");
         }
         return sb.toString();
+    }
+
+    /**
+     * 工作通知详情链接 → 钉钉 page/link 协议，按端分流（同一链接两端生效）：
+     * - PC 端：pc_slide=true → 钉钉窗口侧边栏打开（不跳出钉钉，办公体验佳）
+     * - 移动端：忽略 pc_slide → 钉钉内置浏览器打开（不跳出 App）
+     * dingtalk://dingtalkclient/page/link?url={urlEncode}&pc_slide=true
+     * 参考: https://help.dingtalk.io/zh/open/development/message-link-description
+     */
+    private String dingtalkPageLink(String url) {
+        try {
+            return "dingtalk://dingtalkclient/page/link?url="
+                    + java.net.URLEncoder.encode(url, java.nio.charset.StandardCharsets.UTF_8)
+                    + "&pc_slide=true";
+        } catch (Exception e) {
+            return url;
+        }
     }
 
     /** 公共卡片体：封面 + 小区/户型/月租/区域/标签/通勤 */

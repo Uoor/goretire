@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mvn -q -pl test -am test -Dtest=JwtUtilTest -Dsurefire.failIfNoSpecifiedTests=false)",
+      "Bash(mvn -pl test -am test -Dtest=JwtUtilTest -Dsurefire.failIfNoSpecifiedTests=false)"
+    ]
+  }
+}
