@@ -103,7 +103,7 @@
       </div>
     </div>
 
-    <div class="submit-wrap">
+    <div class="submit-wrap fixed-shell">
       <button class="btn-primary" :disabled="submitting" @click="submit">
         {{ submitting ? '提交中…' : '提交审核' }}
       </button>

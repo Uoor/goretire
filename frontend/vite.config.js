@@ -11,6 +11,8 @@ export default defineConfig({
     }
   },
   server: {
+    // host: true 暴露局域网地址，手机同 WiFi 扫码真机预览（最接近钉钉内体验）
+    host: true,
     port: 5173,
     proxy: {
       '/api': {

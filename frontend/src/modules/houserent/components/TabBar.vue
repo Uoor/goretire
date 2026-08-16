@@ -1,5 +1,5 @@
 <template>
-  <nav class="tabbar">
+  <nav class="tabbar fixed-shell">
     <div class="tab" :class="{ on: route.name === 'home' }" @click="go('home')">
       <i class="ph ph-house"></i><span>首页</span>
     </div>

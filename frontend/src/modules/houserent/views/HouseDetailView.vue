@@ -52,7 +52,7 @@
         </div>
       </div>
 
-      <div class="action-bar">
+      <div class="action-bar fixed-shell">
         <button class="icon-btn" @click="showReport = true"><i class="ph ph-flag"></i></button>
         <button class="btn-primary" @click="contact">钉钉内联系房东</button>
       </div>

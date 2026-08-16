@@ -2,7 +2,7 @@
   <div class="admin-page">
     <TopBar back title="管理后台" />
 
-    <div class="seg-tabs">
+    <div class="seg-tabs sticky-shell">
       <div class="seg-tab" :class="{ on: tab === 'audit' }" @click="switchTab('audit')">
         待审核<template v-if="pending.length"> ({{ pending.length }})</template>
       </div>
