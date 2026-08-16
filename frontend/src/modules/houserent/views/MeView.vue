@@ -128,9 +128,9 @@ function offRack(h) {
   showFeedback.value = true
 }
 
-/** 可删除：非"上架在租"状态（在租中须先下架） */
-function canDelete(h) {
-  return !(h.auditStatus === 1 && h.rackStatus === 0)
+/** 可删除：任意状态均可直接删除（房东完全处置权，删除前有二次确认） */
+function canDelete() {
+  return true
 }
 
 /** 重新出租：已租出/已下架 → 在租中（状态反转，二次确认） */
@@ -154,12 +154,12 @@ async function relist(h) {
   }
 }
 
-/** 删除房源（二次确认；在租中后端会拒绝） */
+/** 删除房源（二次确认；任意状态可删，在租中删除会立即从列表消失） */
 async function removeHouse(h) {
   try {
     await showConfirmDialog({
       title: '删除房源',
-      message: `删除后不可恢复，确认删除「${h.community}」吗？`,
+      message: `删除后不可恢复；若在出租中将立即从房源列表消失。确认删除「${h.community}」吗？`,
       confirmButtonText: '确认删除',
       confirmButtonColor: '#DC2626'
     })

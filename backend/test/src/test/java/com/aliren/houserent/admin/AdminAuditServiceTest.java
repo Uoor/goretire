@@ -155,16 +155,15 @@ class AdminAuditServiceTest {
     }
 
     @Test
-    void deleteHouse_activeRenting_rejected() {
+    void deleteHouse_activeRenting_deletes() {
         House h = new House();
         h.setId(1L);
         h.setPublisherId(7L);
         h.setAuditStatus(1);
-        h.setRackStatus(0); // 上架在租，禁止删
+        h.setRackStatus(0); // 上架在租：现在允许直接删除（房东完全处置权）
         when(houseMapper.selectById(1L)).thenReturn(h);
 
-        assertThatThrownBy(() -> service.deleteHouse(7L, 0, 1L))
-                .isInstanceOf(BusinessException.class)
-                .hasMessageContaining("正在出租");
+        service.deleteHouse(7L, 0, 1L);
+        verify(houseMapper).deleteById(1L);
     }
 }

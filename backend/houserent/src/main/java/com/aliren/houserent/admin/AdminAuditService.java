@@ -106,7 +106,8 @@ public class AdminAuditService {
 
     /**
      * 删除房源（硬删除）：仅发布人本人或管理员可操作。
-     * 已上架且在租的房源禁止删除（须先下架/标记租出），避免误删活跃数据。
+     * 任意状态（含上架在租中）均可直接删除——房东有完全处置权；
+     * 删除后房源从列表消失、详情 404（前端已处理）。
      */
     @Transactional
     public void deleteHouse(Long operatorId, int operatorRole, Long houseId) {
@@ -118,9 +119,6 @@ public class AdminAuditService {
         boolean isAdmin = operatorRole == 1;
         if (!isOwner && !isAdmin) {
             throw new BusinessException(403, "无权限：仅发布人或管理员可删除");
-        }
-        if (h.getAuditStatus() == House.AUDIT_ONLINE && h.getRackStatus() == House.RACK_RENTING) {
-            throw new BusinessException(400, "该房源正在出租中，请先下架再删除");
         }
         houseMapper.deleteById(houseId);
         auditLogService.record(operatorId, "DELETE_HOUSE", "house", houseId, null);
