@@ -62,8 +62,9 @@ cd frontend && npm install && npm run dev
 - 我的发布（状态跟踪 + 已租出下架 + 轻问句）、举报、管理看板
 - 审核/下架/举报处理审计日志；周推/安居故事定时任务骨架
 - 后端 59 个测试全绿；前端构建通过，与后端全接口联调验证
+- **图片上传已闭环**：`POST /api/upload` → 存 `/uploads/` 本地静态目录（`aliren.upload.dir` 配置），发布页 Vant Uploader 真实上传；后续切 OSS 只改上传接口实现
 
 ## 未完成（需真实凭证）
 
 - 钉钉免登真实换号（authCode→unionId→userid）、机器人真实发送
-- 图片上传（当前发布页用占位图）、OSS 接入
+- OSS 接入（当前为本地静态目录存储）

@@ -37,6 +37,10 @@ aliren:
     api-key: ${LLM_API_KEY:}
     model: ${LLM_MODEL:qwen-max}
     timeout-seconds: 10
+  upload:
+    # 图片上传（MVP 本地静态目录，后续可切 OSS）：目录相对 backend 启动位置
+    dir: ${UPLOAD_DIR:./uploads}
+    max-size-mb: 5
   robot:
     # 钉钉推送：enabled=true 且提供凭证后启用真实发送（群卡片/工作通知）；
     # 未启用时 PushClientStub 仅记录日志，编排与定时任务照常跑通

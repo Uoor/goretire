@@ -4,21 +4,13 @@
 
     <div class="form-sec">
       <div class="form-label"><span>房源照片</span><span class="hint">最多 9 张，第一张为主图</span></div>
-      <div class="upload-grid">
-        <div
-          v-for="(img, i) in images"
-          :key="i"
-          class="upload-box filled"
-          @click="removeImage(i)"
-        >
-          <img :src="img" alt="" />
-          <i class="ph ph-x-circle"></i>
-        </div>
-        <div v-if="images.length < 9" class="upload-box" @click="addImage">
-          <i class="ph ph-camera"></i>
-          <span>上传</span>
-        </div>
-      </div>
+      <van-uploader
+        v-model="fileList"
+        :max-count="9"
+        :after-read="afterRead"
+        :preview-image="true"
+        class="photo-uploader"
+      />
       <div class="ai-tip">
         <i class="ph ph-sparkle"></i>
         <span>填写小区后，AI 会自动带出区域与参考租金区间（功能接入中）</span>
@@ -118,10 +110,11 @@ import { useRouter } from 'vue-router'
 import { showToast, showSuccessToast } from 'vant'
 import TopBar from '@/modules/houserent/components/TopBar.vue'
 import { houseApi } from '@/modules/houserent/api'
+import { uploadApi } from '@/api'
 
 const router = useRouter()
 const submitting = ref(false)
-const images = ref([])
+const fileList = ref([])
 
 const houseTypes = ['1室0厅', '1室1厅', '2室1厅', '2室2厅', '3室1厅', '3室2厅', '主卧', '次卧', '整租']
 const payTypes = ['押一付一', '押一付三', '押二付一', '半年付', '年付']
@@ -145,14 +138,19 @@ const form = reactive({
   description: ''
 })
 
-function addImage() {
-  // MVP：接入 OSS/钉钉上传前，先用占位图模拟
-  const placeholder = `https://picsum.photos/seed/p${Date.now()}/400/300`
-  images.value.push(placeholder)
-}
-
-function removeImage(i) {
-  images.value.splice(i, 1)
+/** 选图后上传到后端，成功替换为服务端 URL */
+async function afterRead(item) {
+  item.status = 'uploading'
+  item.message = '上传中…'
+  try {
+    const url = await uploadApi.image(item.file)
+    item.url = url
+    item.status = 'done'
+    item.message = ''
+  } catch (e) {
+    item.status = 'failed'
+    item.message = e.message || '上传失败'
+  }
 }
 
 async function submit() {
@@ -164,11 +162,17 @@ async function submit() {
     showToast('面积与租金需大于 0')
     return
   }
+  const uploading = fileList.value.find((f) => f.status === 'uploading' || f.status === 'failed')
+  if (uploading) {
+    showToast('有图片上传中或失败，请稍候')
+    return
+  }
+  const images = fileList.value.map((f) => f.url).filter(Boolean)
   submitting.value = true
   try {
     const id = await houseApi.publish({
       ...form,
-      images: JSON.stringify(images.value)
+      images: JSON.stringify(images)
     })
     showSuccessToast('已提交审核，预计 2 小时内上架')
     router.push({ name: 'house-detail', params: { id } })
@@ -206,49 +210,10 @@ async function submit() {
   color: var(--fg3);
   margin-left: auto;
 }
-.upload-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
-  margin-bottom: 10px;
-}
-.upload-box {
-  aspect-ratio: 1;
+.photo-uploader :deep(.van-uploader__preview-image),
+.photo-uploader :deep(.van-uploader__upload) {
   border-radius: 10px;
-  border: 1.5px dashed #d9d9d9;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  color: var(--fg3);
-  font-size: 0.64rem;
-  gap: 4px;
-  background: #fafafa;
-  cursor: pointer;
-  position: relative;
   overflow: hidden;
-}
-.upload-box i {
-  font-size: 1.2rem;
-  color: var(--fg3);
-}
-.upload-box.filled {
-  border-style: solid;
-  border-color: transparent;
-}
-.upload-box.filled img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-.upload-box.filled i {
-  position: absolute;
-  top: 4px;
-  right: 4px;
-  color: #fff;
-  background: rgba(0, 0, 0, 0.5);
-  border-radius: 50%;
-  font-size: 1rem;
 }
 .ai-tip {
   background: linear-gradient(90deg, var(--primary-soft), #fff7e6);

@@ -19,6 +19,11 @@ export default defineConfig({
         // 本机 8080 被占用，后端以 --server.port=8081 启动
         target: 'http://localhost:8081',
         changeOrigin: true
+      },
+      // 上传图片静态访问
+      '/uploads': {
+        target: 'http://localhost:8081',
+        changeOrigin: true
       }
     }
   }

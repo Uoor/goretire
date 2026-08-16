@@ -28,3 +28,6 @@ hs_err_pid*
 *.iml
 /.vscode/
 .DS_Store
+
+# 本地上传目录
+/uploads/
