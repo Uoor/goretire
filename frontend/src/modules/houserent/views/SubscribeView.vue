@@ -44,6 +44,11 @@
         <div class="form-label">订阅内容</div>
         <div class="form-field"><input v-model="edit.rawText" /></div>
 
+        <div v-if="conditionText" class="cond-strip">
+          <i class="ph ph-sparkle"></i>
+          <span>AI 解析条件：{{ conditionText }}</span>
+        </div>
+
         <div class="form-label">免打扰时段 <span class="hint">该时段内不推送提醒</span></div>
         <div class="qh-row">
           <input v-model="edit.qStart" type="time" />
@@ -83,6 +88,23 @@ const showDetail = ref(false)
 const current = ref(null)
 const pushes = ref([])
 const edit = reactive({ rawText: '', qStart: '', qEnd: '' })
+
+/** 展示 AI 解析条件（structured_condition JSON → 可读文本） */
+const conditionText = computed(() => {
+  const c = current.value?.structuredCondition
+  if (!c) return ''
+  try {
+    const o = JSON.parse(c)
+    const parts = []
+    if (o.region) parts.push(o.region)
+    if (o.minRent || o.maxRent) parts.push(`${o.minRent || ''}-${o.maxRent || ''} 元`.replace(/^-/, '≤').replace(/-$/, '以内'))
+    if (o.houseType) parts.push(o.houseType)
+    if (o.petOk === 1) parts.push('可养宠')
+    return parts.join(' · ') || '已解析'
+  } catch {
+    return c
+  }
+})
 
 function typeText(t) {
   return t === 2 ? '找租客' : '找房源'
@@ -388,6 +410,24 @@ onMounted(load)
   font-family: inherit;
   color: var(--fg);
   background: transparent;
+}
+.cond-strip {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 10px;
+  padding: 10px 12px;
+  background: linear-gradient(90deg, var(--primary-soft), #fff7e6);
+  border: 1px solid rgba(255, 106, 0, 0.2);
+  border-radius: 10px;
+  font-size: 0.72rem;
+  color: #874d00;
+  line-height: 1.5;
+}
+.cond-strip i {
+  color: var(--primary);
+  margin-top: 2px;
+  flex-shrink: 0;
 }
 .qh-row {
   display: flex;

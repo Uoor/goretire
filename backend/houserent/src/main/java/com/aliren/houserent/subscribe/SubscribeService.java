@@ -15,26 +15,33 @@ import java.util.List;
 
 /**
  * 订阅：创建（自然语言）/ 我的订阅 / 修改（条件、免打扰、暂停恢复）/ 软删 / 推送历史。
- * LLM 解析结构化条件由 match 模块接入，MVP 阶段直接保存原文与可选条件。
+ * LLM 解析结构化条件：创建订阅时由 SubscriptionParser 自动解析（LLM 或本地降级）。
  */
 @Service
 public class SubscribeService {
 
     private final SubscribeMapper subscribeMapper;
     private final PushLogService pushLogService;
+    private final SubscriptionParser subscriptionParser;
 
-    public SubscribeService(SubscribeMapper subscribeMapper, PushLogService pushLogService) {
+    public SubscribeService(SubscribeMapper subscribeMapper, PushLogService pushLogService,
+                           SubscriptionParser subscriptionParser) {
         this.subscribeMapper = subscribeMapper;
         this.pushLogService = pushLogService;
+        this.subscriptionParser = subscriptionParser;
     }
 
-    /** 创建订阅：初始状态活跃(0)，pushCount=0 */
+    /** 创建订阅：初始状态活跃(0)，pushCount=0；自动解析结构化条件（请求自带则优先） */
     public Long create(Long userId, SubscribeCreateRequest req) {
         Subscribe s = new Subscribe();
         s.setUserId(userId);
         s.setType(req.getType());
         s.setRawText(req.getRawText());
-        s.setStructuredCondition(req.getStructuredCondition());
+        String condition = req.getStructuredCondition();
+        if (!StringUtils.hasText(condition)) {
+            condition = subscriptionParser.parse(req.getRawText());
+        }
+        s.setStructuredCondition(condition);
         s.setQuietHours(req.getQuietHours());
         s.setStatus(Subscribe.STATUS_ACTIVE);
         s.setPushCount(0);
