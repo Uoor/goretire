@@ -85,6 +85,13 @@ public class HouseController {
         return ApiResponse.ok(null);
     }
 
+    /** 重新出租（状态反转）：已租出/已下架 → 在租中 */
+    @PostMapping("/{id}/relist")
+    public ApiResponse<Void> reList(@PathVariable Long id) {
+        adminAuditService.reList(UserContext.requireUserId(), UserContext.requireRole(), id);
+        return ApiResponse.ok(null);
+    }
+
     @Data
     public static class FeedbackRequest {
         private Integer answer;

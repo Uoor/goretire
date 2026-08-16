@@ -11,6 +11,7 @@ export const houseApi = {
   mine: () => request.get('/houses/mine'),
   publish: (data) => request.post('/houses', data),
   offRack: (id) => request.post(`/houses/${id}/off-rack`),
+  relist: (id) => request.post(`/houses/${id}/relist`),
   feedback: (id, answer) => request.post(`/houses/${id}/feedback`, { answer }),
   report: (id, reason) => request.post(`/houses/${id}/reports`, { reason }),
   contact: (id) => request.post(`/houses/${id}/contact`),

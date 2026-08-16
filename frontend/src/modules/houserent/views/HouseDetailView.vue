@@ -18,6 +18,8 @@
           <small>元/月</small>
           <span class="d-tag tag owner">{{ labelText }}</span>
           <span v-if="house.petOk === 1" class="tag verify">可养宠</span>
+          <span v-if="house.rackStatus === 1" class="tag status-rented">已租出</span>
+          <span v-else-if="house.rackStatus === 2" class="tag status-off">已下架</span>
         </div>
         <div class="d-title">{{ house.community }} · {{ house.houseType }} {{ house.area }}㎡</div>
         <div class="d-specs">
@@ -201,6 +203,14 @@ onMounted(load)
   font-size: 0.8rem;
   font-weight: 500;
   color: var(--fg2);
+}
+.tag.status-rented {
+  background: var(--bg);
+  color: var(--fg2);
+}
+.tag.status-off {
+  background: #fee2e2;
+  color: var(--destructive);
 }
 .d-title {
   font-size: 1rem;

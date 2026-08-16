@@ -81,6 +81,29 @@ public class AdminAuditService {
         auditLogService.record(operatorId, "OFF_RACK", "house", houseId, null);
     }
 
+    /** 重新出租/上架（状态反转）：已租出/已下架 → 在租中；仅发布人本人或管理员可操作 */
+    @Transactional
+    public void reList(Long operatorId, int operatorRole, Long houseId) {
+        House h = houseMapper.selectById(houseId);
+        if (h == null) {
+            throw new BusinessException(404, "房源不存在");
+        }
+        if (h.getAuditStatus() != House.AUDIT_ONLINE) {
+            throw new BusinessException(400, "仅已上架的房源可重新出租");
+        }
+        boolean isOwner = h.getPublisherId().equals(operatorId);
+        boolean isAdmin = operatorRole == 1;
+        if (!isOwner && !isAdmin) {
+            throw new BusinessException(403, "无权限：仅发布人或管理员可操作");
+        }
+        if (h.getRackStatus() == House.RACK_RENTING) {
+            return; // 已在租中，幂等
+        }
+        h.setRackStatus(House.RACK_RENTING);
+        houseMapper.updateById(h);
+        auditLogService.record(operatorId, "RELIST", "house", houseId, null);
+    }
+
     /** 待审核队列（含房号等审核敏感字段，仅管理员） */
     public List<House> pendingList() {
         QueryWrapper<House> qw = new QueryWrapper<>();

@@ -47,7 +47,8 @@
           </div>
         </div>
         <div class="mh-ops">
-          <button v-if="canOffRack(h)" class="op-btn" @click.stop="offRack(h)">已租出下架</button>
+          <button v-if="canOffRack(h)" class="op-btn" @click.stop="offRack(h)">标记已租出</button>
+          <button v-else-if="h.auditStatus === 1 && h.rackStatus !== 0" class="op-btn ghost-op" @click.stop="relist(h)">重新出租</button>
         </div>
       </div>
     </div>
@@ -55,12 +56,16 @@
     <!-- 轻问句弹层 -->
     <van-popup v-model:show="showFeedback" position="bottom" round>
       <div class="feedback-panel">
-        <h4>恭喜🎉 房子租出去了！</h4>
-        <p class="fb-sub">在安居找到新家了吗？（用于每周安居故事统计）</p>
+        <h4>房子租出去了？</h4>
+        <p class="fb-sub">
+          标记后房源将从广场下架。<br />
+          顺便告诉我们：这房子是租给通过「校友安居」认识的人吗？<br />
+          每周「安居故事」会统计有多少校友通过安居找到新家。
+        </p>
         <div class="fb-btns">
-          <button class="btn-ghost" @click="feedback(0)">跳过</button>
-          <button class="btn-ghost" @click="feedback(2)">还没找到</button>
-          <button class="btn-primary fb-main" @click="feedback(1)">找到新家啦</button>
+          <button class="btn-ghost" @click="feedback(0)">跳过，不回答</button>
+          <button class="btn-ghost" @click="feedback(2)">不是（其他渠道）</button>
+          <button class="btn-primary fb-main" @click="feedback(1)">是的，通过安居找到的</button>
         </div>
       </div>
     </van-popup>
@@ -122,6 +127,17 @@ function offRack(h) {
   showFeedback.value = true
 }
 
+/** 重新出租：已租出/已下架 → 在租中（状态反转） */
+async function relist(h) {
+  try {
+    await houseApi.relist(h.id)
+    showSuccessToast('已重新出租，房源重新上架')
+    load()
+  } catch (e) {
+    showToast(e.message || '操作失败')
+  }
+}
+
 async function feedback(answer) {
   const h = pendingOffRack.value
   showFeedback.value = false
@@ -129,7 +145,7 @@ async function feedback(answer) {
   try {
     await houseApi.offRack(h.id)
     await houseApi.feedback(h.id, answer)
-    showSuccessToast('已下架')
+    showSuccessToast('已标记租出并下架')
     load()
   } catch (e) {
     showToast(e.message || '操作失败')
@@ -309,6 +325,10 @@ onMounted(load)
   padding: 6px 10px;
   border-radius: 8px;
   white-space: nowrap;
+}
+.op-btn.ghost-op {
+  color: var(--fg2);
+  background: var(--bg);
 }
 .op-btn:active {
   opacity: 0.8;

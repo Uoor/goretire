@@ -9,8 +9,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import org.mockito.ArgumentCaptor;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -109,5 +111,33 @@ class AdminAuditServiceTest {
 
         service.offRack(9L, 1, 1L);
         verify(houseMapper).updateById(any(House.class));
+    }
+
+    @Test
+    void reList_rentedHouse_backToRenting() {
+        House h = new House();
+        h.setId(1L);
+        h.setPublisherId(7L);
+        h.setAuditStatus(1);
+        h.setRackStatus(1); // 已租出
+        when(houseMapper.selectById(1L)).thenReturn(h);
+
+        service.reList(7L, 0, 1L);
+        ArgumentCaptor<House> captor = ArgumentCaptor.forClass(House.class);
+        verify(houseMapper).updateById(captor.capture());
+        assertThat(captor.getValue().getRackStatus()).isZero(); // 回到在租中
+    }
+
+    @Test
+    void reList_notOnline_rejected() {
+        House h = new House();
+        h.setId(1L);
+        h.setPublisherId(7L);
+        h.setAuditStatus(2); // 已驳回
+        when(houseMapper.selectById(1L)).thenReturn(h);
+
+        assertThatThrownBy(() -> service.reList(7L, 0, 1L))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("已上架");
     }
 }
