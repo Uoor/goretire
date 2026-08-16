@@ -31,6 +31,12 @@ public class GuideController {
         return ApiResponse.ok(guideService.sections());
     }
 
+    /** 知识库访问 URL（去钉钉知识库下载模板等） */
+    @GetMapping("/space-url")
+    public ApiResponse<Map<String, String>> spaceUrl() {
+        return ApiResponse.ok(Map.of("url", guideService.spaceUrl()));
+    }
+
     @GetMapping("/sections/{nodeId}/items")
     public ApiResponse<List<GuideService.GuideItem>> items(@PathVariable String nodeId) {
         return ApiResponse.ok(guideService.items(nodeId));

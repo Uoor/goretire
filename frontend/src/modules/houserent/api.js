@@ -57,5 +57,6 @@ export const adminApi = {
 export const guideApi = {
   sections: () => request.get('/guide/sections'),
   items: (nodeId) => request.get(`/guide/sections/${nodeId}/items`),
-  content: (nodeId) => request.get('/guide/items/content', { params: { nodeId } })
+  content: (nodeId) => request.get('/guide/items/content', { params: { nodeId } }),
+  spaceUrl: () => request.get('/guide/space-url')
 }

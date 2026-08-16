@@ -106,7 +106,12 @@ public class GuideService {
     }
 
     /** 根节点 id：从 workspace 列表按 URL 匹配（URL 中的 /i/spaces/{shortId} 是稳定标识） */
-    private String rootNodeId() {
+    /** 知识库访问 URL（钉钉内打开，供"去知识库下载模板"引导） */
+    public String spaceUrl() {
+        return findWorkspace().path("url").asText("");
+    }
+
+    private JsonNode findWorkspace() {
         JsonNode list = getJson("/v2.0/wiki/workspaces?operatorId=" + operatorId + "&maxResults=50");
         String shortId = workspaceId.contains("/")
                 ? workspaceId.substring(workspaceId.lastIndexOf('/') + 1)
@@ -114,16 +119,17 @@ public class GuideService {
         for (JsonNode w : list.path("workspaces")) {
             String url = w.path("url").asText("");
             if (url.contains("/i/spaces/" + shortId + "/") || url.endsWith("/i/spaces/" + shortId)) {
-                String root = w.path("rootNodeId").asText("");
-                if (!root.isBlank()) return root;
+                return w;
             }
-            // 兜底：直接匹配 API workspaceId（URL 短 ID 与 API ID 可能不同）
             if (workspaceId.equals(w.path("workspaceId").asText(""))) {
-                String root = w.path("rootNodeId").asText("");
-                if (!root.isBlank()) return root;
+                return w;
             }
         }
         throw new BusinessException(500, "知识库未找到: " + workspaceId);
+    }
+
+    private String rootNodeId() {
+        return findWorkspace().path("rootNodeId").asText("");
     }
 
     private JsonNode getJson(String path) {
