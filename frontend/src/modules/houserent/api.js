@@ -6,7 +6,11 @@ import request from '@/utils/request'
 // ============================================================
 
 export const houseApi = {
-  list: (params) => request.get('/houses', { params }),
+  // 分页列表：返回 { total, list }；兼容旧返回（数组）直接包一层
+  list: async (params) => {
+    const data = await request.get('/houses', { params })
+    return Array.isArray(data) ? { total: data.length, list: data } : data
+  },
   detail: (id) => request.get(`/houses/${id}`),
   mine: () => request.get('/houses/mine'),
   publish: (data) => request.post('/houses', data),

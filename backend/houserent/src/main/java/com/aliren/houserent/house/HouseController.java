@@ -6,6 +6,7 @@ import com.aliren.houserent.admin.AdminAuditService;
 import com.aliren.houserent.house.dto.HouseCreateRequest;
 import com.aliren.houserent.house.dto.HouseListQuery;
 import com.aliren.houserent.house.dto.HouseResponse;
+import com.aliren.houserent.house.dto.PageDto;
 import com.aliren.houserent.report.ReportService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -31,9 +32,9 @@ public class HouseController {
         this.adminAuditService = adminAuditService;
     }
 
-    /** 房源列表：仅已上架+在租 */
+    /** 房源列表：仅已上架+在租（分页） */
     @GetMapping
-    public ApiResponse<List<HouseResponse>> list(HouseListQuery query) {
+    public ApiResponse<PageDto<HouseResponse>> list(HouseListQuery query) {
         return ApiResponse.ok(houseService.list(query));
     }
 

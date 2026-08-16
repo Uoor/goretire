@@ -6,7 +6,9 @@ import com.aliren.core.user.UserMapper;
 import com.aliren.houserent.house.dto.HouseCreateRequest;
 import com.aliren.houserent.house.dto.HouseListQuery;
 import com.aliren.houserent.house.dto.HouseResponse;
+import com.aliren.houserent.house.dto.PageDto;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -52,8 +54,8 @@ public class HouseService {
         return h.getId();
     }
 
-    /** 列表：仅已上架(1)且在租(0)的房源，支持筛选 */
-    public List<HouseResponse> list(HouseListQuery query) {
+    /** 列表：仅已上架(1)且在租(0)的房源，支持筛选 + 分页 */
+    public PageDto<HouseResponse> list(HouseListQuery query) {
         QueryWrapper<House> qw = new QueryWrapper<>();
         qw.eq("audit_status", House.AUDIT_ONLINE).eq("rack_status", House.RACK_RENTING);
         if (StringUtils.hasText(query.getRegion())) {
@@ -89,7 +91,11 @@ public class HouseService {
             qw.ge("created_at", LocalDate.now().minusDays(7).atStartOfDay());
         }
         qw.orderByDesc("created_at");
-        return houseMapper.selectList(qw).stream().map(HouseResponse::from).toList();
+        long page = query.getPage() == null || query.getPage() < 1 ? 1 : query.getPage();
+        long size = query.getSize() == null || query.getSize() < 1 ? 20 : Math.min(query.getSize(), 100);
+        Page<House> p = houseMapper.selectPage(new Page<>(page, size), qw);
+        List<HouseResponse> list = p.getRecords().stream().map(HouseResponse::from).toList();
+        return new PageDto<>(p.getTotal(), list);
     }
 
     /** 户型关键词归一化：口语说法 → 一组可 LIKE 的关键词 */

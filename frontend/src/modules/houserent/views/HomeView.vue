@@ -68,6 +68,10 @@
       />
     </div>
 
+    <!-- 触底加载更多 / 加载中 / 已加载完 -->
+    <div v-if="loadingMore" class="load-more"><van-loading size="18">加载中…</van-loading></div>
+    <div v-else-if="!loading && houses.length && !hasMore" class="load-more end">— 已加载全部 —</div>
+
     <div v-if="loading" class="feed">
       <van-skeleton v-for="i in 3" :key="i" title :row="2" class="sk" />
     </div>
@@ -76,7 +80,7 @@
 </template>
 
 <script setup>
-import { onMounted, ref, watch, nextTick } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { showToast } from 'vant'
 import TopBar from '@/modules/houserent/components/TopBar.vue'
@@ -87,8 +91,13 @@ import { houseApi, matchApi } from '@/modules/houserent/api'
 import { formatMoney } from '@/utils/format'
 
 const router = useRouter()
+const PAGE_SIZE = 10
 const houses = ref([])
 const loading = ref(true)
+const loadingMore = ref(false)
+const page = ref(1)
+const total = ref(0)
+const hasMore = computed(() => houses.value.length < total.value)
 const query = ref('')
 const showSearch = ref(false)
 const searchRef = ref(null)
@@ -119,41 +128,74 @@ const chips = [
 
 const chipMap = Object.fromEntries(chips.map((c) => [c.key, c]))
 
+/** 组装筛选参数（分页参数由调用方附加） */
+function buildParams() {
+  const params = {}
+  for (const key of Object.values(filters.value)) {
+    const chip = chipMap[key]
+    if (!chip) continue
+    // 严格按分组取值：label 是显示名，筛选值在 value 字段（避免把区域名当 label 传）
+    switch (chip.group) {
+      case 'region':
+        if (chip.region) params.region = chip.region
+        break
+      case 'price':
+        if (chip.min != null) params.minRent = chip.min
+        if (chip.max != null) params.maxRent = chip.max
+        break
+      case 'type':
+        if (chip.type) params.houseType = chip.type
+        break
+      case 'label':
+        if (chip.value != null) params.label = chip.value
+        break
+      case 'pet':
+        params.petOk = 1
+        break
+      case 'new':
+        params.newOnly = true
+        break
+    }
+  }
+  return params
+}
+
+/** 加载第一页（筛选变化/首次进入时调用，重置分页） */
 async function load() {
   loading.value = true
   try {
-    const params = {}
-    for (const key of Object.values(filters.value)) {
-      const chip = chipMap[key]
-      if (!chip) continue
-      // 严格按分组取值：label 是显示名，筛选值在 value 字段（避免把区域名当 label 传）
-      switch (chip.group) {
-        case 'region':
-          if (chip.region) params.region = chip.region
-          break
-        case 'price':
-          if (chip.min != null) params.minRent = chip.min
-          if (chip.max != null) params.maxRent = chip.max
-          break
-        case 'type':
-          if (chip.type) params.houseType = chip.type
-          break
-        case 'label':
-          if (chip.value != null) params.label = chip.value
-          break
-        case 'pet':
-          params.petOk = 1
-          break
-        case 'new':
-          params.newOnly = true
-          break
-      }
-    }
-    houses.value = await houseApi.list(params)
+    const data = await houseApi.list({ ...buildParams(), page: 1, size: PAGE_SIZE })
+    houses.value = data.list
+    total.value = data.total
+    page.value = 1
   } catch (e) {
     showToast(e.message || '加载失败')
   } finally {
     loading.value = false
+  }
+}
+
+/** 触底加载下一页（追加） */
+async function loadMore() {
+  if (loading.value || loadingMore.value || !hasMore.value) return
+  loadingMore.value = true
+  try {
+    const data = await houseApi.list({ ...buildParams(), page: page.value + 1, size: PAGE_SIZE })
+    houses.value = houses.value.concat(data.list)
+    total.value = data.total
+    page.value += 1
+  } catch (e) {
+    showToast(e.message || '加载失败')
+  } finally {
+    loadingMore.value = false
+  }
+}
+
+/** 滚动触底自动加载（距底 120px 触发） */
+function onScroll() {
+  const el = document.documentElement
+  if (el.scrollTop + el.clientHeight >= el.scrollHeight - 120) {
+    loadMore()
   }
 }
 
@@ -193,8 +235,13 @@ function goDemand() {
 watch(filters, load, { deep: true })
 
 onMounted(async () => {
+  window.addEventListener('scroll', onScroll, { passive: true })
   await load()
   if (showSearch.value) nextTick(() => searchRef.value?.focus())
+})
+
+onUnmounted(() => {
+  window.removeEventListener('scroll', onScroll)
 })
 </script>
 
@@ -256,6 +303,17 @@ onMounted(async () => {
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+.load-more {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 14px 0 4px;
+  font-size: 0.72rem;
+  color: var(--fg3);
+}
+.load-more.end {
+  letter-spacing: 0.05em;
 }
 .sk {
   border-radius: 14px;

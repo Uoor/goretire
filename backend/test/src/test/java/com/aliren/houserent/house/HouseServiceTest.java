@@ -3,6 +3,8 @@ package com.aliren.houserent.house;
 import com.aliren.core.common.BusinessException;
 import com.aliren.houserent.house.dto.HouseCreateRequest;
 import com.aliren.houserent.house.dto.HouseResponse;
+import com.aliren.houserent.house.dto.PageDto;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -87,8 +89,12 @@ class HouseServiceTest {
 
     @Test
     void list_auditedOnly() {
-        when(houseMapper.selectList(any())).thenReturn(List.of());
-        List<HouseResponse> list = houseService.list(new com.aliren.houserent.house.dto.HouseListQuery());
-        assertThat(list).isEmpty();
+        Page<House> page = new Page<>(1, 20);
+        page.setTotal(0);
+        page.setRecords(List.of());
+        when(houseMapper.selectPage(any(), any())).thenReturn(page);
+        PageDto<HouseResponse> result = houseService.list(new com.aliren.houserent.house.dto.HouseListQuery());
+        assertThat(result.getList()).isEmpty();
+        assertThat(result.getTotal()).isZero();
     }
 }
