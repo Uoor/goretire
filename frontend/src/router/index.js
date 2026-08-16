@@ -15,6 +15,7 @@ const routes = [
   { path: '/guide', name: 'guide', component: () => import('@/modules/houserent/views/GuideView.vue'), meta: { title: '避坑指南' } },
   { path: '/report', name: 'report', component: () => import('@/modules/houserent/views/RentReportView.vue'), meta: { title: '租金周报' } },
   { path: '/admin', name: 'admin', component: () => import('@/modules/houserent/views/admin/AdminView.vue'), meta: { title: '管理后台' } },
+  { path: '/join', name: 'join', component: () => import('@/modules/houserent/views/JoinView.vue'), meta: { title: '加入组织' } },
   { path: '/:pathMatch(.*)*', redirect: '/' }
 ]
 
@@ -48,10 +49,17 @@ async function ensureLogin() {
 
 router.beforeEach(async (to) => {
   document.title = to.meta.title ? `校友安居 · ${to.meta.title}` : '校友安居'
+  // 加入组织页：已登录用户无需停留
+  if (to.name === 'join' && useUserStore().isLoggedIn) {
+    return { name: 'home' }
+  }
   try {
     await ensureLogin()
   } catch (e) {
-    // 免登失败：放行到页面，页面级请求会 401 提示（如钉钉容器内 http 环境被拦）
+    // 免登失败（非组织成员等）：阻断并引导加入组织；其余放行（页面级请求会处理）
+    if (e?.__loginFailed) {
+      return { name: 'join' }
+    }
     console.warn('[router] login failed:', e)
   }
   // 管理后台角色校验（dev-code 种子用户为管理员，可直接访问）
