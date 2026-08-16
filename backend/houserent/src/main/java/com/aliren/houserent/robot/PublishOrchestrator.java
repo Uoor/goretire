@@ -75,6 +75,7 @@ public class PublishOrchestrator {
             if (s != null) {
                 pushClient.sendWorkNotice(dingtalkUserId(s.getUserId()), content);
                 pushLogService.record(s.getUserId(), s.getId(), null, content);
+                subscribeMapper.incrementPushCount(s.getId());
             }
         }
         for (DemandHit hit : demandHits) {
