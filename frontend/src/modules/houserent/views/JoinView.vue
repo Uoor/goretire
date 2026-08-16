@@ -16,40 +16,42 @@
     <div class="join-body">
       <div class="join-intro">
         <p>「校友安居」只面向<span class="hl">阿里 / 蚂蚁</span>在职与离职校友开放。</p>
-        <p>你当前使用的账号<span class="strong">不在校友社群组织中</span>，暂时无法使用租房服务。</p>
+        <p>你当前使用的账号<span class="strong">不在校友社群组织中</span>，加入后即可使用租房服务。</p>
       </div>
+
+      <!-- 一键加入：直接跳邀请/指南链接 -->
+      <a class="join-now" :href="guideUrl" target="_blank" rel="noopener">
+        <span class="jn-icon">🎟️</span>
+        <span class="jn-tx">
+          <b>一键加入校友社群</b>
+          <small>点击后按指引申请加入组织</small>
+        </span>
+        <i class="ph ph-arrow-up-right"></i>
+      </a>
 
       <div class="join-steps">
         <div class="step">
           <span class="n">1</span>
-          <div class="tx"><b>查看入群指南</b><p>了解如何加入「阿里人·一起提前退休」社群</p></div>
+          <div class="tx"><b>点击上方一键加入</b><p>申请加入「阿里人·一起提前退休」社群组织</p></div>
         </div>
         <div class="step">
           <span class="n">2</span>
-          <div class="tx"><b>加入校友组织</b><p>入群后按指引加入组织，校友身份即登录</p></div>
-        </div>
-        <div class="step">
-          <span class="n">3</span>
-          <div class="tx"><b>回到安居</b><p>重新打开本应用，即可使用租房服务</p></div>
+          <div class="tx"><b>回到安居</b><p>重新打开本应用，校友身份即自动登录</p></div>
         </div>
       </div>
     </div>
 
-    <!-- CTA 栏（底部固定，橙色主按钮） -->
+    <!-- CTA 栏（底部固定，一键加入主按钮） -->
     <div class="join-cta">
-      <span>🏠 查看【提前退休】入群指南 → 自动进入全员群</span>
-      <a
-        class="cta-btn"
-        :href="guideUrl"
-        target="_blank"
-        rel="noopener"
-      >查看入群指南 📖</a>
+      <a class="cta-btn" :href="guideUrl" target="_blank" rel="noopener">
+        🎟️ 一键加入社群
+      </a>
     </div>
   </div>
 </template>
 
 <script setup>
-// 入群指南文档链接（钉钉云文档，与社群宣传页一致）
+// 加入入口链接：钉钉组织邀请链接或入群指南文档（管理员生成邀请链接后替换此值）
 const guideUrl = 'https://alidocs.dingtalk.com/i/p/O1pMzN6O07ezBnePqWXw3p83wOVloX31?dontjump=true'
 </script>
 
@@ -136,6 +138,39 @@ const guideUrl = 'https://alidocs.dingtalk.com/i/p/O1pMzN6O07ezBnePqWXw3p83wOVlo
   flex-direction: column;
   gap: 10px;
 }
+.join-now {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 14px;
+  padding: 16px 14px;
+  background: linear-gradient(135deg, var(--primary), var(--primary-deep));
+  border-radius: 14px;
+  text-decoration: none;
+  box-shadow: 0 3px 10px rgba(255, 106, 0, 0.25);
+}
+.join-now .jn-icon {
+  font-size: 1.5rem;
+}
+.join-now .jn-tx {
+  flex: 1;
+  color: #fff;
+}
+.join-now .jn-tx b {
+  display: block;
+  font-size: 0.95rem;
+}
+.join-now .jn-tx small {
+  font-size: 0.72rem;
+  opacity: 0.85;
+}
+.join-now > i {
+  color: #fff;
+  font-size: 1.1rem;
+}
+.join-now:active {
+  transform: translateY(1px);
+}
 .step {
   display: flex;
   align-items: center;
@@ -175,24 +210,19 @@ const guideUrl = 'https://alidocs.dingtalk.com/i/p/O1pMzN6O07ezBnePqWXw3p83wOVlo
   background: #fff;
   padding: 12px 16px;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 10px;
+  justify-content: center;
   border-top: 1px solid var(--border);
   box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.06);
-}
-.join-cta span {
-  font-size: 0.78rem;
-  color: var(--fg2);
 }
 .cta-btn {
   background: var(--primary);
   color: #fff;
   border: none;
-  padding: 10px 28px;
-  border-radius: 8px;
-  font-weight: 600;
-  font-size: 0.85rem;
+  padding: 13px 40px;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 0.92rem;
   cursor: pointer;
   text-decoration: none;
   box-shadow: 0 2px 0 var(--primary-deep);
