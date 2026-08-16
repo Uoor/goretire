@@ -10,6 +10,8 @@
       <div class="h-tags">
         <span class="tag owner">{{ labelText }}</span>
         <span v-if="house.petOk === 1" class="tag verify">可养宠</span>
+        <!-- 已核实标：列表均为已上架（审核通过），产品 4.1 卡片 6 要素之一 -->
+        <span class="tag verify">✅ 已核实</span>
       </div>
       <div class="h-foot">
         <span class="commute"><i class="ph ph-bicycle"></i> {{ house.commute || '通勤待填' }}</span>

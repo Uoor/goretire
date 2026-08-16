@@ -4,8 +4,8 @@
       v-for="chip in chips"
       :key="chip.key"
       class="chip"
-      :class="{ on: modelValue === chip.key }"
-      @click="$emit('update:modelValue', modelValue === chip.key ? '' : chip.key)"
+      :class="{ on: modelValue[chip.group] === chip.key }"
+      @click="toggle(chip)"
     >
       {{ chip.label }}
     </div>
@@ -13,11 +13,23 @@
 </template>
 
 <script setup>
-defineProps({
-  chips: { type: Array, required: true }, // [{key,label}]
-  modelValue: { type: String, default: '' }
+// 分组筛选条：每组内单选（互斥），不同组独立（如区域 西溪 + 价格 <3000 + 可养宠 可同时选中）。
+// modelValue: { [group]: selectedKey }，选中/取消通过 update:modelValue 回传新对象。
+const props = defineProps({
+  chips: { type: Array, required: true }, // [{ key, label, group }]
+  modelValue: { type: Object, default: () => ({}) }
 })
-defineEmits(['update:modelValue'])
+const emit = defineEmits(['update:modelValue'])
+
+function toggle(chip) {
+  const next = { ...props.modelValue }
+  if (next[chip.group] === chip.key) {
+    delete next[chip.group]
+  } else {
+    next[chip.group] = chip.key
+  }
+  emit('update:modelValue', next)
+}
 </script>
 
 <style scoped>

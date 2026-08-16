@@ -27,11 +27,19 @@
       </div>
       <div v-if="matchResult.matches.length === 0" class="match-empty">没有找到合适的房源，换个说法试试</div>
       <div v-for="m in matchResult.matches" :key="m.houseId" class="match-card" @click="openHouse(m.houseId)">
+        <!-- 房源摘要（产品 4.4.1：3-5 套 + 匹配理由） -->
+        <template v-if="houseOf(m)">
+          <div class="mc-head">
+            <b>{{ houseOf(m).community }}</b>
+            <span class="mc-price num">{{ formatMoney(houseOf(m).rent) }} 元/月</span>
+          </div>
+          <div class="mc-meta">{{ houseOf(m).houseType }} {{ houseOf(m).area }}㎡ · {{ houseOf(m).region }}</div>
+        </template>
         <div class="why">{{ m.reason }}</div>
       </div>
     </div>
 
-    <FilterChips :chips="chips" v-model="activeChip" />
+    <FilterChips :chips="chips" v-model="filters" />
 
     <!-- 避坑指南引导条 -->
     <div class="home-guide" @click="router.push({ name: 'guide' })">
@@ -73,6 +81,7 @@ import HouseCard from '@/modules/houserent/components/HouseCard.vue'
 import FilterChips from '@/modules/houserent/components/FilterChips.vue'
 import EmptyState from '@/modules/houserent/components/EmptyState.vue'
 import { houseApi, matchApi } from '@/modules/houserent/api'
+import { formatMoney } from '@/utils/format'
 
 const router = useRouter()
 const houses = ref([])
@@ -81,29 +90,58 @@ const query = ref('')
 const showSearch = ref(false)
 const searchRef = ref(null)
 const matchResult = ref(null)
-const activeChip = ref('')
+// 分组筛选：{ group: selectedKey }，见 FilterChips
+const filters = ref({})
 
+// 产品 4.1 筛选：区域/价格区间/户型/标签/可养宠/新上架（通勤为文本描述，暂不筛）
 const chips = [
-  { key: 'label1', label: '房东直租' },
-  { key: 'label2', label: '校友转租' },
-  { key: 'label3', label: '合租拼室友' },
-  { key: 'pet', label: '可养宠' },
-  { key: 'new', label: '新上架' }
+  { group: 'region', key: 'r-xixi', label: '杭州西溪', region: '杭州西溪' },
+  { group: 'region', key: 'r-binjiang', label: '杭州滨江', region: '杭州滨江' },
+  { group: 'region', key: 'r-wangjing', label: '北京望京', region: '北京望京' },
+  { group: 'region', key: 'r-zhangjiang', label: '上海张江', region: '上海张江' },
+  { group: 'price', key: 'p-3000', label: '3000以下', max: 3000 },
+  { group: 'price', key: 'p-3000-5000', label: '3000-5000', min: 3000, max: 5000 },
+  { group: 'price', key: 'p-5000-8000', label: '5000-8000', min: 5000, max: 8000 },
+  { group: 'price', key: 'p-8000', label: '8000以上', min: 8000 },
+  { group: 'type', key: 't-zhengzu', label: '整租', type: '整租' },
+  { group: 'type', key: 't-hezu', label: '合租', type: '合租' },
+  { group: 'type', key: 't-yiju', label: '一居', type: '一居' },
+  { group: 'type', key: 't-liangju', label: '两居', type: '两居' },
+  { group: 'label', key: 'label1', label: '房东直租', label: 1 },
+  { group: 'label', key: 'label2', label: '校友转租', label: 2 },
+  { group: 'label', key: 'label3', label: '合租拼室友', label: 3 },
+  { group: 'pet', key: 'pet', label: '可养宠' },
+  { group: 'new', key: 'new', label: '新上架' }
 ]
+
+const chipMap = Object.fromEntries(chips.map((c) => [c.key, c]))
 
 async function load() {
   loading.value = true
   try {
     const params = {}
-    if (/^label\d$/.test(activeChip.value)) params.label = Number(activeChip.value.slice(5))
-    if (activeChip.value === 'pet') params.petOk = 1
-    if (activeChip.value === 'new') params.newOnly = true
+    for (const key of Object.values(filters.value)) {
+      const chip = chipMap[key]
+      if (!chip) continue
+      if (chip.region) params.region = chip.region
+      if (chip.min != null) params.minRent = chip.min
+      if (chip.max != null) params.maxRent = chip.max
+      if (chip.type) params.houseType = chip.type
+      if (chip.label != null) params.label = chip.label
+      if (chip.group === 'pet') params.petOk = 1
+      if (chip.group === 'new') params.newOnly = true
+    }
     houses.value = await houseApi.list(params)
   } catch (e) {
     showToast(e.message || '加载失败')
   } finally {
     loading.value = false
   }
+}
+
+/** 匹配结果里取房源摘要（列表已加载的在租房源） */
+function houseOf(match) {
+  return houses.value.find((h) => h.id === match.houseId)
 }
 
 async function doSearch() {
@@ -128,7 +166,7 @@ function openHouse(id) {
   router.push({ name: 'house-detail', params: { id } })
 }
 
-watch(activeChip, load)
+watch(filters, load, { deep: true })
 
 onMounted(async () => {
   await load()
@@ -236,6 +274,27 @@ onMounted(async () => {
   border: 1px solid var(--border);
   margin-bottom: 10px;
   cursor: pointer;
+}
+.mc-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+.mc-head b {
+  font-size: 0.86rem;
+}
+.mc-price {
+  color: var(--primary-deep);
+  font-weight: 700;
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+.mc-meta {
+  font-size: 0.68rem;
+  color: var(--fg3);
+  margin-top: 3px;
+  margin-bottom: 8px;
 }
 .match-card .why {
   font-size: 0.7rem;

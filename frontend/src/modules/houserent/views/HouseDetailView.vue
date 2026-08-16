@@ -5,9 +5,14 @@
     <div v-if="house">
       <div class="detail-hero">
         <div class="hero-img" :class="thumbClass">
-          <img v-if="cover" :src="cover" alt="" />
-          <div class="dots">
-            <i v-for="(_, i) in Math.max(1, images.length)" :key="i" :class="{ on: i === 0 }"></i>
+          <img v-if="images.length" :src="images[imgIndex]" alt="" />
+          <!-- 多图：左右切换 + 指示点（产品 4.2 图集） -->
+          <template v-if="images.length > 1">
+            <div class="hero-nav prev" @click="switchImg(-1)"><i class="ph ph-caret-left"></i></div>
+            <div class="hero-nav next" @click="switchImg(1)"><i class="ph ph-caret-right"></i></div>
+          </template>
+          <div class="dots" v-if="images.length > 1">
+            <i v-for="(_, i) in images.length" :key="i" :class="{ on: i === imgIndex }"></i>
           </div>
         </div>
       </div>
@@ -105,11 +110,20 @@ const reportReason = ref('')
 
 const images = computed(() => parseImages(house.value?.images))
 const cover = computed(() => images.value[0] || '')
+const imgIndex = ref(0)
 const thumbClass = computed(() => ['thumb-a', 'thumb-b', 'thumb-c'][Number(route.params.id) % 3])
 const labelText = computed(() => ({ 1: '房东直租', 2: '校友转租', 3: '合租拼室友' })[house.value?.label] || '')
 
+/** 图集切换（产品 4.2：最多 9 张，首图为封面） */
+function switchImg(dir) {
+  const len = images.value.length
+  if (len <= 1) return
+  imgIndex.value = (imgIndex.value + dir + len) % len
+}
+
 async function load() {
   loading.value = true
+  imgIndex.value = 0
   try {
     house.value = await houseApi.detail(route.params.id)
   } catch (e) {
@@ -167,6 +181,31 @@ onMounted(load)
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+/* 图集左右切换（多图时） */
+.hero-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.35);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 2;
+}
+.hero-nav.prev {
+  left: 12px;
+}
+.hero-nav.next {
+  right: 12px;
+}
+.hero-nav:active {
+  background: rgba(0, 0, 0, 0.55);
 }
 .dots {
   position: absolute;

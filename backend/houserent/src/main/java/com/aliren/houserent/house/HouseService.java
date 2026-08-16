@@ -69,6 +69,9 @@ public class HouseService {
         if (query.getPetOk() != null) {
             qw.eq("pet_ok", query.getPetOk());
         }
+        if (StringUtils.hasText(query.getHouseType())) {
+            qw.like("house_type", query.getHouseType());
+        }
         if (Boolean.TRUE.equals(query.getNewOnly())) {
             qw.ge("created_at", LocalDate.now().minusDays(7).atStartOfDay());
         }
