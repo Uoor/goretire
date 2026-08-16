@@ -110,9 +110,9 @@ const chips = [
   { group: 'type', key: 't-hezu', label: '合租', type: '合租' },
   { group: 'type', key: 't-yiju', label: '一居', type: '一居' },
   { group: 'type', key: 't-liangju', label: '两居', type: '两居' },
-  { group: 'label', key: 'label1', label: '房东直租', label: 1 },
-  { group: 'label', key: 'label2', label: '校友转租', label: 2 },
-  { group: 'label', key: 'label3', label: '合租拼室友', label: 3 },
+  { group: 'label', key: 'label1', label: '房东直租', value: 1 },
+  { group: 'label', key: 'label2', label: '校友转租', value: 2 },
+  { group: 'label', key: 'label3', label: '合租拼室友', value: 3 },
   { group: 'pet', key: 'pet', label: '可养宠' },
   { group: 'new', key: 'new', label: '新上架' }
 ]
@@ -126,13 +126,28 @@ async function load() {
     for (const key of Object.values(filters.value)) {
       const chip = chipMap[key]
       if (!chip) continue
-      if (chip.region) params.region = chip.region
-      if (chip.min != null) params.minRent = chip.min
-      if (chip.max != null) params.maxRent = chip.max
-      if (chip.type) params.houseType = chip.type
-      if (chip.label != null) params.label = chip.label
-      if (chip.group === 'pet') params.petOk = 1
-      if (chip.group === 'new') params.newOnly = true
+      // 严格按分组取值：label 是显示名，筛选值在 value 字段（避免把区域名当 label 传）
+      switch (chip.group) {
+        case 'region':
+          if (chip.region) params.region = chip.region
+          break
+        case 'price':
+          if (chip.min != null) params.minRent = chip.min
+          if (chip.max != null) params.maxRent = chip.max
+          break
+        case 'type':
+          if (chip.type) params.houseType = chip.type
+          break
+        case 'label':
+          if (chip.value != null) params.label = chip.value
+          break
+        case 'pet':
+          params.petOk = 1
+          break
+        case 'new':
+          params.newOnly = true
+          break
+      }
     }
     houses.value = await houseApi.list(params)
   } catch (e) {
