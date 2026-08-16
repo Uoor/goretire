@@ -46,6 +46,8 @@ aliren:
     # 未启用时 PushClientStub 仅记录日志，编排与定时任务照常跑通
     enabled: ${ROBOT_ENABLED:false}
     webhook: ${ROBOT_WEBHOOK:}
+    # 工作通知（私聊）需要应用 agentId（数字），配置后启用；未配置降级为日志
+    agent-id: ${ROBOT_AGENT_ID:}
   schedule:
     # 定时任务：周五精选周推 / 周一安居故事（缺省开启；真实推送依赖 robot）
     enabled: ${SCHEDULE_ENABLED:true}

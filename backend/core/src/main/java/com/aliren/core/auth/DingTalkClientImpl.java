@@ -3,6 +3,7 @@ package com.aliren.core.auth;
 import com.aliren.core.common.BusinessException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
@@ -15,10 +16,9 @@ import java.net.http.HttpResponse;
 import java.time.Duration;
 
 /**
- * 钉钉免登换号（生产实现，基于钉钉开放平台 REST API + JDK HttpClient）：
- * 1) GET https://oapi.dingtalk.com/gettoken?appkey=&appsecret= 换 access_token（已实现）
- * 2) authCode -> unionId（H5 免登接口，需真实凭证后按开放平台文档补全）
- * 3) unionId -> userid（企业内部应用需同一组织，需补全）
+ * 钉钉免登换号（生产实现，基于钉钉开放平台新版 v1.0 API + JDK HttpClient）：
+ * 1) POST /v1.0/oauth2/userAccessToken 用 appKey/appSecret + authCode 换用户级 accessToken
+ * 2) GET  /v1.0/contact/users/me 用用户级 token 拿 userid（企业内部应用同组织内）
  * 参考: https://open.dingtalk.com/document/orgapp/logon-free-process
  *
  * 条件装配：仅当配置了 aliren.dingtalk.app-key 时启用（与开发桩 DingTalkClientStub 互斥）。
@@ -28,7 +28,8 @@ import java.time.Duration;
 @ConditionalOnExpression("'${aliren.dingtalk.app-key:}' != ''")
 public class DingTalkClientImpl implements DingTalkClient {
 
-    private static final String GET_TOKEN_URL = "https://oapi.dingtalk.com/gettoken";
+    private static final String USER_TOKEN_URL = "https://api.dingtalk.com/v1.0/oauth2/userAccessToken";
+    private static final String USER_ME_URL = "https://api.dingtalk.com/v1.0/contact/users/me";
     private static final Duration TIMEOUT = Duration.ofSeconds(5);
 
     private final String appKey;
@@ -45,35 +46,72 @@ public class DingTalkClientImpl implements DingTalkClient {
 
     @Override
     public String getUserIdByCode(String authCode) {
-        String accessToken = getAccessToken();
-        // TODO(Task 6 完成点): 按钉钉开放平台文档实现 authCode -> unionId -> userid
-        // 需要真实 DING_APP_KEY / DING_APP_SECRET 与钉钉组织环境才能联调补全
-        log.warn("dingtalk code exchange not yet implemented, got accessToken length={}, authCode length={}",
-                accessToken.length(), authCode == null ? 0 : authCode.length());
-        throw new BusinessException(500, "钉钉换号待接入：需配置 DING_APP_KEY / DING_APP_SECRET 并按开放平台文档实现");
+        if (authCode == null || authCode.isBlank()) {
+            throw new BusinessException(401, "免登失败");
+        }
+        // 本地浏览器联调桩：dev-code 直接放行（对应前端 utils/dd.js 的浏览器桩），
+        // 钉钉容器内真实 authCode 走下方真实换号
+        if ("dev-code".equals(authCode)) {
+            return authCode;
+        }
+        String userToken = exchangeUserToken(authCode);
+        return fetchUserId(userToken);
     }
 
-    private String getAccessToken() {
+    /** authCode -> 用户级 accessToken（v1.0 oauth2） */
+    private String exchangeUserToken(String authCode) {
         try {
-            URI uri = URI.create(GET_TOKEN_URL + "?appkey=" + appKey + "&appsecret=" + appSecret);
-            HttpRequest request = HttpRequest.newBuilder(uri).timeout(TIMEOUT).GET().build();
+            ObjectNode body = objectMapper.createObjectNode();
+            body.put("clientId", appKey);
+            body.put("clientSecret", appSecret);
+            body.put("code", authCode);
+            body.put("grantType", "authorization_code");
+            HttpRequest request = HttpRequest.newBuilder(URI.create(USER_TOKEN_URL))
+                    .timeout(TIMEOUT)
+                    .header("Content-Type", "application/json")
+                    .POST(HttpRequest.BodyPublishers.ofString(objectMapper.writeValueAsString(body)))
+                    .build();
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
             JsonNode json = objectMapper.readTree(response.body());
-            int errCode = json.path("errcode").asInt(-1);
-            if (errCode != 0) {
-                throw new BusinessException(500, "获取钉钉token失败: errcode=" + errCode
-                        + " errmsg=" + json.path("errmsg").asText(""));
+            if (response.statusCode() != 200 || !json.hasNonNull("accessToken")) {
+                log.warn("dingtalk userAccessToken failed: status={} body={}", response.statusCode(), response.body());
+                throw new BusinessException(401, "免登失败");
             }
-            String token = json.path("access_token").asText("");
-            if (token.isEmpty()) {
-                throw new BusinessException(500, "获取钉钉token失败: access_token 为空");
-            }
-            return token;
+            return json.path("accessToken").asText();
         } catch (BusinessException e) {
             throw e;
         } catch (Exception e) {
-            log.warn("dingtalk gettoken failed", e);
-            throw new BusinessException(500, "获取钉钉token异常");
+            log.warn("dingtalk userAccessToken exception", e);
+            throw new BusinessException(401, "免登失败");
+        }
+    }
+
+    /** 用户级 token -> userid（企业内部应用同组织内；取 userId 失败时回退 unionId） */
+    private String fetchUserId(String userToken) {
+        try {
+            HttpRequest request = HttpRequest.newBuilder(URI.create(USER_ME_URL))
+                    .timeout(TIMEOUT)
+                    .header("x-acs-dingtalk-access-token", userToken)
+                    .GET()
+                    .build();
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            JsonNode json = objectMapper.readTree(response.body());
+            if (response.statusCode() != 200) {
+                log.warn("dingtalk users/me failed: status={} body={}", response.statusCode(), response.body());
+                throw new BusinessException(401, "免登失败");
+            }
+            String userId = json.path("userId").asText("");
+            String unionId = json.path("unionId").asText("");
+            String id = !userId.isBlank() ? userId : unionId;
+            if (id.isBlank()) {
+                throw new BusinessException(401, "免登失败");
+            }
+            return id;
+        } catch (BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            log.warn("dingtalk users/me exception", e);
+            throw new BusinessException(401, "免登失败");
         }
     }
 }
