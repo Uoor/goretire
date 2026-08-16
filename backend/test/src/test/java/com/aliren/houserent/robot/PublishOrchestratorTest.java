@@ -90,8 +90,11 @@ class PublishOrchestratorTest {
         orchestrator.onHouseAudited(1L);
 
         verify(pushClient).sendGroupCardAction(anyString(), anyString(), eq("https://h5.example.com/#/house/1"));
-        verify(pushClient).sendWorkNotice("ding-user-7", "你订阅的房源上新了：「西溪八方城」2室1厅 5800元/月 —— 区域预算都符合");
-        verify(pushClient).sendWorkNotice("ding-user-8", "你挂在求租墙的需求有新房源：「西溪八方城」2室1厅 5800元/月 —— 目标区域一致");
+        // 工作通知升级为结构化卡片：标题 + 命中理由 + 房源信息 + 跳转链接
+        verify(pushClient).sendWorkNotice(eq("ding-user-7"), org.mockito.ArgumentMatchers.contains("🎯 订阅新匹配"));
+        verify(pushClient).sendWorkNotice(eq("ding-user-8"), org.mockito.ArgumentMatchers.contains("🎯 求租新匹配"));
+        verify(pushClient).sendWorkNotice(eq("ding-user-7"), org.mockito.ArgumentMatchers.contains("区域预算都符合"));
+        verify(pushClient).sendWorkNotice(eq("ding-user-7"), org.mockito.ArgumentMatchers.contains("https://h5.example.com/#/house/1"));
     }
 
     @Test

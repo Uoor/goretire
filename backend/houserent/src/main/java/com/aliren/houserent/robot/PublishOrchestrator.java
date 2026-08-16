@@ -69,21 +69,23 @@ public class PublishOrchestrator {
         String detailUrl = h5BaseUrl.isBlank() ? "" : h5BaseUrl + "/#/house/" + houseId;
         pushClient.sendGroupCardAction("🏠 新上架 · " + h.getCommunity(), buildHouseCard(h), detailUrl);
         for (SubscriptionHit hit : subHits) {
-            String content = "你订阅的房源上新了：「" + h.getCommunity() + "」" + h.getHouseType()
-                    + " " + h.getRent() + "元/月 —— " + hit.getReason();
             Subscribe s = subscribeMapper.selectById(hit.getSubscribeId());
             if (s != null) {
-                pushClient.sendWorkNotice(dingtalkUserId(s.getUserId()), content);
+                pushClient.sendWorkNotice(dingtalkUserId(s.getUserId()),
+                        buildNoticeCard("🎯 订阅新匹配", h, detailUrl, hit.getReason()));
+                String content = "你订阅的房源上新了：「" + h.getCommunity() + "」" + h.getHouseType()
+                        + " " + h.getRent() + "元/月 —— " + hit.getReason();
                 pushLogService.record(s.getUserId(), s.getId(), null, content);
                 subscribeMapper.incrementPushCount(s.getId());
             }
         }
         for (DemandHit hit : demandHits) {
-            String content = "你挂在求租墙的需求有新房源：「" + h.getCommunity() + "」" + h.getHouseType()
-                    + " " + h.getRent() + "元/月 —— " + hit.getReason();
             Demand d = demandMapper.selectById(hit.getDemandId());
             if (d != null) {
-                pushClient.sendWorkNotice(dingtalkUserId(d.getPublisherId()), content);
+                pushClient.sendWorkNotice(dingtalkUserId(d.getPublisherId()),
+                        buildNoticeCard("🎯 求租新匹配", h, detailUrl, hit.getReason()));
+                String content = "你挂在求租墙的需求有新房源：「" + h.getCommunity() + "」" + h.getHouseType()
+                        + " " + h.getRent() + "元/月 —— " + hit.getReason();
                 pushLogService.record(d.getPublisherId(), null, d.getId(), content);
             }
         }
@@ -105,6 +107,28 @@ public class PublishOrchestrator {
      * 封面图用 ![alt](url)，相对路径（/uploads/）按 h5BaseUrl 拼绝对地址。
      */
     private String buildHouseCard(House h) {
+        return buildCardBody(h) + "<br/>✅ 已通过管理员审核，欢迎看房";
+    }
+
+    /**
+     * 工作通知卡片（订阅/求租匹配）：标题行 + 房源结构化信息 + 跳转详情链接。
+     * 未配置 H5 地址时省略链接，纯文本信息也能看。
+     */
+    private String buildNoticeCard(String title, House h, String detailUrl, String reason) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("**").append(title).append("**<br/>");
+        if (reason != null && !reason.isBlank()) {
+            sb.append("📌 ").append(reason).append("<br/>");
+        }
+        sb.append(buildCardBody(h));
+        if (detailUrl != null && !detailUrl.isBlank()) {
+            sb.append("👉 [查看房源详情](").append(detailUrl).append(")");
+        }
+        return sb.toString();
+    }
+
+    /** 公共卡片体：封面 + 小区/户型/月租/区域/标签/通勤 */
+    private String buildCardBody(House h) {
         StringBuilder sb = new StringBuilder();
         String cover = coverUrl(h);
         if (!cover.isBlank()) {
@@ -123,7 +147,6 @@ public class PublishOrchestrator {
             sb.append("**通勤**：🚲 ").append(h.getCommute()).append("<br/>");
         }
         sb.append("<br/>");
-        sb.append("✅ 已通过管理员审核，欢迎看房");
         return sb.toString();
     }
 
