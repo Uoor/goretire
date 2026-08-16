@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -71,13 +72,51 @@ public class HouseService {
             qw.eq("pet_ok", query.getPetOk());
         }
         if (StringUtils.hasText(query.getHouseType())) {
-            qw.like("house_type", query.getHouseType());
+            // 户型语义归一化：把"一居/两居/三居"等口语说法映射到可 LIKE 命中的关键词，
+            // 保证选"两居"能同时命中"2室1厅"与"两居"两种写法（LIKE 多条件 OR）
+            List<String> keywords = houseTypeKeywords(query.getHouseType());
+            qw.and(w -> {
+                for (int i = 0; i < keywords.size(); i++) {
+                    if (i == 0) {
+                        w.like("house_type", keywords.get(i));
+                    } else {
+                        w.or().like("house_type", keywords.get(i));
+                    }
+                }
+            });
         }
         if (Boolean.TRUE.equals(query.getNewOnly())) {
             qw.ge("created_at", LocalDate.now().minusDays(7).atStartOfDay());
         }
         qw.orderByDesc("created_at");
         return houseMapper.selectList(qw).stream().map(HouseResponse::from).toList();
+    }
+
+    /** 户型关键词归一化：口语说法 → 一组可 LIKE 的关键词 */
+    private List<String> houseTypeKeywords(String raw) {
+        List<String> out = new ArrayList<>();
+        String r = raw.trim();
+        out.add(r);
+        // 中文数字户型："一居/两居/三居…" → 同时匹配 "1室…/2室…/3室…"
+        if (r.contains("居") && r.length() <= 3) {
+            char n = r.charAt(0);
+            String digit = switch (n) {
+                case '一' -> "1";
+                case '两', '二' -> "2";
+                case '三' -> "3";
+                case '四' -> "4";
+                case '五' -> "5";
+                default -> null;
+            };
+            if (digit != null) {
+                out.add(digit + "室");
+            }
+        }
+        // 整租：同时命中"室"（如 2室1厅）；合租保持"合租"关键词
+        if (r.contains("整租")) {
+            out.add("室");
+        }
+        return out;
     }
 
     /** 详情：仅已上架可看（未上架/驳回对普通用户隐藏），附发布人信息 */
