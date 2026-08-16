@@ -56,6 +56,11 @@ aliren:
   push:
     # 防骚扰：单订阅每日推送上限（条/天），超限当天不再私聊提醒
     daily-sub-limit: ${DAILY_SUB_LIMIT:3}
+  guide:
+    # 避坑指南知识库：钉钉知识库 workspaceId + 操作管理员 unionId；
+    # 配置后 GuideView 从钉钉知识库读取（钉钉为唯一数据源）
+    workspace-id: ${GUIDE_WORKSPACE_ID:}
+    operator-id: ${GUIDE_OPERATOR_ID:}
   schedule:
     # 定时任务：周五精选周推 / 周一安居故事（缺省开启；真实推送依赖 robot）
     enabled: ${SCHEDULE_ENABLED:true}

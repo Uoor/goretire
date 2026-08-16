@@ -52,3 +52,10 @@ export const adminApi = {
   handleReport: (id, result) => request.post(`/admin/reports/${id}/handle`, { result }),
   stats: () => request.get('/admin/stats')
 }
+
+// 避坑指南知识库（钉钉知识库为数据源）
+export const guideApi = {
+  sections: () => request.get('/guide/sections'),
+  items: (nodeId) => request.get(`/guide/sections/${nodeId}/items`),
+  content: (nodeId) => request.get('/guide/items/content', { params: { nodeId } })
+}
