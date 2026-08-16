@@ -27,6 +27,9 @@ aliren:
     # 生产环境务必通过 JWT_SECRET 环境变量覆盖
     secret: ${JWT_SECRET:aliren-dev-secret-key-please-change-in-prod-0123456789}
     expire-hours: 168
+  auth:
+    # 浏览器联调 dev-code 桩放行开关：生产必须设 DEV_CODE_ENABLED=false
+    dev-code-enabled: ${DEV_CODE_ENABLED:true}
   dingtalk:
     app-key: ${DING_APP_KEY:}
     app-secret: ${DING_APP_SECRET:}

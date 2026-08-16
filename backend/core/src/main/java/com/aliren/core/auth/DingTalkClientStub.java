@@ -1,6 +1,7 @@
 package com.aliren.core.auth;
 
 import com.aliren.core.common.BusinessException;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -13,13 +14,23 @@ import org.springframework.context.annotation.Configuration;
  * 导致桩永远不生效。因此条件放在 @Bean 方法上声明。
  */
 public class DingTalkClientStub implements DingTalkClient {
+
+    private final boolean devCodeEnabled;
+
+    public DingTalkClientStub(boolean devCodeEnabled) {
+        this.devCodeEnabled = devCodeEnabled;
+    }
+
     @Override
     public String getUserIdByCode(String authCode) {
         if (authCode == null || authCode.isBlank()) {
             throw new BusinessException(401, "免登失败");
         }
-        // 开发桩：authCode 即视为钉钉 userid（便于本地联调）
-        return authCode;
+        // 开发桩：仅当开关开启时放行 dev-code（生产 DEV_CODE_ENABLED=false 后彻底关闭）
+        if (devCodeEnabled && "dev-code".equals(authCode)) {
+            return authCode;
+        }
+        throw new BusinessException(401, "免登失败");
     }
 }
 
@@ -28,7 +39,7 @@ class DingTalkClientConfig {
 
     @Bean
     @ConditionalOnMissingBean(DingTalkClient.class)
-    DingTalkClient dingTalkClientStub() {
-        return new DingTalkClientStub();
+    DingTalkClient dingTalkClientStub(@Value("${aliren.auth.dev-code-enabled:true}") boolean devCodeEnabled) {
+        return new DingTalkClientStub(devCodeEnabled);
     }
 }

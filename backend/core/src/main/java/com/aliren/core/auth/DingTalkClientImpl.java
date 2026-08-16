@@ -34,13 +34,16 @@ public class DingTalkClientImpl implements DingTalkClient {
 
     private final String appKey;
     private final String appSecret;
+    private final boolean devCodeEnabled;
     private final HttpClient httpClient;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     public DingTalkClientImpl(@Value("${aliren.dingtalk.app-key}") String appKey,
-                              @Value("${aliren.dingtalk.app-secret}") String appSecret) {
+                              @Value("${aliren.dingtalk.app-secret}") String appSecret,
+                              @Value("${aliren.auth.dev-code-enabled:true}") boolean devCodeEnabled) {
         this.appKey = appKey;
         this.appSecret = appSecret;
+        this.devCodeEnabled = devCodeEnabled;
         this.httpClient = HttpClient.newBuilder().connectTimeout(TIMEOUT).build();
     }
 
@@ -49,9 +52,9 @@ public class DingTalkClientImpl implements DingTalkClient {
         if (authCode == null || authCode.isBlank()) {
             throw new BusinessException(401, "免登失败");
         }
-        // 本地浏览器联调桩：dev-code 直接放行（对应前端 utils/dd.js 的浏览器桩），
-        // 钉钉容器内真实 authCode 走下方真实换号
-        if ("dev-code".equals(authCode)) {
+        // 本地浏览器联调桩：dev-code 直接放行（对应前端 utils/dd.js 的浏览器桩）。
+        // 生产必须关闭（aliren.auth.dev-code-enabled=false），否则任何人可伪装身份。
+        if (devCodeEnabled && "dev-code".equals(authCode)) {
             return authCode;
         }
         String userToken = exchangeUserToken(authCode);
