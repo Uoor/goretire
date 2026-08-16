@@ -49,7 +49,7 @@
         <div v-if="d.description" class="mc-desc">{{ d.description }}</div>
         <div class="mc-ops">
           <button v-if="d.matchStatus !== 2" class="op-btn ghost" @click="complete(d)">标记已成交</button>
-          <button class="op-btn" @click="rematch(d)">重新匹配</button>
+          <button class="op-btn" :disabled="rematching" @click="rematch(d)">{{ rematching ? '匹配中…' : '重新匹配' }}</button>
           <button class="op-btn" @click="withdraw(d)">撤回</button>
         </div>
       </div>
@@ -126,6 +126,7 @@ const showCreate = ref(false)
 const showMatchResult = ref(false)
 const immediateMatches = ref([])
 const immediateDegraded = ref(false)
+const rematching = ref(false)
 const creating = ref(false)
 const createForm = reactive({ region: '', houseType: '', budget: '', moveInDate: '', leaseTerm: '', requirements: '', description: '' })
 
@@ -155,6 +156,8 @@ function statusClass(s) {
 
 /** 手动重新匹配：用需求原文再匹配一轮现有房源，弹结果 */
 async function rematch(d) {
+  if (rematching.value) return
+  rematching.value = true
   try {
     const res = await demandApi.rematch(d.id)
     d.matchStatus = res?.matches?.length ? 1 : 0
@@ -163,6 +166,8 @@ async function rematch(d) {
     showMatchResult.value = true
   } catch (e) {
     showToast(e.message || '匹配失败')
+  } finally {
+    rematching.value = false
   }
 }
 
@@ -415,6 +420,10 @@ onMounted(() => {
   color: #fff;
   font-weight: 600;
   cursor: pointer;
+}
+.op-btn:disabled {
+  opacity: 0.55;
+  cursor: default;
 }
 .op-btn.ghost {
   background: #fff;

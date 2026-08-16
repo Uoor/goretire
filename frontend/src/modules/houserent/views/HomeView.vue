@@ -15,7 +15,14 @@
         />
       </div>
       <!-- mousedown.prevent：在 input blur 触发前执行，避免点击按钮时按钮因 blur 消失导致 click 丢失 -->
-      <button v-if="showSearch" class="search-go" @mousedown.prevent="doSearch">找房</button>
+      <button v-if="showSearch" class="search-go" :disabled="matching" @mousedown.prevent="doSearch">
+        {{ matching ? '匹配中…' : '找房' }}
+      </button>
+    </div>
+
+    <!-- AI 匹配中：解析需求需要几秒，给用户明确反馈 -->
+    <div v-if="matching" class="match-loading">
+      <van-loading size="16" color="#FF6A00">AI 正在理解你的需求，匹配合适房源…</van-loading>
     </div>
 
     <!-- 一句话找房结果 -->
@@ -101,6 +108,7 @@ const hasMore = computed(() => houses.value.length < total.value)
 const query = ref('')
 const showSearch = ref(false)
 const searchRef = ref(null)
+const matching = ref(false)
 const matchResult = ref(null)
 // 分组筛选：{ group: selectedKey }，见 FilterChips
 const filters = ref({})
@@ -207,12 +215,15 @@ function houseOf(match) {
 
 async function doSearch() {
   const text = query.value.trim()
-  if (!text) return
+  if (!text || matching.value) return
   showSearch.value = false
+  matching.value = true
   try {
     matchResult.value = await matchApi.search(text)
   } catch (e) {
     showToast(e.message || '找房失败')
+  } finally {
+    matching.value = false
   }
 }
 
@@ -298,6 +309,19 @@ onUnmounted(() => {
 .search-go:active {
   transform: translateY(1px);
   box-shadow: none;
+}
+.search-go:disabled {
+  opacity: 0.6;
+}
+.match-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 14px 16px;
+  background: var(--primary-soft);
+  border-bottom: 1px solid var(--border);
+  font-size: 0.75rem;
+  color: var(--primary-deep);
 }
 .feed {
   padding: 12px 16px;
