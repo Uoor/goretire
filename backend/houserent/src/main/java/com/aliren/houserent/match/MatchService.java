@@ -66,14 +66,19 @@ public class MatchService {
         }
         // 本地硬过滤：先剔除明显不符的（区域/价格/户型），候选交 LLM 排序
         List<House> filtered = prefilterSearch(text, candidates);
-        // 过滤后仍有候选 → LLM 排序 + 理由；过滤后为空 → 放宽到全量交 LLM（保底），仍失败则本地降级
+        // 过滤后仍有候选 → LLM 排序 + 理由；过滤后为空 → 放宽到全量交 LLM（保底）
         List<House> llmCandidates = filtered.isEmpty() ? candidates : filtered;
         String out = matchClient.complete(buildSearchPrompt(text, llmCandidates));
         List<Object> parsed = parseHits(out, llmCandidates, "houseId");
         if (parsed == null) {
+            // LLM 调用失败/输出非法 → 本地降级
             return MatchSearchResponse.of(degradeSearch(text, llmCandidates), true);
         }
         List<HouseMatch> matches = parsed.stream().map(m -> (HouseMatch) m).toList();
+        // LLM 判空但预过滤明明有候选（如候选太少时 LLM 偶发犹豫）→ 本地兜底，避免"有房却无结果"
+        if (matches.isEmpty() && !filtered.isEmpty()) {
+            return MatchSearchResponse.of(degradeSearch(text, filtered), true);
+        }
         return MatchSearchResponse.of(matches.size() > MAX_RESULTS ? matches.subList(0, MAX_RESULTS) : matches, false);
     }
 
@@ -173,8 +178,10 @@ public class MatchService {
                     .append(" 描述=").append(h.getDescription() == null ? "" : h.getDescription())
                     .append("\n");
         }
-        sb.append("请选出最匹配的 3-5 套，只输出 JSON 数组，每项形如 {\"houseId\": 数字, \"reason\": \"简短中文理由\"}，不要输出其他文字。");
-        sb.append("注意：候选房源全部为已审核在租状态，理由中不要编造房源状态（如已租出/已下架），只依据给定的字段描述。");
+        sb.append("请从中选出与用户需求最匹配的 1-3 套，只输出 JSON 数组，每项形如 {\"houseId\": 数字, \"reason\": \"简短中文理由\"}，不要输出其他文字。");
+        sb.append("规则：1) 理由只能依据用户输入中明确提到的条件（如区域/价格/户型/养宠），用户没提到的维度一律不得作为理由；");
+        sb.append("2) 候选房源全部为已审核在租状态，不得编造房源状态；");
+        sb.append("3) 候选列表已按用户条件预筛（区域/价格/户型等硬条件已满足），从中选出最匹配的即可，除非完全不符才输出 []。");
         return sb.toString();
     }
 
@@ -296,12 +303,16 @@ public class MatchService {
     private List<HouseMatch> degradeSearch(String text, List<House> candidates) {
         Integer maxRent = extractPrice(text);
         String region = extractRegion(text, candidates);
+        String typeKeyword = extractTypeKeyword(text);
         List<HouseMatch> result = new ArrayList<>();
         for (House h : candidates) {
             if (maxRent != null && h.getRent() != null && h.getRent().compareTo(java.math.BigDecimal.valueOf(maxRent)) > 0) {
                 continue;
             }
             if (region != null && !h.getRegion().contains(region)) {
+                continue;
+            }
+            if (typeKeyword != null && h.getHouseType() != null && !h.getHouseType().contains(typeKeyword)) {
                 continue;
             }
             result.add(new HouseMatch(h.getId(), buildFallbackReason(h, maxRent, region),
