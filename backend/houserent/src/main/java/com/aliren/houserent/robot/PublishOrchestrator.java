@@ -96,22 +96,26 @@ public class PublishOrchestrator {
         return u == null ? "" : u.getDingtalkUserId();
     }
 
-    /** 结构化房源卡片（钉钉 markdown：加粗/分割线/引用），按钮由 actionCard 提供 */
+    /**
+     * 结构化房源卡片（钉钉 markdown）。
+     * 注意：钉钉 Webhook markdown 的单个 \n 不换行，必须用 <br/> 做行内换行，空行用 \n\n。
+     */
     private String buildHouseCard(House h) {
         StringBuilder sb = new StringBuilder();
-        sb.append("**小区**：").append(h.getCommunity()).append("\n");
-        sb.append("**户型**：").append(h.getHouseType()).append(" · ").append(h.getArea()).append("㎡\n");
-        sb.append("**月租**：**").append(rentText(h.getRent())).append(" 元/月**（").append(h.getDepositPay()).append("）\n");
-        sb.append("**区域**：").append(h.getRegion()).append("\n");
+        sb.append("**小区**：").append(h.getCommunity()).append("<br/>");
+        sb.append("**户型**：").append(h.getHouseType()).append(" · ").append(h.getArea()).append("㎡<br/>");
+        sb.append("**月租**：**").append(rentText(h.getRent())).append(" 元/月**（").append(h.getDepositPay()).append("）<br/>");
+        sb.append("**区域**：").append(h.getRegion()).append("<br/>");
         sb.append("**标签**：`").append(labelText(h.getLabel())).append("`");
         if (h.getPetOk() != null && h.getPetOk() == 1) {
             sb.append(" · `可养宠`");
         }
-        sb.append("\n");
+        sb.append("<br/>");
         if (h.getCommute() != null && !h.getCommute().isBlank()) {
-            sb.append("**通勤**：🚲 ").append(h.getCommute()).append("\n");
+            sb.append("**通勤**：🚲 ").append(h.getCommute()).append("<br/>");
         }
-        sb.append("\n> ✅ 已通过管理员审核，欢迎看房\n");
+        sb.append("<br/>");
+        sb.append("> ✅ 已通过管理员审核，欢迎看房\n");
         return sb.toString();
     }
 

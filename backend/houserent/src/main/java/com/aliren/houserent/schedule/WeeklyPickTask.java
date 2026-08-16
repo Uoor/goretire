@@ -46,12 +46,16 @@ public class WeeklyPickTask {
         int i = 1;
         for (House h : picks) {
             md.append(i++).append(". **").append(h.getCommunity()).append("** ")
-                    .append(h.getHouseType()).append(" ").append(h.getArea()).append("㎡\n")
-                    .append("   月租 ").append(h.getRent()).append(" 元 · ").append(h.getRegion())
-                    .append(" · ").append(labelText(h.getLabel())).append("\n")
-                    .append("   通勤：").append(h.getCommute() == null ? "" : h.getCommute()).append("\n\n");
+                    .append(h.getHouseType()).append(" ").append(h.getArea()).append("㎡<br/>")
+                    .append("月租 **").append(rentText(h.getRent())).append(" 元** · ").append(h.getRegion())
+                    .append(" · `").append(labelText(h.getLabel())).append("`<br/>")
+                    .append("通勤：").append(h.getCommute() == null ? "" : h.getCommute()).append("\n\n");
         }
         pushClient.sendGroupCard("本周精选", md.toString());
+    }
+
+    private String rentText(java.math.BigDecimal rent) {
+        return rent == null ? "" : rent.stripTrailingZeros().toPlainString();
     }
 
     private String labelText(Integer label) {

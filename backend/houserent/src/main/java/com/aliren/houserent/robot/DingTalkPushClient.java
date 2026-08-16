@@ -108,7 +108,7 @@ public class DingTalkPushClient implements PushClient {
         if (errCode != 0) {
             log.warn("[dingtalk-push] 群推送失败: errcode={} errmsg={}", errCode, json.path("errmsg").asText(""));
         } else {
-            String _t = body.path("title").asText("");
+            String _t = body.path("markdown").path("title").asText("");
             if (_t.isEmpty()) _t = body.path("actionCard").path("title").asText("");
             log.info("[dingtalk-push] 群推送成功: {}", _t);
         }
