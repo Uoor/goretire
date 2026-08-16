@@ -23,7 +23,7 @@ public class SubscriptionParser {
     private static final Pattern PRICE_RANGE = Pattern.compile("(\\d{3,6})\\s*[-~至]\\s*(\\d{3,6})");
     private static final Pattern PRICE_MAX = Pattern.compile("(\\d{3,6})\\s*(元|以内|以下|内|预算)");
     private static final List<String> REGIONS = List.of(
-            "杭州西溪", "杭州滨江", "杭州蒋村", "北京望京", "北京西二旗",
+            "杭州西溪", "杭州滨江", "杭州西湖", "杭州蒋村", "北京望京", "北京西二旗",
             "上海张江", "上海漕河泾", "深圳南山", "深圳科技园", "深圳宝安");
     private static final List<String> TYPES = List.of("两居", "两室", "一居", "一室", "三居", "三室", "主卧", "次卧", "合租", "整租");
 

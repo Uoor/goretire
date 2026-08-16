@@ -165,6 +165,8 @@ const quickCommunities = [
   { name: '西溪蝶园', region: '杭州西溪' },
   { name: '滨江长河', region: '杭州滨江' },
   { name: '江陵路', region: '杭州滨江' },
+  { name: '翠苑', region: '杭州西湖' },
+  { name: '文三路', region: '杭州西湖' },
   { name: '北京望京', region: '北京望京' },
   { name: '西二旗', region: '北京西二旗' },
   { name: '张江高科', region: '上海张江' },

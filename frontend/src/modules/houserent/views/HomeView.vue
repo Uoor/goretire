@@ -109,6 +109,7 @@ const filters = ref({})
 const chips = [
   { group: 'region', key: 'r-xixi', label: '杭州西溪', region: '杭州西溪' },
   { group: 'region', key: 'r-binjiang', label: '杭州滨江', region: '杭州滨江' },
+  { group: 'region', key: 'r-xihu', label: '杭州西湖', region: '杭州西湖' },
   { group: 'region', key: 'r-wangjing', label: '北京望京', region: '北京望京' },
   { group: 'region', key: 'r-zhangjiang', label: '上海张江', region: '上海张江' },
   { group: 'price', key: 'p-3000', label: '3000以下', max: 3000 },
