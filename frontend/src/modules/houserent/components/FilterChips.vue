@@ -1,24 +1,24 @@
 <template>
   <div class="filter-bar">
-    <!-- 顶部筛选栏：每个入口一行，按分组去重；有选中显示已选标签与徽标 -->
+    <!-- 顶部筛选栏：按显示组聚合入口；组内有选中即高亮并显示已选值 -->
     <div
       v-for="g in groups"
-      :key="g.group"
+      :key="g.disp"
       class="f-item"
-      :class="{ on: !!modelValue[g.group] }"
-      @click="openGroup(g.group)"
+      :class="{ on: groupActive(g.disp) }"
+      @click="openGroup(g.disp)"
     >
       <span class="f-label">{{ g.label }}</span>
-      <span v-if="modelValue[g.group]" class="f-val">{{ labelOf(g.group) }}</span>
-      <i class="ph ph-caret-down" :class="{ up: activeGroup === g.group }"></i>
+      <span v-if="groupActive(g.disp)" class="f-val">{{ labelOf(g.disp) }}</span>
+      <i class="ph ph-caret-down" :class="{ up: activeDisp === g.disp }"></i>
     </div>
     <div v-if="activeCount > 0" class="f-clear" @click="clearAll">清空</div>
 
-    <!-- 底部弹层：当前分组选项单选互斥 -->
+    <!-- 底部弹层：当前显示组下所有选项（不同内部 group 独立选择） -->
     <van-popup v-model:show="showSheet" position="bottom" round :safe-area-inset-bottom="true">
       <div class="sheet">
         <div class="sheet-head">
-          <span class="sheet-title">{{ activeGroupLabel }}</span>
+          <span class="sheet-title">{{ activeLabel }}</span>
           <i class="ph ph-x" @click="showSheet = false"></i>
         </div>
         <div class="sheet-body">
@@ -34,7 +34,7 @@
           </div>
         </div>
         <div class="sheet-foot">
-          <button class="reset-btn" @click="clearGroup(activeGroup)">重置</button>
+          <button class="reset-btn" @click="clearGroup(activeDisp)">重置</button>
           <button class="confirm-btn" @click="showSheet = false">完成</button>
         </div>
       </div>
@@ -45,7 +45,8 @@
 <script setup>
 import { computed, ref } from 'vue'
 
-// 分组筛选：顶部一行按组聚合入口，点开底部弹层单选（组内互斥，组间独立）。
+// 分组筛选：顶部一行按「显示组」聚合入口，点开底部弹层选择（单选互斥、组间独立）。
+// 显示组：多个内部 group 可共用一个入口（如 pet/new → "其他"），弹层里各自独立选择。
 // modelValue: { [group]: selectedKey }，交互与旧版一致，HomeView 数据无需改动。
 const props = defineProps({
   chips: { type: Array, required: true }, // [{ key, label, group }]
@@ -54,37 +55,47 @@ const props = defineProps({
 const emit = defineEmits(['update:modelValue'])
 
 const showSheet = ref(false)
-const activeGroup = ref('')
+const activeDisp = ref('')
 
-/** 分组展示顺序与命名（按 chips 出现顺序 + 覆盖常用中文名） */
+/** 内部 group → 显示组名（同名的多个 group 聚合为一个入口） */
 const GROUP_NAMES = { region: '区域', price: '价格', type: '户型', label: '标签', pet: '其他', new: '其他' }
-const groupLabelOf = (g) => GROUP_NAMES[g] || g
+const dispOf = (group) => GROUP_NAMES[group] || group
 
-/** 去重分组：同一 group 的 chips 聚合为一个入口（pet/new 归入"其他"） */
+/** 显示组入口：按显示名去重，保持 chips 出现顺序 */
 const groups = computed(() => {
   const seen = new Set()
   const list = []
   for (const c of props.chips) {
-    if (!seen.has(c.group)) {
-      seen.add(c.group)
-      list.push({ group: c.group, label: groupLabelOf(c.group) })
+    const d = dispOf(c.group)
+    if (!seen.has(d)) {
+      seen.add(d)
+      list.push({ disp: d, label: d })
     }
   }
   return list
 })
 
-const activeGroupLabel = computed(() => groupLabelOf(activeGroup.value))
-const groupChips = computed(() => props.chips.filter((c) => c.group === activeGroup.value))
+const activeLabel = computed(() => activeDisp.value)
+const groupChips = computed(() => props.chips.filter((c) => dispOf(c.group) === activeDisp.value))
 
+/** 已选中 chip 数（不同内部 group 各计一次，pet/new 可同时选中算 2 个筛选） */
 const activeCount = computed(() => Object.keys(props.modelValue).length)
 
-function labelOf(group) {
-  const chip = props.chips.find((c) => c.key === props.modelValue[group])
-  return chip ? chip.label : ''
+/** 显示组下所有已选中值文案（多个用 · 连接） */
+function labelOf(disp) {
+  return props.chips
+    .filter((c) => dispOf(c.group) === disp && props.modelValue[c.group] === c.key)
+    .map((c) => c.label)
+    .join('·')
 }
 
-function openGroup(group) {
-  activeGroup.value = group
+/** 显示组下是否已有选中（多个内部 group 任一选中即高亮） */
+function groupActive(disp) {
+  return props.chips.some((c) => dispOf(c.group) === disp && props.modelValue[c.group] != null)
+}
+
+function openGroup(disp) {
+  activeDisp.value = disp
   showSheet.value = true
 }
 
@@ -98,9 +109,11 @@ function pick(chip) {
   emit('update:modelValue', next)
 }
 
-function clearGroup(group) {
+function clearGroup(disp) {
   const next = { ...props.modelValue }
-  delete next[group]
+  for (const c of props.chips) {
+    if (dispOf(c.group) === disp) delete next[c.group]
+  }
   emit('update:modelValue', next)
 }
 
@@ -120,12 +133,18 @@ function clearAll() {
   position: sticky;
   top: 0;
   z-index: 10;
+  /* 防止任何子项把页面撑宽（clip 不建立滚动容器，不破坏 sticky 吸顶） */
+  max-width: 100vw;
+  overflow-x: clip;
 }
 .f-item {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 3px;
-  padding: 6px 10px;
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 6px 4px;
   border-radius: 8px;
   font-size: 0.74rem;
   color: var(--fg2);
@@ -133,7 +152,7 @@ function clearAll() {
   border: 1px solid transparent;
   cursor: pointer;
   white-space: nowrap;
-  flex-shrink: 0;
+  overflow: hidden;
   transition: all 0.15s ease;
 }
 .f-item.on {
@@ -149,6 +168,7 @@ function clearAll() {
   overflow: hidden;
   text-overflow: ellipsis;
   font-weight: 600;
+  white-space: nowrap;
 }
 .f-item i {
   font-size: 0.7rem;
