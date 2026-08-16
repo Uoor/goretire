@@ -1,5 +1,5 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
-import { getAuthCode } from '@/utils/dd'
+import { getAuthCode, configDingtalk } from '@/utils/dd'
 import { authApi } from '@/api'
 import { useUserStore } from '@/store/user'
 
@@ -27,6 +27,8 @@ const router = createRouter({
 async function ensureLogin() {
   const store = useUserStore()
   if (store.isLoggedIn) return
+  // 钉钉容器内先 dd.config 授权 JSAPI，再取免登 code；浏览器联调直接跳过
+  await configDingtalk()
   const code = await getAuthCode()
   const data = await authApi.login(code)
   store.setSession(data.token, data.user)

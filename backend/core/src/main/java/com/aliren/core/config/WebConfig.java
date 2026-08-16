@@ -28,11 +28,11 @@ public class WebConfig implements WebMvcConfigurer {
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(authInterceptor)
                 .addPathPatterns("/api/**")
-                .excludePathPatterns("/api/auth", "/error");
+                .excludePathPatterns("/api/auth", "/api/dingtalk/jsapi-sign", "/error");
         // 限流在鉴权之后（依赖 UserContext）
         registry.addInterceptor(rateLimitInterceptor)
                 .addPathPatterns("/api/**")
-                .excludePathPatterns("/api/auth", "/error");
+                .excludePathPatterns("/api/auth", "/api/dingtalk/jsapi-sign", "/error");
     }
 
     /** 上传目录静态映射：/uploads/** → 本地目录 */
