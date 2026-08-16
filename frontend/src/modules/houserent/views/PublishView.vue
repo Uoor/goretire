@@ -201,7 +201,8 @@ async function submit() {
       images: JSON.stringify(images)
     })
     showSuccessToast('已提交审核，预计 2 小时内上架')
-    router.push({ name: 'house-detail', params: { id } })
+    // 新房源为待审核状态，详情页对其 404；跳「我的发布」查看审核状态
+    router.push({ name: 'me' })
   } catch (e) {
     showToast(e.message || '发布失败')
   } finally {

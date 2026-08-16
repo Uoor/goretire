@@ -25,7 +25,10 @@
         <span v-if="matchResult.degraded" class="deg-tag">本地降级</span>
         <i class="ph ph-x" @click="matchResult = null"></i>
       </div>
-      <div v-if="matchResult.matches.length === 0" class="match-empty">没有找到合适的房源，换个说法试试</div>
+      <div v-if="matchResult.matches.length === 0" class="match-empty">
+        没有找到合适的房源，换个说法试试
+        <button class="to-demand" @click="goDemand">把需求挂到求租墙，有新房源提醒我</button>
+      </div>
       <div v-for="m in matchResult.matches" :key="m.houseId" class="match-card" @click="openHouse(m.houseId)">
         <!-- 房源摘要（产品 4.4.1：3-5 套 + 匹配理由） -->
         <template v-if="houseOf(m)">
@@ -166,6 +169,12 @@ function openHouse(id) {
   router.push({ name: 'house-detail', params: { id } })
 }
 
+/** 产品 4.4.2：即时找房没结果时，一键把需求挂上求租墙 */
+function goDemand() {
+  matchResult.value = null
+  router.push({ name: 'demand' })
+}
+
 watch(filters, load, { deep: true })
 
 onMounted(async () => {
@@ -266,6 +275,22 @@ onMounted(async () => {
   font-size: 0.8rem;
   color: var(--fg3);
   padding: 12px 0;
+}
+.to-demand {
+  display: block;
+  margin-top: 10px;
+  width: 100%;
+  background: var(--primary-soft);
+  color: var(--primary-deep);
+  border: 1px solid rgba(255, 106, 0, 0.3);
+  border-radius: 10px;
+  padding: 10px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.to-demand:active {
+  opacity: 0.85;
 }
 .match-card {
   background: var(--card);

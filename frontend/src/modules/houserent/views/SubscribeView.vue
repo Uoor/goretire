@@ -22,15 +22,18 @@
     </div>
 
     <div class="list">
-      <div v-for="s in subs" :key="s.id" class="sub-item" @click="openDetail(s)">
-        <div class="txt">
-          <div class="q">{{ s.rawText }}</div>
-          <div class="st">{{ typeText(s.type) }} · 已推送 {{ s.pushCount || 0 }} 次</div>
-          <div v-if="s.quietHours" class="qh">🔕 免打扰 {{ quietText(s.quietHours) }}</div>
+      <van-skeleton v-if="loading" v-for="i in 3" :key="i" title :row="2" class="sk" />
+      <template v-else>
+        <div v-for="s in subs" :key="s.id" class="sub-item" @click="openDetail(s)">
+          <div class="txt">
+            <div class="q">{{ s.rawText }}</div>
+            <div class="st">{{ typeText(s.type) }} · 已推送 {{ s.pushCount || 0 }} 次</div>
+            <div v-if="s.quietHours" class="qh">🔕 免打扰 {{ quietText(s.quietHours) }}</div>
+          </div>
+          <div class="sw" :class="{ on: s.status === 0 }" @click.stop="toggle(s)"></div>
         </div>
-        <div class="sw" :class="{ on: s.status === 0 }" @click.stop="toggle(s)"></div>
-      </div>
-      <EmptyState v-if="subs.length === 0" icon="ph ph-bell" text="还没有订阅，创建一条试试" />
+        <EmptyState v-if="subs.length === 0" icon="ph ph-bell" text="还没有订阅，创建一条试试" />
+      </template>
     </div>
 
     <!-- 订阅详情：编辑 / 免打扰 / 推送历史 -->
@@ -80,6 +83,7 @@ import EmptyState from '@/modules/houserent/components/EmptyState.vue'
 import { subscribeApi } from '@/modules/houserent/api'
 
 const subs = ref([])
+const loading = ref(false)
 const rawText = ref('')
 const type = ref(1)
 const creating = ref(false)
@@ -177,10 +181,13 @@ async function remove() {
 }
 
 async function load() {
+  loading.value = true
   try {
     subs.value = await subscribeApi.list()
   } catch (e) {
     showToast(e.message || '加载失败')
+  } finally {
+    loading.value = false
   }
 }
 
@@ -302,6 +309,9 @@ onMounted(load)
 }
 .list {
   padding: 12px 16px;
+}
+.sk {
+  border-radius: 14px;
 }
 .sub-item {
   background: var(--card);

@@ -16,7 +16,9 @@
     </div>
 
     <div class="wall" v-if="tab === 'wall'">
-      <div v-for="d in wall" :key="d.id" class="match-card">
+      <van-skeleton v-if="loading" v-for="i in 3" :key="i" title :row="2" class="sk" />
+      <template v-else>
+        <div v-for="d in wall" :key="d.id" class="match-card">
         <div class="mc-top">
           <b>{{ d.region }}</b>
           <span v-if="d.houseType" class="mc-tag">{{ d.houseType }}</span>
@@ -26,13 +28,19 @@
           </span>
         </div>
         <div v-if="d.description" class="mc-desc">{{ d.description }}</div>
+        <div v-if="d.requirements" class="mc-reqs">
+          <span v-for="r in reqs(d.requirements)" :key="r" class="req-tag">{{ r }}</span>
+        </div>
         <div class="mc-meta">入住：{{ d.moveInDate || '时间灵活' }} · 租期：{{ d.leaseTerm || '面议' }}</div>
       </div>
       <EmptyState v-if="wall.length === 0" text="求租墙还空着，来发布第一个需求吧" />
+      </template>
     </div>
 
     <div class="wall" v-else>
-      <div v-for="d in mine" :key="d.id" class="match-card">
+      <van-skeleton v-if="loading" v-for="i in 3" :key="i" title :row="2" class="sk" />
+      <template v-else>
+        <div v-for="d in mine" :key="d.id" class="match-card">
         <div class="mc-top">
           <b>{{ d.region }}</b>
           <span v-if="d.houseType" class="mc-tag">{{ d.houseType }}</span>
@@ -45,6 +53,7 @@
         </div>
       </div>
       <EmptyState v-if="mine.length === 0" text="还没有发布过求租需求" />
+      </template>
     </div>
 
     <!-- 发布/编辑需求弹层 -->
@@ -56,6 +65,7 @@
         <div class="form-field"><input v-model="createForm.budget" placeholder="预算区间（如：4000-6000）" /></div>
         <div class="form-field"><input v-model="createForm.moveInDate" type="date" /></div>
         <div class="form-field"><input v-model="createForm.leaseTerm" placeholder="期望租期（如：一年）" /></div>
+        <div class="form-field"><input v-model="createForm.requirements" placeholder="特殊要求（可空，逗号分隔：如 可养宠,带车位,南向）" /></div>
         <div class="form-field"><input v-model="createForm.description" placeholder="一句话描述（可空）" /></div>
         <button class="btn-primary" :disabled="creating" @click="create">
           {{ creating ? '发布中…' : '发布到求租墙' }}
@@ -74,10 +84,11 @@ import { demandApi } from '@/modules/houserent/api'
 
 const tab = ref('wall')
 const wall = ref([])
+const loading = ref(false)
 const mine = ref([])
 const showCreate = ref(false)
 const creating = ref(false)
-const createForm = reactive({ region: '', houseType: '', budget: '', moveInDate: '', leaseTerm: '', description: '' })
+const createForm = reactive({ region: '', houseType: '', budget: '', moveInDate: '', leaseTerm: '', requirements: '', description: '' })
 
 function budgetText(budget) {
   try {
@@ -85,6 +96,15 @@ function budgetText(budget) {
     return [b.min, b.max].filter((v) => v != null).join('-') + ' 元'
   } catch {
     return budget
+  }
+}
+/** 特殊要求 JSON 数组 → 标签列表 */
+function reqs(requirements) {
+  try {
+    const arr = JSON.parse(requirements)
+    return Array.isArray(arr) ? arr : []
+  } catch {
+    return []
   }
 }
 function statusText(s) {
@@ -95,17 +115,23 @@ function statusClass(s) {
 }
 
 async function loadWall() {
+  loading.value = true
   try {
     wall.value = await demandApi.list()
   } catch (e) {
     showToast(e.message || '加载失败')
+  } finally {
+    loading.value = false
   }
 }
 async function loadMine() {
+  loading.value = true
   try {
     mine.value = await demandApi.mine()
   } catch (e) {
     showToast(e.message || '加载失败')
+  } finally {
+    loading.value = false
   }
 }
 
@@ -122,12 +148,16 @@ async function create() {
           return JSON.stringify({ min: min || null, max: max || null })
         })()
       : null
+    const requirements = createForm.requirements
+      ? JSON.stringify(createForm.requirements.split(/[,，]/).map((s) => s.trim()).filter(Boolean))
+      : null
     await demandApi.create({
       region: createForm.region.trim(),
       houseType: createForm.houseType.trim(),
       budget,
       moveInDate: createForm.moveInDate || null,
       leaseTerm: createForm.leaseTerm.trim(),
+      requirements,
       description: createForm.description.trim()
     })
     showSuccessToast('已发布到求租墙')
@@ -228,6 +258,9 @@ onMounted(() => {
 .wall {
   padding: 12px 16px;
 }
+.sk {
+  border-radius: 14px;
+}
 .match-card {
   background: var(--card);
   border-radius: 14px;
@@ -271,6 +304,19 @@ onMounted(() => {
   color: var(--fg2);
   margin-top: 8px;
   line-height: 1.5;
+}
+.mc-reqs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+.req-tag {
+  font-size: 0.64rem;
+  color: var(--primary-deep);
+  background: var(--primary-soft);
+  padding: 2px 8px;
+  border-radius: 999px;
 }
 .mc-meta {
   font-size: 0.68rem;
