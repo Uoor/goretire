@@ -54,7 +54,7 @@ public class GuideService {
         return !workspaceId.isEmpty() && !operatorId.isEmpty();
     }
 
-    /** 板块列表（根下文件夹） */
+    /** 板块列表（根下文件夹；文档/文件（带扩展名如 .adoc）不是板块，跳过） */
     public List<GuideSection> sections() {
         JsonNode root = getJson("/v2.0/wiki/nodes?operatorId=" + operatorId
                 + "&spaceId=" + workspaceId + "&parentNodeId=" + rootNodeId());
@@ -63,6 +63,8 @@ public class GuideService {
             String name = n.path("name").asText("");
             String nodeId = n.path("nodeId").asText("");
             if (name.isBlank() || nodeId.isBlank()) continue;
+            // 文件夹无扩展名；文档/文件带扩展名（.adoc 等）→ 不作为板块
+            if (name.contains(".")) continue;
             out.add(new GuideSection(nodeId, name, n.path("icon").asText("")));
         }
         return out;
