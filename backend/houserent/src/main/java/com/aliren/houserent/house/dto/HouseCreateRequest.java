@@ -23,6 +23,7 @@ public class HouseCreateRequest {
     private BigDecimal rent;
     @NotBlank(message = "押付方式不能为空")
     private String depositPay;
+    private String leaseTerm;
     @NotNull(message = "标签不能为空")
     private Integer label;
     private Integer petOk;

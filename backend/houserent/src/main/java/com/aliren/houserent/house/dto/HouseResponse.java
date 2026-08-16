@@ -20,6 +20,7 @@ public class HouseResponse {
     private Integer area;
     private BigDecimal rent;
     private String depositPay;
+    private String leaseTerm;
     private Integer label;
     private Integer petOk;
     private String commute;
@@ -42,6 +43,7 @@ public class HouseResponse {
         r.setArea(h.getArea());
         r.setRent(h.getRent());
         r.setDepositPay(h.getDepositPay());
+        r.setLeaseTerm(h.getLeaseTerm());
         r.setLabel(h.getLabel());
         r.setPetOk(h.getPetOk());
         r.setCommute(h.getCommute());

@@ -19,7 +19,17 @@
           <b>{{ h.community }} · {{ h.houseType }} {{ h.area }}㎡</b>
           <span class="ac-price num">{{ h.rent }} 元/月</span>
         </div>
-        <div class="ac-meta">{{ h.region }} · {{ h.depositPay }} · 房号 {{ h.roomNo || '—' }} · 发布人#{{ h.publisherId }}</div>
+        <div class="ac-meta">{{ h.region }} · {{ h.depositPay }}{{ h.leaseTerm ? ' · ' + h.leaseTerm : '' }} · 房号 {{ h.roomNo || '—' }} · 发布人#{{ h.publisherId }}</div>
+        <!-- 图片预览（审核必须看图） -->
+        <div v-if="hImages(h).length" class="ac-imgs">
+          <img v-for="(img, i) in hImages(h).slice(0, 6)" :key="i" :src="img" alt="" @click="preview = img" />
+        </div>
+        <div class="ac-tags">
+          <span class="ac-tag">{{ labelText(h.label) }}</span>
+          <span v-if="h.petOk === 1" class="ac-tag">可养宠</span>
+          <span v-if="h.commute" class="ac-tag">{{ h.commute }}</span>
+          <span class="ac-tag time">{{ timeText(h.createdAt) }}</span>
+        </div>
         <div v-if="h.description" class="ac-desc">{{ h.description }}</div>
         <div class="ac-ops">
           <button class="op pass" @click="audit(h, true, '')">通过</button>
@@ -29,10 +39,18 @@
       <EmptyState v-if="pending.length === 0" text="没有待审核房源" />
     </div>
 
-    <!-- 举报 -->
+    <!-- 举报：状态筛选 + 查看被举报房源 -->
     <div v-else-if="tab === 'reports'" class="panel">
+      <div class="rp-filter">
+        <span class="rp-tab" :class="{ on: reportFilter === 0 }" @click="switchReport(0)">待处理</span>
+        <span class="rp-tab" :class="{ on: reportFilter === 1 }" @click="switchReport(1)">已处理</span>
+        <span class="rp-tab" :class="{ on: reportFilter === -1 }" @click="switchReport(-1)">全部</span>
+      </div>
       <div v-for="r in reports" :key="r.id" class="audit-card">
-        <div class="ac-top"><b>举报 #{{ r.id }} · {{ targetText(r.targetType) }}#{{ r.targetId }}</b></div>
+        <div class="ac-top">
+          <b>{{ targetText(r.targetType) }} #{{ r.targetId }}</b>
+          <button class="view-house" @click="viewReportedHouse(r)">查看房源</button>
+        </div>
         <div class="ac-desc">{{ r.reason }}</div>
         <div class="ac-meta">举报人 #{{ r.reporterId }} · {{ r.status === 1 ? '已处理' : '待处理' }}</div>
         <div v-if="r.status === 0" class="ac-ops">
@@ -71,6 +89,31 @@
         <button class="btn-primary" :disabled="!handleResult.trim()" @click="doHandleReport">确认处理</button>
       </div>
     </van-popup>
+
+    <!-- 审核图大图预览 -->
+    <van-popup v-model:show="preview" position="center" round>
+      <img v-if="preview" :src="preview" class="preview-img" alt="" />
+    </van-popup>
+
+    <!-- 被举报房源信息 -->
+    <van-popup v-model:show="showReported" position="bottom" round>
+      <div class="mini-panel" v-if="reportedHouse">
+        <h4>被举报房源</h4>
+        <div class="ac-top">
+          <b>{{ reportedHouse.community }} · {{ reportedHouse.houseType }} {{ reportedHouse.area }}㎡</b>
+          <span class="ac-price num">{{ reportedHouse.rent }} 元/月</span>
+        </div>
+        <div class="ac-meta">{{ reportedHouse.region }} · {{ reportedHouse.depositPay }} · 状态：{{ statusText(reportedHouse) }}</div>
+        <div v-if="reportedHouse.description" class="ac-desc">{{ reportedHouse.description }}</div>
+        <div v-if="reportedHouse.auditStatus === 1 && reportedHouse.rackStatus === 0" class="ac-ops">
+          <button class="op reject" @click="quickOffRack(reportedHouse)">下架该房源</button>
+        </div>
+      </div>
+      <div class="mini-panel" v-else>
+        <h4>被举报房源</h4>
+        <p class="ac-desc">{{ reportedError || '房源不存在或已删除' }}</p>
+      </div>
+    </van-popup>
   </div>
 </template>
 
@@ -79,12 +122,14 @@ import { onMounted, ref } from 'vue'
 import { showToast, showSuccessToast } from 'vant'
 import TopBar from '@/modules/houserent/components/TopBar.vue'
 import EmptyState from '@/modules/houserent/components/EmptyState.vue'
-import { adminApi } from '@/modules/houserent/api'
+import { adminApi, houseApi } from '@/modules/houserent/api'
+import { parseImages, timeAgo } from '@/utils/format'
 
 const tab = ref('audit')
 const pending = ref([])
 const reports = ref([])
 const reportPending = ref(0)
+const reportFilter = ref(0)
 const stats = ref(null)
 
 const showReject = ref(false)
@@ -93,9 +138,30 @@ const rejectReason = ref('')
 const showHandle = ref(false)
 const handleTarget = ref(null)
 const handleResult = ref('')
+const preview = ref('')
+const showReported = ref(false)
+const reportedHouse = ref(null)
+const reportedError = ref('')
 
 function targetText(t) {
   return t === 1 ? '房源' : '用户'
+}
+
+function hImages(h) {
+  return parseImages(h.images)
+}
+function labelText(label) {
+  return { 1: '房东直租', 2: '校友转租', 3: '合租拼室友' }[label] || ''
+}
+function timeText(t) {
+  return t ? `${timeAgo(t)} 发布` : ''
+}
+function statusText(h) {
+  if (h.rackStatus === 1) return '已租出'
+  if (h.rackStatus === 2) return '已下架'
+  if (h.auditStatus === 2) return '已驳回'
+  if (h.auditStatus === 0) return '待审核'
+  return '在租中'
 }
 
 async function loadAudit() {
@@ -107,10 +173,43 @@ async function loadAudit() {
 }
 async function loadReports() {
   try {
-    reports.value = await adminApi.reports(0)
-    reportPending.value = reports.value.length
+    reports.value = await adminApi.reports(reportFilter.value === -1 ? null : reportFilter.value)
+    reportPending.value = reports.value.filter((r) => r.status === 0).length
   } catch (e) {
     showToast(e.message || '加载失败')
+  }
+}
+
+/** 举报状态筛选切换 */
+function switchReport(status) {
+  reportFilter.value = status
+  loadReports()
+}
+
+/** 查看被举报房源（供举报处理参考上下文） */
+async function viewReportedHouse(r) {
+  if (r.targetType !== 1) {
+    showToast('暂仅支持查看房源类举报')
+    return
+  }
+  reportedHouse.value = null
+  reportedError.value = ''
+  showReported.value = true
+  try {
+    reportedHouse.value = await houseApi.detail(r.targetId)
+  } catch (e) {
+    reportedError.value = e.message || '房源不存在或已删除'
+  }
+}
+
+/** 举报处理时一键下架该房源（常见处置） */
+async function quickOffRack(h) {
+  try {
+    await houseApi.offRack(h.id)
+    showSuccessToast('已下架该房源')
+    showReported.value = false
+  } catch (e) {
+    showToast(e.message || '操作失败')
   }
 }
 async function loadStats() {
@@ -224,6 +323,72 @@ onMounted(loadAudit)
   font-size: 0.68rem;
   color: var(--fg3);
   margin-top: 6px;
+}
+.ac-imgs {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+  overflow-x: auto;
+}
+.ac-imgs img {
+  width: 72px;
+  height: 72px;
+  border-radius: 8px;
+  object-fit: cover;
+  flex-shrink: 0;
+  cursor: pointer;
+  background: linear-gradient(135deg, #ffd9c2, #ffb98a);
+}
+.ac-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+.ac-tag {
+  font-size: 0.62rem;
+  color: var(--primary-deep);
+  background: var(--primary-soft);
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+.ac-tag.time {
+  color: var(--fg3);
+  background: var(--bg);
+}
+.rp-filter {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.rp-tab {
+  font-size: 0.74rem;
+  padding: 5px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  color: var(--fg2);
+  background: #fff;
+  cursor: pointer;
+}
+.rp-tab.on {
+  background: var(--primary-soft);
+  border-color: var(--primary);
+  color: var(--primary-deep);
+  font-weight: 600;
+}
+.view-house {
+  font-size: 0.66rem;
+  color: var(--accent);
+  background: var(--accent-soft);
+  border: none;
+  padding: 4px 10px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.preview-img {
+  width: 70vw;
+  max-width: 360px;
+  border-radius: 12px;
 }
 .ac-desc {
   font-size: 0.76rem;

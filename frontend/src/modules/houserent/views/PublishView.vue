@@ -20,7 +20,19 @@
     <div class="form-sec">
       <div class="form-label"><span>小区名称</span><span class="req">*</span></div>
       <div class="form-field">
-        <input v-model="form.community" placeholder="如：西溪八方城" />
+        <input v-model="form.community" placeholder="如：西溪八方城" @blur="autoRegion" />
+      </div>
+      <!-- 常用小区快捷选择：选小区自动带出区域（产品第 2 步"AI 自动带出区域"） -->
+      <div class="quick-communities">
+        <span
+          v-for="c in quickCommunities"
+          :key="c.name"
+          class="qc-chip"
+          :class="{ on: form.community === c.name }"
+          @click="pickCommunity(c)"
+        >
+          {{ c.name }}
+        </span>
       </div>
       <div class="form-label"><span>房号（仅审核可见）</span><span class="hint">公开展示只到小区</span></div>
       <div class="form-field">
@@ -67,6 +79,18 @@
           @click="form.depositPay = p"
         >
           {{ p }}
+        </div>
+      </div>
+      <div class="form-label"><span>租期</span><span class="hint">可空，默认面议</span></div>
+      <div class="seg">
+        <div
+          v-for="t in leaseTerms"
+          :key="t"
+          class="seg-item"
+          :class="{ on: form.leaseTerm === t }"
+          @click="form.leaseTerm = t"
+        >
+          {{ t }}
         </div>
       </div>
     </div>
@@ -124,10 +148,23 @@ const priceTip = ref(null)
 
 const houseTypes = ['1室0厅', '1室1厅', '2室1厅', '2室2厅', '3室1厅', '3室2厅', '主卧', '次卧', '整租']
 const payTypes = ['押一付一', '押一付三', '押二付一', '半年付', '年付']
+const leaseTerms = ['面议', '半年', '一年', '两年', '三年以上']
 const labels = [
   { value: 1, text: '房东直租' },
   { value: 2, text: '校友转租' },
   { value: 3, text: '合租拼室友' }
+]
+
+// 常用小区 → 区域映射（模拟"选小区 AI 带出区域"，无真实小区库时先用常用列表）
+const quickCommunities = [
+  { name: '西溪八方城', region: '杭州西溪' },
+  { name: '西溪蝶园', region: '杭州西溪' },
+  { name: '滨江长河', region: '杭州滨江' },
+  { name: '江陵路', region: '杭州滨江' },
+  { name: '北京望京', region: '北京望京' },
+  { name: '西二旗', region: '北京西二旗' },
+  { name: '张江高科', region: '上海张江' },
+  { name: '漕河泾', region: '上海漕河泾' }
 ]
 
 const form = reactive({
@@ -138,11 +175,30 @@ const form = reactive({
   area: null,
   rent: null,
   depositPay: '',
+  leaseTerm: '',
   label: null,
   petOk: 0,
   commute: '',
   description: ''
 })
+
+/** 快捷选择小区：自动带出区域并触发定价参考 */
+function pickCommunity(c) {
+  form.community = c.name
+  form.region = c.region
+  priceTip.value = null
+  loadRegionPrice()
+}
+
+/** 手动填小区失焦：若区域为空且命中常用映射则自动带出 */
+function autoRegion() {
+  if (form.region.trim()) return
+  const hit = quickCommunities.find((c) => c.name === form.community.trim())
+  if (hit) {
+    form.region = hit.region
+    loadRegionPrice()
+  }
+}
 
 /** 区域失焦：拉取该区域参考租金（AI 定价参考） */
 async function loadRegionPrice() {
@@ -256,6 +312,28 @@ async function submit() {
 .ai-tip i {
   color: var(--primary);
   margin-top: 2px;
+}
+.quick-communities {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+.qc-chip {
+  font-size: 0.7rem;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: #fff;
+  color: var(--fg2);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.qc-chip.on {
+  background: var(--primary-soft);
+  border-color: var(--primary);
+  color: var(--primary-deep);
+  font-weight: 600;
 }
 .form-field {
   border: 1px solid var(--border);

@@ -39,6 +39,7 @@ CREATE TABLE IF NOT EXISTS `house` (
   `area`            INT           NOT NULL COMMENT '面积（平方米）',
   `rent`            DECIMAL(10,2) NOT NULL COMMENT '租金（元/月）',
   `deposit_pay`     VARCHAR(16)   NOT NULL COMMENT '押付方式',
+  `lease_term`      VARCHAR(16)   NOT NULL DEFAULT '' COMMENT '租期（如：一年）',
   `label`           TINYINT       NOT NULL COMMENT '房源标签：1=房东直租 2=校友转租 3=合租拼室友',
   `pet_ok`          TINYINT       NOT NULL DEFAULT 0 COMMENT '是否允许宠物',
   `commute`         VARCHAR(64)   NOT NULL DEFAULT '' COMMENT '通勤说明',

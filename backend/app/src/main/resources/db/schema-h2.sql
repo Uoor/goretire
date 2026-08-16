@@ -37,6 +37,7 @@ CREATE TABLE house (
   area             INT          NOT NULL,
   rent             DECIMAL(10,2) NOT NULL,
   deposit_pay      VARCHAR(16)  NOT NULL,
+  lease_term       VARCHAR(16)  NOT NULL DEFAULT '',
   label            TINYINT      NOT NULL,
   pet_ok           TINYINT      NOT NULL DEFAULT 0,
   commute          VARCHAR(64)  NOT NULL DEFAULT '',

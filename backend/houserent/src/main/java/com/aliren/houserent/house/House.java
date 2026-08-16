@@ -37,6 +37,7 @@ public class House {
     private Integer area;
     private BigDecimal rent;
     private String depositPay;
+    private String leaseTerm;
     private Integer label;
     private Integer petOk;
     private String commute;

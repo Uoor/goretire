@@ -38,6 +38,7 @@ public class HouseService {
         h.setArea(req.getArea());
         h.setRent(req.getRent());
         h.setDepositPay(req.getDepositPay());
+        h.setLeaseTerm(req.getLeaseTerm());
         h.setLabel(req.getLabel());
         h.setPetOk(req.getPetOk() == null ? 0 : req.getPetOk());
         h.setCommute(req.getCommute());
