@@ -1,5 +1,6 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
 import { getAuthCode, configDingtalk, isDingTalk } from '@/utils/dd'
+import { showDialog } from 'vant'
 import { authApi } from '@/api'
 import { useUserStore } from '@/store/user'
 
@@ -67,8 +68,14 @@ router.beforeEach(async (to) => {
   try {
     await ensureLogin()
   } catch (e) {
-    // 免登失败（非组织成员/JSAPI 被拦等）：阻断并引导加入组织；其余放行
+    // 免登失败（非组织成员/JSAPI 被拦等）：先弹窗说明，用户确认后再引导加入组织
     if (e?.__loginFailed) {
+      await showDialog({
+        title: '校友专属服务',
+        message: '「校友安居」是面向阿里/蚂蚁校友社群的专属租房服务，需要先加入社群组织才能使用。',
+        confirmButtonText: '查看如何加入',
+        closeOnClickOverlay: false
+      }).catch(() => {})
       return { name: 'join' }
     }
     console.warn('[router] login failed:', e)
