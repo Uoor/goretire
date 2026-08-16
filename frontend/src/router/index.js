@@ -40,23 +40,34 @@ async function ensureLogin() {
     if (!uid || uid === 'dev-code') store.clear()
   }
   if (store.isLoggedIn) return
-  // 钉钉容器内先 dd.config 授权 JSAPI，再取免登 code；浏览器联调直接跳过
-  await configDingtalk()
-  const code = await getAuthCode()
-  const data = await authApi.login(code)
-  store.setSession(data.token, data.user)
+  try {
+    // 钉钉容器内先 dd.config 授权 JSAPI，再取免登 code；浏览器联调直接跳过
+    await configDingtalk()
+    const code = await getAuthCode()
+    const data = await authApi.login(code)
+    store.setSession(data.token, data.user)
+  } catch (e) {
+    // 钉钉容器内免登失败（含换 userid 失败、requestAuthCode/JSAPI 被拦）：
+    // 用户无法完成身份验证，统一标记引导「加入组织」页
+    if (inDingTalk) {
+      const err = e instanceof Error ? e : new Error(String(e))
+      if (!err.__loginFailed) err.__loginFailed = true
+      throw err
+    }
+    throw e
+  }
 }
 
 router.beforeEach(async (to) => {
   document.title = to.meta.title ? `校友安居 · ${to.meta.title}` : '校友安居'
-  // 加入组织页：已登录用户无需停留
-  if (to.name === 'join' && useUserStore().isLoggedIn) {
-    return { name: 'home' }
+  // 加入组织页：已登录回首页；未登录直接放行（不再触发免登，避免死循环）
+  if (to.name === 'join') {
+    return useUserStore().isLoggedIn ? { name: 'home' } : true
   }
   try {
     await ensureLogin()
   } catch (e) {
-    // 免登失败（非组织成员等）：阻断并引导加入组织；其余放行（页面级请求会处理）
+    // 免登失败（非组织成员/JSAPI 被拦等）：阻断并引导加入组织；其余放行
     if (e?.__loginFailed) {
       return { name: 'join' }
     }
