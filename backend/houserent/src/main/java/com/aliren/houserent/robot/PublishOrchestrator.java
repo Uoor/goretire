@@ -12,6 +12,7 @@ import com.aliren.core.user.User;
 import com.aliren.core.user.UserMapper;
 import com.aliren.houserent.subscribe.Subscribe;
 import com.aliren.houserent.subscribe.SubscribeMapper;
+import com.fasterxml.jackson.databind.JsonNode;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -40,6 +41,7 @@ public class PublishOrchestrator {
     private final UserMapper userMapper;
     /** H5 访问地址（配置 aliren.h5.base-url），用于卡片跳转；未配置时卡片不带跳转按钮 */
     private final String h5BaseUrl;
+    private final com.fasterxml.jackson.databind.ObjectMapper objectMapper = new com.fasterxml.jackson.databind.ObjectMapper();
 
     public PublishOrchestrator(HouseMapper houseMapper, MatchService matchService, PushClient pushClient,
                                PushLogService pushLogService, SubscribeMapper subscribeMapper,
@@ -99,9 +101,14 @@ public class PublishOrchestrator {
     /**
      * 结构化房源卡片（钉钉 markdown）。
      * 注意：钉钉 Webhook markdown 的单个 \n 不换行，必须用 <br/> 做行内换行，空行用 \n\n。
+     * 封面图用 ![alt](url)，相对路径（/uploads/）按 h5BaseUrl 拼绝对地址。
      */
     private String buildHouseCard(House h) {
         StringBuilder sb = new StringBuilder();
+        String cover = coverUrl(h);
+        if (!cover.isBlank()) {
+            sb.append("![🏠 房源封面](").append(cover).append(")\n\n");
+        }
         sb.append("**小区**：").append(h.getCommunity()).append("<br/>");
         sb.append("**户型**：").append(h.getHouseType()).append(" · ").append(h.getArea()).append("㎡<br/>");
         sb.append("**月租**：**").append(rentText(h.getRent())).append(" 元/月**（").append(h.getDepositPay()).append("）<br/>");
@@ -117,6 +124,29 @@ public class PublishOrchestrator {
         sb.append("<br/>");
         sb.append("> ✅ 已通过管理员审核，欢迎看房\n");
         return sb.toString();
+    }
+
+    /** 卡片封面图：images 首图；相对路径拼 H5 地址 */
+    private String coverUrl(House h) {
+        if (h.getImages() == null || h.getImages().isBlank()) {
+            return "";
+        }
+        try {
+            JsonNode arr = objectMapper.readTree(h.getImages());
+            if (arr.isArray() && !arr.isEmpty()) {
+                String url = arr.get(0).asText("").trim();
+                if (url.isBlank()) {
+                    return "";
+                }
+                if (url.startsWith("/")) {
+                    return h5BaseUrl + url;
+                }
+                return url;
+            }
+        } catch (Exception ignored) {
+            // 非法 JSON 忽略
+        }
+        return "";
     }
 
     /** 金额去尾零：6000.00 → 6000 */
