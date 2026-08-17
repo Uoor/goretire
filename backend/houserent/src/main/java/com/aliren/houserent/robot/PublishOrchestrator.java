@@ -164,7 +164,7 @@ public class PublishOrchestrator {
         }
         sb.append("**小区**：").append(h.getCommunity()).append("<br/>");
         sb.append("**户型**：").append(h.getHouseType()).append(" · ").append(h.getArea()).append("㎡<br/>");
-        sb.append("**月租**：**").append(rentText(h.getRent())).append(" 元/月**（").append(h.getDepositPay())
+        sb.append("**月租**：**").append(h.getRentText()).append(" 元/月**（").append(h.getDepositPay())
                 .append("）<br/>");
         sb.append("**区域**：").append(h.getRegion()).append("<br/>");
         sb.append("**标签**：`").append(labelText(h.getLabel())).append("`");
@@ -200,14 +200,6 @@ public class PublishOrchestrator {
             // 非法 JSON 忽略
         }
         return "";
-    }
-
-    /** 金额去尾零：6000.00 → 6000 */
-    private String rentText(java.math.BigDecimal rent) {
-        if (rent == null) {
-            return "";
-        }
-        return rent.stripTrailingZeros().toPlainString();
     }
 
     private String labelText(Integer label) {

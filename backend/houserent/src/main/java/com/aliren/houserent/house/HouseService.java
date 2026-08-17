@@ -9,6 +9,7 @@ import com.aliren.houserent.house.dto.HouseResponse;
 import com.aliren.houserent.house.dto.PageDto;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -16,8 +17,14 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
+@Slf4j
 @Service
 public class HouseService {
+
+    /** 分页默认大小 */
+    private static final int DEFAULT_PAGE_SIZE = 20;
+    /** 分页最大大小 */
+    private static final int MAX_PAGE_SIZE = 100;
 
     private final HouseMapper houseMapper;
     private final UserMapper userMapper;
@@ -29,6 +36,7 @@ public class HouseService {
 
     /** 发布房源：初始状态待审核(0) + 在租中(0) */
     public Long publish(Long publisherId, HouseCreateRequest req) {
+        log.info("publishing house: publisherId={}, community={}", publisherId, req.getCommunity());
         if (req.getRent() == null || req.getRent().signum() <= 0) {
             throw new BusinessException("租金不合法");
         }
@@ -39,6 +47,7 @@ public class HouseService {
         h.setRackStatus(House.RACK_RENTING);
         h.setFeedbackAnswer(0);
         houseMapper.insert(h);
+        log.info("house published: id={}, publisherId={}", h.getId(), publisherId);
         return h.getId();
     }
 
@@ -47,6 +56,7 @@ public class HouseService {
      * 保留发布人、房号；审核状态回待审核，需管理员重新审核。
      */
     public void update(Long userId, Long id, HouseCreateRequest req) {
+        log.info("updating house: userId={}, houseId={}", userId, id);
         if (req.getRent() == null || req.getRent().signum() <= 0) {
             throw new BusinessException("租金不合法");
         }
@@ -60,6 +70,7 @@ public class HouseService {
         applyFields(h, req);
         h.setAuditStatus(House.AUDIT_PENDING); // 修改后重新送审
         houseMapper.updateById(h);
+        log.info("house updated: id={}, userId={}", id, userId);
     }
 
     private void applyFields(House h, HouseCreateRequest req) {
@@ -117,7 +128,7 @@ public class HouseService {
         }
         qw.orderByDesc("created_at");
         long page = query.getPage() == null || query.getPage() < 1 ? 1 : query.getPage();
-        long size = query.getSize() == null || query.getSize() < 1 ? 20 : Math.min(query.getSize(), 100);
+        long size = query.getSize() == null || query.getSize() < 1 ? DEFAULT_PAGE_SIZE : Math.min(query.getSize(), MAX_PAGE_SIZE);
         Page<House> p = houseMapper.selectPage(new Page<>(page, size), qw);
         List<HouseResponse> list = p.getRecords().stream().map(HouseResponse::from).toList();
         return new PageDto<>(p.getTotal(), list);

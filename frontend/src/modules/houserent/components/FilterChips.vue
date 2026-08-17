@@ -49,7 +49,14 @@ import { computed, ref } from 'vue'
 // 显示组：多个内部 group 可共用一个入口（如 pet/new → "其他"），弹层里各自独立选择。
 // modelValue: { [group]: selectedKey }，交互与旧版一致，HomeView 数据无需改动。
 const props = defineProps({
-  chips: { type: Array, required: true }, // [{ key, label, group }]
+  chips: {
+    type: Array,
+    required: true,
+    validator: (value) => {
+      // 每个 chip 必须包含 key, label, group
+      return value.every((chip) => chip.key != null && chip.label && chip.group)
+    }
+  },
   modelValue: { type: Object, default: () => ({}) }
 })
 const emit = defineEmits(['update:modelValue'])
@@ -148,7 +155,7 @@ function clearAll() {
   border-radius: 8px;
   font-size: 0.74rem;
   color: var(--fg2);
-  background: #f5f5f4;
+  background: var(--bg);
   border: 1px solid transparent;
   cursor: pointer;
   white-space: nowrap;
@@ -220,7 +227,7 @@ function clearAll() {
   padding: 8px 14px;
   border-radius: 10px;
   border: 1px solid var(--border);
-  background: #f7f7f6;
+  background: var(--bg);
   font-size: 0.8rem;
   color: var(--fg2);
   cursor: pointer;

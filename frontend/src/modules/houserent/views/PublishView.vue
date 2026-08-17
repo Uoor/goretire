@@ -144,6 +144,7 @@ import TopBar from '@/modules/houserent/components/TopBar.vue'
 import { houseApi } from '@/modules/houserent/api'
 import { uploadApi } from '@/api'
 import { formatMoney } from '@/utils/format'
+import { compressImage } from '@/utils/image'
 
 const route = useRoute()
 const router = useRouter()
@@ -230,12 +231,19 @@ async function loadRegionPrice() {
   }
 }
 
-/** 选图后上传到后端，成功替换为服务端 URL */
+/** 选图后压缩并上传到后端，成功替换为服务端 URL */
 async function afterRead(item) {
   item.status = 'uploading'
-  item.message = '上传中…'
+  item.message = '压缩中…'
   try {
-    const url = await uploadApi.image(item.file)
+    // 压缩图片（最大 1200px，质量 0.8）
+    const compressed = await compressImage(item.file, {
+      maxWidth: 1200,
+      maxHeight: 1200,
+      quality: 0.8
+    })
+    item.message = '上传中…'
+    const url = await uploadApi.image(compressed)
     item.url = url
     item.status = 'done'
     item.message = ''
@@ -361,7 +369,7 @@ onMounted(() => {
   border-radius: 10px;
   padding: 10px 12px;
   font-size: 0.72rem;
-  color: #874d00;
+  color: var(--warning-text);
   display: flex;
   gap: 8px;
   align-items: flex-start;

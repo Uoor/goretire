@@ -23,8 +23,8 @@
           <small>元/月</small>
           <span class="d-tag tag owner">{{ labelText }}</span>
           <span v-if="house.petOk === 1" class="tag verify">可养宠</span>
-          <span v-if="house.rackStatus === 1" class="tag status-rented">已租出</span>
-          <span v-else-if="house.rackStatus === 2" class="tag status-off">已下架</span>
+          <span v-if="house.rackStatus === RACK_STATUS.RENTED" class="tag status-rented">已租出</span>
+          <span v-else-if="house.rackStatus === RACK_STATUS.OFF" class="tag status-off">已下架</span>
         </div>
         <div class="d-title">{{ house.community }} · {{ house.houseType }} {{ house.area }}㎡</div>
         <div class="d-specs">
@@ -69,9 +69,9 @@
       <div class="action-bar fixed-shell">
         <button class="icon-btn" @click="showReport = true"><i class="ph ph-flag"></i></button>
         <!-- 在租中：可联系房东；已租出/已下架：禁用并提示（房源已不可租） -->
-        <button v-if="house.rackStatus === 0" class="btn-primary" @click="contact">钉钉内联系房东</button>
-        <button v-else class="btn-primary btn-disabled" @click="showToast('该房源已' + (house.rackStatus === 1 ? '租出' : '下架'))">
-          已{{ house.rackStatus === 1 ? '租出' : '下架' }}，暂不可联系
+        <button v-if="house.rackStatus === RACK_STATUS.RENTING" class="btn-primary" @click="contact">钉钉内联系房东</button>
+        <button v-else class="btn-primary btn-disabled" @click="showToast('该房源已' + (house.rackStatus === RACK_STATUS.RENTED ? '租出' : '下架'))">
+          已{{ house.rackStatus === RACK_STATUS.RENTED ? '租出' : '下架' }}，暂不可联系
         </button>
       </div>
     </div>
@@ -107,6 +107,7 @@ import EmptyState from '@/modules/houserent/components/EmptyState.vue'
 import { houseApi } from '@/modules/houserent/api'
 import { formatMoney, parseImages } from '@/utils/format'
 import { openSingleChat } from '@/utils/dd'
+import { HOUSE_LABEL_TEXT, RACK_STATUS } from '@/constants/status'
 
 const route = useRoute()
 const router = useRouter()
@@ -119,7 +120,7 @@ const images = computed(() => parseImages(house.value?.images))
 const cover = computed(() => images.value[0] || '')
 const imgIndex = ref(0)
 const thumbClass = computed(() => ['thumb-a', 'thumb-b', 'thumb-c'][Number(route.params.id) % 3])
-const labelText = computed(() => ({ 1: '房东直租', 2: '校友转租', 3: '合租拼室友' })[house.value?.label] || '')
+const labelText = computed(() => HOUSE_LABEL_TEXT[house.value?.label] || '')
 
 /** 图集切换（产品 4.2：最多 9 张，首图为封面） */
 function switchImg(dir) {

@@ -156,8 +156,8 @@ onMounted(async () => {
 .story-strip {
   margin: 6px 16px 20px;
   padding: 12px;
-  background: #f0fdf4;
-  border: 1px solid #bbf7d0;
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-border);
   border-radius: 12px;
   font-size: 0.74rem;
   color: var(--accent);

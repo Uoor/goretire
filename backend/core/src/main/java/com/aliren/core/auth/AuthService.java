@@ -23,7 +23,7 @@ public class AuthService {
         this.jwtUtil = jwtUtil;
     }
 
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public AuthResponse authenticate(String authCode) {
         String dingtalkUserId;
         try {
@@ -40,8 +40,8 @@ public class AuthService {
             user = new User();
             user.setDingtalkUserId(dingtalkUserId);
             user.setNickname("校友");
-            user.setRole(0);
-            user.setStatus(1);
+            user.setRole(User.ROLE_USER);
+            user.setStatus(User.STATUS_ACTIVE);
             try {
                 userMapper.insert(user);
             } catch (DuplicateKeyException e) {
@@ -52,7 +52,7 @@ public class AuthService {
                 }
             }
         }
-        if (user.getStatus() == null || user.getStatus() != 1) {
+        if (user.getStatus() == null || user.getStatus() != User.STATUS_ACTIVE) {
             throw new BusinessException(403, "账号已停用");
         }
         String token = jwtUtil.generate(user.getId(), user.getDingtalkUserId(), user.getRole());

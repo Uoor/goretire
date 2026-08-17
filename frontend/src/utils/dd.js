@@ -47,12 +47,24 @@ export function configDingtalk() {
       dd.error((err) => {
         configPromise = null // 授权失败允许下次重试
         // 钉钉 dd.error 的 err 结构: {errorCode, errorMessage, errorMessageCN?}
-        const detail = err?.errorMessage || err?.errorCode || err?.message || JSON.stringify(err)
-        reject(new Error(`dd.config: ${detail}`))
+        const errorCode = err?.errorCode
+        const errorMessage = err?.errorMessageCN || err?.errorMessage || err?.message || JSON.stringify(err)
+        // 常见错误码提示
+        let friendlyMessage = '钉钉授权失败'
+        if (errorCode === 2 || errorCode === 3) {
+          friendlyMessage = '钉钉授权签名验证失败，请检查应用配置或联系管理员'
+        } else if (errorCode === 4) {
+          friendlyMessage = '钉钉应用未授权，请联系管理员开通权限'
+        } else if (errorCode === 7) {
+          friendlyMessage = '钉钉授权已过期，请刷新页面重试'
+        }
+        console.error('[dd.config] 授权失败:', { errorCode, errorMessage, url })
+        reject(new Error(`${friendlyMessage}（${errorMessage}）`))
       })
     }))
     .catch((err) => {
       configPromise = null
+      console.error('[dd.config] 签名请求失败:', err)
       throw err
     })
   return configPromise

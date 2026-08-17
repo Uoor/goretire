@@ -433,11 +433,11 @@ onUnmounted(() => {
   gap: 8px;
   margin: 10px 16px 0;
   padding: 10px 12px;
-  background: #fffbe6;
-  border: 1px solid #ffe58f;
+  background: var(--warning-soft);
+  border: 1px solid var(--warning-border);
   border-radius: 12px;
   font-size: 0.72rem;
-  color: #874d00;
+  color: var(--warning-text);
   cursor: pointer;
 }
 .home-guide > i:first-child {
@@ -446,17 +446,17 @@ onUnmounted(() => {
 }
 .home-guide > i:last-child {
   margin-left: auto;
-  color: #d48806;
+  color: var(--warning);
 }
 .report-strip {
-  background: #eff6ff;
-  border-color: #bfdbfe;
-  color: #1e40af;
+  background: var(--transfer-soft);
+  border-color: var(--transfer-border);
+  color: var(--transfer-text);
 }
 .report-strip > i:first-child {
-  color: #2563eb;
+  color: var(--transfer);
 }
 .report-strip > i:last-child {
-  color: #2563eb;
+  color: var(--transfer);
 }
 </style>

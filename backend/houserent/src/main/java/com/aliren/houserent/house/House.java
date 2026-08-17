@@ -53,4 +53,9 @@ public class House {
     private Integer feedbackAnswer;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+
+    /** 金额去尾零：6000.00 → 6000 */
+    public String getRentText() {
+        return rent == null ? "" : rent.stripTrailingZeros().toPlainString();
+    }
 }

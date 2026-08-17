@@ -89,11 +89,26 @@ frontend/src/
 - **前端环境变量**：`frontend/.env`（已 gitignore）放 `VITE_DING_CORP_ID`；模板见 `frontend/.env.example`。
 - **视觉规范**：新增/改 UI 前读 [frontend/DESIGN.md](frontend/DESIGN.md)（暖白 `#F5F5F4` + 活力橙 `#FF6A00`，数字用 `--num`/DM Sans，橙色只用于行动/价格/信任信号）。设计令牌在 `styles/tokens.css`。
 
+## 编码规范
+
+> **规范文件位于 `docs/harness/` 目录，开发前请查阅。**
+
+| 文件 | 用途 |
+|------|------|
+| [alibaba-java-standard.md](docs/harness/alibaba-java-standard.md) | Java 命名、常量、异常、日志、并发等基础规范 |
+| [spring-boot-practices.md](docs/harness/spring-boot-practices.md) | Spring Boot 依赖注入、Controller/Service/Repository 分层、事务、配置 |
+| [test-guidelines.md](docs/harness/test-guidelines.md) | 测试框架、命名、隔离、断言规范 |
+| [review-checklist.md](docs/harness/review-checklist.md) | Code Review 检查清单（命名、并发、事务、日志、SQL、测试） |
+
+**注意**：`docs/harness/` 下的指南描述的是 TestNG + JPA + Flyway 技术栈，本仓库使用 **JUnit 5 + MyBatis-Plus**，仅借鉴其通用规则（命名、日志占位符、并发等），不套用框架/包名约定。
+
+---
+
 ## 关键约定与坑
 
 - **钉钉 markdown 换行**：Webhook markdown 单个 `\n` 不换行，必须用 `<br/>` 做行内换行，空行用 `\n\n`。见 [PublishOrchestrator.java](backend/houserent/src/main/java/com/aliren/houserent/robot/PublishOrchestrator.java) 的卡片构建。
 - **发布编排目前是同步的**：`PublishOrchestrator.onHouseAudited`（审核通过 → 订阅/求租匹配 → 群卡片 + 私聊工作通知 + push_log 落库）在审核接口内同步执行，接真实 LLM/推送后应异步化。
 - **定时任务**：`houserent/schedule/`（周五精选周推、周一安居故事），由 `aliren.schedule.enabled` 控制。
-- **测试框架是 JUnit 5 + Mockito + AssertJ，不是 TestNG**。`docs/harness/` 下的 `alibaba-java-standard.md` / `spring-boot-practices.md` / `test-guidelines.md` / `review-checklist.md` 描述的是另一套技术栈（`com.aibrg`、TestNG、JPA、Flyway），**与本仓库不匹配**，勿直接套用其框架/包名约定；如需借鉴仅取其通用规则（命名、日志占位符、并发等）。
+- **测试框架是 JUnit 5 + Mockito + AssertJ，不是 TestNG**。`docs/harness/` 下的指南文件描述的是另一套技术栈（TestNG、JPA、Flyway），**仅借鉴其通用规则**（命名、日志占位符、并发等），不套用框架/包名约定。
 - **枚举/常量**：领域状态常量定义在实体类上（如 `House.AUDIT_ONLINE`、`House.LABEL_DIRECT`），不要散落魔法值。
 - 产品/钉钉/前后端实现方案与 H5 原型见 `docs/design/`。

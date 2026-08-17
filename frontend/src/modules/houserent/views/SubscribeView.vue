@@ -431,7 +431,7 @@ onMounted(load)
   border: 1px solid rgba(255, 106, 0, 0.2);
   border-radius: 10px;
   font-size: 0.72rem;
-  color: #874d00;
+  color: var(--warning-text);
   line-height: 1.5;
 }
 .cond-strip i {
@@ -511,8 +511,8 @@ onMounted(load)
   margin-top: 16px;
   padding: 11px;
   border-radius: 10px;
-  border: 1px solid #fecaca;
-  background: #fff;
+  border: 1px solid var(--destructive-border);
+  background: var(--card);
   color: var(--destructive);
   font-size: 0.82rem;
   cursor: pointer;

@@ -48,8 +48,8 @@
         </div>
         <div class="mh-ops">
           <button v-if="canOffRack(h)" class="op-btn" @click.stop="offRack(h)">标记已租出</button>
-          <button v-else-if="h.auditStatus === 1 && h.rackStatus !== 0" class="op-btn ghost-op" @click.stop="relist(h)">重新出租</button>
-          <button v-if="h.auditStatus === 2" class="op-btn ghost-op" @click.stop="editRejected(h)">修改重新提交</button>
+          <button v-else-if="h.auditStatus === AUDIT_STATUS.ONLINE && h.rackStatus !== RACK_STATUS.RENTING" class="op-btn ghost-op" @click.stop="relist(h)">重新出租</button>
+          <button v-if="h.auditStatus === AUDIT_STATUS.REJECTED" class="op-btn ghost-op" @click.stop="editRejected(h)">修改重新提交</button>
           <button v-if="canDelete(h)" class="op-btn del-op" @click.stop="removeHouse(h)">删除</button>
         </div>
       </div>
@@ -81,6 +81,7 @@ import { showConfirmDialog, showToast, showSuccessToast } from 'vant'
 import TopBar from '@/modules/houserent/components/TopBar.vue'
 import { useUserStore } from '@/store/user'
 import { houseApi } from '@/modules/houserent/api'
+import { AUDIT_STATUS, RACK_STATUS, getHouseStatusText, getHouseStatusClass } from '@/constants/status'
 
 const router = useRouter()
 const store = useUserStore()
@@ -88,29 +89,22 @@ const myHouses = ref([])
 const showFeedback = ref(false)
 const pendingOffRack = ref(null)
 
-const activeCount = computed(() => myHouses.value.filter((h) => h.auditStatus === 1 && h.rackStatus === 0).length)
+const activeCount = computed(() => myHouses.value.filter((h) => h.auditStatus === AUDIT_STATUS.ONLINE && h.rackStatus === RACK_STATUS.RENTING).length)
 
 function statusText(h) {
-  if (h.rackStatus === 1) return '已租出'
-  if (h.rackStatus === 2) return '已下架'
-  if (h.auditStatus === 2) return '已驳回'
-  if (h.auditStatus === 0) return '待审核'
-  return '已上架'
+  return getHouseStatusText(h.auditStatus, h.rackStatus)
 }
 function statusClass(h) {
-  if (h.auditStatus === 2) return 'st-rejected'
-  if (h.auditStatus === 0) return 'st-pending'
-  if (h.rackStatus === 1) return 'st-rented'
-  return 'st-online'
+  return getHouseStatusClass(h.auditStatus, h.rackStatus)
 }
 function canOffRack(h) {
-  return h.auditStatus === 1 && h.rackStatus === 0
+  return h.auditStatus === AUDIT_STATUS.ONLINE && h.rackStatus === RACK_STATUS.RENTING
 }
 
 /** 点击我的房源：仅已上架可进详情；待审核/驳回给状态提示（详情接口对未上架返回 404） */
 function openMyHouse(h) {
-  if (h.auditStatus !== 1) {
-    showToast(h.auditStatus === 0 ? '该房源待审核，上架后可查看' : `已驳回：${h.auditReason || '未通过审核'}`)
+  if (h.auditStatus !== AUDIT_STATUS.ONLINE) {
+    showToast(h.auditStatus === AUDIT_STATUS.PENDING ? '该房源待审核，上架后可查看' : `已驳回：${h.auditReason || '未通过审核'}`)
     return
   }
   router.push({ name: 'house-detail', params: { id: h.id } })
@@ -349,7 +343,7 @@ onMounted(load)
   color: var(--primary-deep);
 }
 .st-rejected {
-  background: #fee2e2;
+  background: var(--destructive-soft);
   color: var(--destructive);
 }
 .st-rented {
@@ -375,7 +369,7 @@ onMounted(load)
 }
 .op-btn.del-op {
   color: var(--destructive);
-  background: #fee2e2;
+  background: var(--destructive-soft);
 }
 .op-btn:active {
   opacity: 0.8;

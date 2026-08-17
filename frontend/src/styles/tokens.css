@@ -12,9 +12,22 @@
   /* 语义色 */
   --accent: #16a34a;
   --accent-soft: #f0fdf4;
+  --accent-border: #bbf7d0;
   --destructive: #dc2626;
   --warning: #d48806;
   --warning-soft: #fffbe6;
+  --warning-border: #ffe58f;
+  --warning-text: #874d00;
+
+  /* 转租蓝（校友转租标签） */
+  --transfer: #2563eb;
+  --transfer-soft: #eff6ff;
+  --transfer-border: #bfdbfe;
+  --transfer-text: #1e40af;
+
+  /* 危险色（删除/举报） */
+  --destructive-soft: #fee2e2;
+  --destructive-border: #fecaca;
 
   /* 中性色 */
   --bg: #f5f5f4;

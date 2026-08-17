@@ -24,9 +24,23 @@
 <script setup>
 import { computed } from 'vue'
 import { formatMoney, parseImages, timeAgo } from '@/utils/format'
+import { HOUSE_LABEL_TEXT } from '@/constants/status'
 
 const props = defineProps({
-  house: { type: Object, required: true },
+  house: {
+    type: Object,
+    required: true,
+    validator: (value) => {
+      // 必须包含房源基本字段
+      return (
+        value.id != null &&
+        value.community &&
+        value.houseType &&
+        value.rent != null &&
+        value.area != null
+      )
+    }
+  },
   index: { type: Number, default: 0 }
 })
 defineEmits(['click'])
@@ -38,7 +52,7 @@ const meta = computed(() =>
     .filter(Boolean)
     .join(' · ')
 )
-const labelText = computed(() => ({ 1: '房东直租', 2: '校友转租', 3: '合租拼室友' })[props.house.label] || '')
+const labelText = computed(() => HOUSE_LABEL_TEXT[props.house.label] || '')
 </script>
 
 <style scoped>
