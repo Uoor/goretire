@@ -25,20 +25,23 @@ const router = createRouter({
   routes
 })
 
+// 会话级免登标记：页面加载后首次导航强制重新免登（钉钉容器内拉取最新昵称/头像），
+// 之后 SPA 内部路由跳转（切 Tab 等）复用本次会话，不再重复请求免登。
+let sessionAuthed = false
+
 /**
  * 免登：
  * - 浏览器联调：取 dev-code 桩（后端放行），token 持久化后复用；
- * - 钉钉容器内：先 dd.config 授权 JSAPI，再 requestAuthCode 真实免登。
- *   关键：钉钉内若残留 dev-code 桩身份（浏览器联调遗留的 localStorage），
- *   必须清除后重新真实免登，否则 staffId 是 dev-code、单聊无法唤起。
+ * - 钉钉容器内：每次页面加载强制重新免登（不依赖 localStorage 旧 token），
+ *   先 dd.config 授权 JSAPI，再 requestAuthCode 真实免登；
+ *   会话内路由跳转复用本次登录态。
  */
 async function ensureLogin() {
   const store = useUserStore()
   const inDingTalk = isDingTalk()
-  // 钉钉内：dev-code 桩身份（或旧 token 缺 dingtalkUserId 字段）一律重登
-  if (inDingTalk && store.isLoggedIn) {
-    const uid = store.userInfo?.dingtalkUserId
-    if (!uid || uid === 'dev-code') store.clear()
+  // 钉钉容器内：页面加载后的第一次导航强制重登（清掉旧 token/userInfo）
+  if (inDingTalk && !sessionAuthed) {
+    store.clear()
   }
   if (store.isLoggedIn) return
   try {
@@ -47,6 +50,7 @@ async function ensureLogin() {
     const code = await getAuthCode()
     const data = await authApi.login(code)
     store.setSession(data.token, data.user)
+    sessionAuthed = true
   } catch (e) {
     // 钉钉容器内免登失败（含换 userid 失败、requestAuthCode/JSAPI 被拦）：
     // 用户无法完成身份验证，统一标记引导「加入组织」页
