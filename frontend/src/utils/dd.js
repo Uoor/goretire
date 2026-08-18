@@ -50,7 +50,7 @@ function getContainerCorpId() {
  * 钉钉 JSAPI 授权（dd.config）。
  * - 浏览器联调：非钉钉环境，直接 resolve(false)，一切走桩；
  * - 钉钉容器内：请求后端签名（jsapi_ticket 算法），再 dd.config 授权
- *   runtime.permission.requestAuthCode 与 biz.chat.openSingleChat，
+ *   runtime.permission.requestAuthCode（免登）与 biz.util.openLink（打开名片页），
  *   dd.ready 后 resolve(true)。
  * 幂等：多次调用复用同一个 Promise。
  */
@@ -80,7 +80,7 @@ export function configDingtalk() {
           timeStamp: String(cfg.timeStamp),
           nonceStr: cfg.nonceStr,
           signature: cfg.signature,
-          jsApiList: ['runtime.permission.requestAuthCode', 'biz.chat.openSingleChat']
+          jsApiList: ['runtime.permission.requestAuthCode', 'biz.util.openLink']
         })
         dd.ready(() => {
           clearTimeout(timer)
@@ -154,10 +154,11 @@ function requestAuthCodeOnce(corpId, resolve, reject, triedWithoutCorpId = false
 }
 
 /**
- * 唤起钉钉单聊窗口（联系房东：拿到钉钉 userid 后直接开聊）。
+ * 打开房东名片页（联系房东：拿到钉钉 userid 后唤起个人名片）。
+ * 使用钉钉统一跳转协议 page/profile（官方支持，无需 openSingleChat 的 JSAPI 权限）：
+ *   dingtalk://dingtalkclient/page/profile?corp_id={corp_id}&staff_id={staff_id}
+ * 用户可在名片页查看资料并自行发起会话。
  * 非钉钉环境直接拒绝（调用方降级提示）。
- * 注：不同钉钉版本对参数名要求不一（userid / staffId），同时传两者兼容；
- * 部分版本还需 corpId（当前企业），一并带上。
  */
 export function openSingleChat(userId) {
   return new Promise((resolve, reject) => {
@@ -165,18 +166,26 @@ export function openSingleChat(userId) {
       reject(new Error('请在钉钉内使用此功能'))
       return
     }
-    function onSuccess() {
-      resolve(true)
-    }
-    function onFail(err) {
-      const detail = err?.errorMessage || err?.errorCode || err?.message || JSON.stringify(err)
-      reject(new Error(`打开钉钉会话失败: ${detail}`))
-    }
-    // 优先用后端签名接口返回的 corpId（已通过 dd.config 校验），再补容器企业
     const corpId = backendCorpId || ''
-    // 钉钉容器实际读取 userId（驼峰）字段；同时带 userid/staffId 兼容历史版本
-    const params = { userId, userid: userId, staffId: userId, onSuccess, onFail }
-    if (corpId) params.corpId = corpId
-    dd.biz.chat.openSingleChat(params)
+    const profileUrl = `dingtalk://dingtalkclient/page/profile?corp_id=${encodeURIComponent(corpId)}&staff_id=${encodeURIComponent(userId)}`
+    // 用 openLink 唤起钉钉内部协议；失败回退 location.href 直接跳转
+    const doOpen = () => {
+      try {
+        if (typeof dd !== 'undefined' && dd.biz && typeof dd.biz.util.openLink === 'function') {
+          dd.biz.util.openLink({
+            url: profileUrl,
+            onSuccess: () => resolve(true),
+            onFail: () => { location.href = profileUrl; resolve(true) }
+          })
+        } else {
+          location.href = profileUrl
+          resolve(true)
+        }
+      } catch (e) {
+        location.href = profileUrl
+        resolve(true)
+      }
+    }
+    doOpen()
   })
 }
