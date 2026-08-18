@@ -174,7 +174,8 @@ export function openSingleChat(userId) {
     }
     // 优先用后端签名接口返回的 corpId（已通过 dd.config 校验），再补容器企业
     const corpId = backendCorpId || ''
-    const params = { userid: userId, staffId: userId, onSuccess, onFail }
+    // 钉钉容器实际读取 userId（驼峰）字段；同时带 userid/staffId 兼容历史版本
+    const params = { userId, userid: userId, staffId: userId, onSuccess, onFail }
     if (corpId) params.corpId = corpId
     dd.biz.chat.openSingleChat(params)
   })
