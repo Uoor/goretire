@@ -24,16 +24,21 @@ let configPromise = null
  * 背景：钉钉多组织场景下，容器当前活跃企业可能与应用所属企业不一致，
  * dd.config 校验 corpId 不匹配会报 invalid corpid。
  */
+let lastRuntimeInfo = null
 function getContainerCorpId() {
   return new Promise((resolve) => {
     try {
       if (typeof dd !== 'undefined' && dd.runtime && typeof dd.runtime.info === 'function') {
         dd.runtime.info({
           onSuccess: (info) => {
+            lastRuntimeInfo = info || null
             const corpId = (info && (info.corpId || info.corpId2)) || ''
             resolve(corpId || null)
           },
-          onFail: () => resolve(null)
+          onFail: (err) => {
+            lastRuntimeInfo = { error: err?.errorMessage || err?.message || 'onFail' }
+            resolve(null)
+          }
         })
       } else {
         resolve(null)
@@ -100,6 +105,20 @@ export function configDingtalk() {
             friendlyMessage = '钉钉授权已过期，请刷新页面重试'
           }
           console.error('[dd.config] 授权失败:', { errorCode, errorMessage, corpId, url })
+          // 诊断上报：容器 corpId vs 后端配置 corpId 的差异是排查 invalid corpid 的关键
+          try {
+            request.post('/dingtalk/jsapi-debug', {
+              event: 'dd.config.error',
+              errorCode,
+              errorMessage,
+              containerCorpId,
+              runtimeInfo: lastRuntimeInfo,
+              backendCorpId: cfg.corpId,
+              usedCorpId: corpId,
+              agentId: cfg.agentId,
+              pageUrl: location.href
+            }).catch(() => {})
+          } catch (e) { /* 上报失败不影响主流程 */ }
           reject(new Error(`${friendlyMessage}（${errorCode}: ${errorMessage}）`))
         })
       }))

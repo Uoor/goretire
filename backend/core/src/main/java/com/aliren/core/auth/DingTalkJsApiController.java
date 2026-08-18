@@ -33,6 +33,16 @@ public class DingTalkJsApiController {
         return ApiResponse.ok(jsApiService.sign(req.getUrl()));
     }
 
+    /**
+     * 前端 dd.config 失败诊断上报（免鉴权，只写日志不落库）。
+     * 用于排查 invalid corpid / 签名校验失败：记录容器上下文 vs 后端配置的差异。
+     */
+    @PostMapping("/jsapi-debug")
+    public ApiResponse<Void> debug(@RequestBody(required = false) Map<String, Object> body) {
+        log.warn("[dingtalk-jsapi] DEBUG report: {}", body == null ? "null" : body);
+        return ApiResponse.ok(null);
+    }
+
     @Data
     public static class SignRequest {
         /** 钉钉内访问的完整页面 URL（location.href），签名必须与它一致 */
