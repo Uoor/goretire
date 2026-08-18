@@ -43,9 +43,9 @@ pre_check() {
         exit 1
     fi
 
-    # 检查 MySQL
-    source <(grep -E '^DB_PASSWORD=' "$ENV_FILE" | sed 's/^DB_PASSWORD=//')
-    if ! mysql -uroot -p"${DB_PASSWORD}" -e "USE aliren" &>/dev/null; then
+    # 检查 MySQL（从 .env 提取密码）
+    DB_PASSWORD=$(grep -E '^DB_PASSWORD=' "$ENV_FILE" | cut -d'=' -f2- | tr -d "'\"")
+    if ! mysql -uroot -p"$DB_PASSWORD" -e "USE aliren" &>/dev/null; then
         err "MySQL 连接失败或数据库 aliren 不存在"
         exit 1
     fi
