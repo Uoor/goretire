@@ -262,6 +262,11 @@ onUnmounted(() => {
 .page-home {
   padding-bottom: 76px;
 }
+@media (min-width: 768px) {
+  .page-home {
+    padding-bottom: 0;
+  }
+}
 .searchbar {
   background: var(--card);
   padding: 10px 16px;
@@ -329,6 +334,20 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+/* PC 端：房源卡片网格 */
+@media (min-width: 768px) {
+  .feed {
+    padding: 16px 0;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
+}
+@media (min-width: 1024px) {
+  .feed {
+    grid-template-columns: repeat(3, 1fr);
+  }
 }
 .load-more {
   display: flex;

@@ -15,65 +15,26 @@ html {
 
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Noto Sans SC', 'Segoe UI', sans-serif;
-  /* 桌面浏览器预览：深色画布呈现"手机壳"效果（与原型一致）；真机打开时媒体查询还原 */
-  background: #1d1d1f;
+  background: var(--bg);
   color: var(--fg);
   min-height: 100vh;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
 }
 
-/* 手机壳容器：真机（<500px）全屏无壳；桌面浏览器居中成"手机" */
+/* 移动端全屏无壳 */
 #app {
-  max-width: 430px;
-  margin: 0 auto;
   min-height: 100vh;
   background: var(--bg);
 }
 
-@media (min-width: 500px) {
-  #app {
-    /* 桌面宽视口（PC 钉钉 / 普通浏览器 ≥500px）：整体缩放到 375 设计稿宽度，
-       解决 postcss vw 按视口宽度放大导致交互错乱的问题。
-       width: 100vw + zoom = 375/视口宽，视觉宽度正好等于 375px；
-       zoom 会连 fixed 元素（TabBar/van-popup）一起缩放，无需改组件。
-       缩放比例由 JS 动态计算（见 src/utils/viewport.js）。 */
-    width: 100vw;
-    max-width: none;
-    margin: 24px auto;
-    border-radius: 36px;
-    overflow: hidden;
-    min-height: calc(100vh - 48px);
-    box-shadow: 0 0 0 8px #2c2c2e, 0 24px 60px rgba(0, 0, 0, 0.55);
-    zoom: var(--desktop-zoom, 1);
-  }
-}
-
-@media (max-width: 499px) {
+/* PC 端（≥768px）：移除深色壳，纯白底全宽铺满 */
+@media (min-width: 768px) {
   body {
     background: var(--bg);
   }
   #app {
-    box-shadow: none;
-    border-radius: 0;
-    margin: 0;
-  }
-}
-
-/* ===== 手机壳适配（桌面 ≥500px 预览时） =====
-   整体 zoom 缩放到 375 视觉宽后，fixed/sticky 元素相对缩放后的视口定位，
-   宽度直接占满（100%），无需再用 430px 手动居中。 */
-@media (min-width: 500px) {
-  .fixed-shell {
-    left: 0 !important;
-    right: 0 !important;
-    transform: none;
-    width: 100% !important;
-    bottom: 0;
-  }
-  .sticky-shell {
-    top: 0 !important;
-    border-radius: 0;
+    min-height: 100vh;
   }
 }
 
@@ -88,10 +49,16 @@ a {
   font-weight: 600;
 }
 
-/* 通用占位样式（页面实现前的骨架标注） */
+/* 通用页面容器 */
 .page {
   padding: 16px;
 }
+@media (min-width: 768px) {
+  .page {
+    padding: 24px 0;
+  }
+}
+
 .page .placeholder {
   margin-top: 12px;
   padding: 20px 16px;
@@ -100,4 +67,19 @@ a {
   border-radius: var(--radius-md);
   color: var(--fg2);
   font-size: 14px;
+}
+
+/* ===== PC 响应式辅助类（≥768px） ===== */
+/* 卡片网格：在 PC 端自动多列 */
+@media (min-width: 768px) {
+  .grid-pc {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
+}
+@media (min-width: 1024px) {
+  .grid-pc {
+    grid-template-columns: repeat(3, 1fr);
+  }
 }
