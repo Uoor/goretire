@@ -35,6 +35,12 @@ export function configDingtalk() {
   configPromise = request
     .post('/dingtalk/jsapi-sign', { url })
     .then((cfg) => new Promise((resolve, reject) => {
+      // 兜底：dd.config 后 8s 内既无 ready 也无 error（部分钉钉版本静默失败），
+      // 超时按失败处理，避免免登流程永久卡死。
+      const timer = setTimeout(() => {
+        configPromise = null
+        reject(new Error('钉钉授权超时（dd.config 无回调）'))
+      }, 8000)
       dd.config({
         agentId: String(cfg.agentId),
         corpId: cfg.corpId,
@@ -43,8 +49,12 @@ export function configDingtalk() {
         signature: cfg.signature,
         jsApiList: ['runtime.permission.requestAuthCode', 'biz.chat.openSingleChat']
       })
-      dd.ready(() => resolve(true))
+      dd.ready(() => {
+        clearTimeout(timer)
+        resolve(true)
+      })
       dd.error((err) => {
+        clearTimeout(timer)
         configPromise = null // 授权失败允许下次重试
         // 钉钉 dd.error 的 err 结构: {errorCode, errorMessage, errorMessageCN?}
         const errorCode = err?.errorCode
@@ -59,7 +69,7 @@ export function configDingtalk() {
           friendlyMessage = '钉钉授权已过期，请刷新页面重试'
         }
         console.error('[dd.config] 授权失败:', { errorCode, errorMessage, url })
-        reject(new Error(`${friendlyMessage}（${errorMessage}）`))
+        reject(new Error(`${friendlyMessage}（${errorCode}: ${errorMessage}）`))
       })
     }))
     .catch((err) => {
