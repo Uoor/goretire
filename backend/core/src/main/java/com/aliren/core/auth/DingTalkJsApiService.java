@@ -33,7 +33,7 @@ public class DingTalkJsApiService {
     private static final String GET_TOKEN_URL = "https://oapi.dingtalk.com/gettoken";
     private static final String GET_TICKET_URL = "https://oapi.dingtalk.com/get_jsapi_ticket";
     private static final Duration TIMEOUT = Duration.ofSeconds(5);
-    private static final long TICKET_TTL_MS = 7000_000L; // 官方 7200s，提前 200s 过期
+    private static final long TICKET_TTL_MS = 7000_000L; // 官方 7200s，提前 200s 缓存
     private static final long TOKEN_TTL_MS = 7000_000L;  // access_token 同样 7200s，避免每次签名都 gettoken
 
     private final String appKey;
