@@ -32,6 +32,18 @@ public class DingTalkClientStub implements DingTalkClient {
         }
         throw new BusinessException(401, "免登失败");
     }
+
+    @Override
+    public DingTalkUserProfile getUserProfile(String userId) {
+        // 开发桩：无真实钉钉资料，返回默认占位
+        if (devCodeEnabled && "dev-code".equals(userId)) {
+            DingTalkUserProfile profile = new DingTalkUserProfile();
+            profile.setUserId(userId);
+            profile.setName("校友");
+            return profile;
+        }
+        return null;
+    }
 }
 
 @Configuration

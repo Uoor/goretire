@@ -86,6 +86,62 @@ class AuthServiceTest {
     }
 
     @Test
+    void auth_newUser_withProfile_fillsNicknameAndAvatar() {
+        when(dingTalkClient.getUserIdByCode("code-5")).thenReturn("ding-500");
+        when(userMapper.selectByDingtalkUserId("ding-500")).thenReturn(null);
+        when(userMapper.insert(any(User.class))).thenAnswer(inv -> {
+            inv.getArgument(0, User.class).setId(5L);
+            return 1;
+        });
+        DingTalkUserProfile profile = new DingTalkUserProfile();
+        profile.setUserId("ding-500");
+        profile.setName("峰");
+        profile.setAvatar("https://example.com/a.png");
+        when(dingTalkClient.getUserProfile("ding-500")).thenReturn(profile);
+
+        AuthResponse resp = authService.authenticate("code-5");
+        assertThat(resp.getUser().getNickname()).isEqualTo("峰");
+        assertThat(resp.getUser().getUserId()).isEqualTo(5L);
+    }
+
+    @Test
+    void auth_existingUser_withProfile_updatesNickname() {
+        when(dingTalkClient.getUserIdByCode("code-6")).thenReturn("ding-600");
+        User existing = new User();
+        existing.setId(6L);
+        existing.setDingtalkUserId("ding-600");
+        existing.setNickname("旧昵称");
+        existing.setRole(0);
+        existing.setStatus(1);
+        when(userMapper.selectByDingtalkUserId("ding-600")).thenReturn(existing);
+        DingTalkUserProfile profile = new DingTalkUserProfile();
+        profile.setUserId("ding-600");
+        profile.setName("新昵称");
+        when(dingTalkClient.getUserProfile("ding-600")).thenReturn(profile);
+
+        AuthResponse resp = authService.authenticate("code-6");
+        assertThat(resp.getUser().getNickname()).isEqualTo("新昵称");
+        verify(userMapper).updateById(existing);
+    }
+
+    @Test
+    void auth_existingUser_profileFails_keepsOldData() {
+        when(dingTalkClient.getUserIdByCode("code-7")).thenReturn("ding-700");
+        User existing = new User();
+        existing.setId(7L);
+        existing.setDingtalkUserId("ding-700");
+        existing.setNickname("保持");
+        existing.setRole(0);
+        existing.setStatus(1);
+        when(userMapper.selectByDingtalkUserId("ding-700")).thenReturn(existing);
+        when(dingTalkClient.getUserProfile("ding-700")).thenReturn(null);
+
+        AuthResponse resp = authService.authenticate("code-7");
+        assertThat(resp.getUser().getNickname()).isEqualTo("保持");
+        verify(userMapper, never()).updateById(any(User.class));
+    }
+
+    @Test
     void auth_blankUserId_rejected401() {
         when(dingTalkClient.getUserIdByCode("code-4")).thenReturn("");
         assertThatThrownBy(() -> authService.authenticate("code-4"))

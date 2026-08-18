@@ -36,10 +36,16 @@ public class AuthService {
             throw new BusinessException(401, "免登失败");
         }
         User user = userMapper.selectByDingtalkUserId(dingtalkUserId);
+        // 拉取钉钉真实资料（昵称/头像），失败返回 null 不影响登录
+        DingTalkUserProfile profile = dingTalkClient.getUserProfile(dingtalkUserId);
         if (user == null) {
             user = new User();
             user.setDingtalkUserId(dingtalkUserId);
-            user.setNickname("校友");
+            user.setNickname(profile != null && profile.getName() != null && !profile.getName().isBlank()
+                    ? profile.getName() : "校友");
+            if (profile != null && profile.getAvatar() != null && !profile.getAvatar().isBlank()) {
+                user.setAvatar(profile.getAvatar());
+            }
             user.setRole(User.ROLE_USER);
             user.setStatus(User.STATUS_ACTIVE);
             try {
@@ -50,6 +56,22 @@ public class AuthService {
                 if (user == null) {
                     throw e;
                 }
+            }
+        } else if (profile != null) {
+            // 已注册用户：每次免登刷新真实昵称/头像（钉钉侧改名/换头像后保持同步）
+            boolean changed = false;
+            if (profile.getName() != null && !profile.getName().isBlank()
+                    && !profile.getName().equals(user.getNickname())) {
+                user.setNickname(profile.getName());
+                changed = true;
+            }
+            if (profile.getAvatar() != null && !profile.getAvatar().isBlank()
+                    && !profile.getAvatar().equals(user.getAvatar())) {
+                user.setAvatar(profile.getAvatar());
+                changed = true;
+            }
+            if (changed) {
+                userMapper.updateById(user);
             }
         }
         if (user.getStatus() == null || user.getStatus() != User.STATUS_ACTIVE) {

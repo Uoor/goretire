@@ -34,6 +34,7 @@ public class DingTalkClientImpl implements DingTalkClient {
 
     private static final String GET_TOKEN_URL = "https://oapi.dingtalk.com/gettoken";
     private static final String GET_USERINFO_URL = "https://oapi.dingtalk.com/topapi/v2/user/getuserinfo";
+    private static final String GET_USER_URL = "https://oapi.dingtalk.com/topapi/v2/user/get";
     private static final Duration TIMEOUT = Duration.ofSeconds(5);
     private static final long TOKEN_TTL_MS = 7000_000L; // access_token 7200s，提前 200s 过期
 
@@ -136,6 +137,38 @@ public class DingTalkClientImpl implements DingTalkClient {
         } catch (Exception e) {
             log.warn("dingtalk getuserinfo exception", e);
             throw new BusinessException(401, "免登失败");
+        }
+    }
+
+    @Override
+    public DingTalkUserProfile getUserProfile(String userId) {
+        if (userId == null || userId.isBlank()) {
+            return null;
+        }
+        try {
+            ObjectNode body = objectMapper.createObjectNode();
+            body.put("userid", userId);
+            HttpRequest request = HttpRequest.newBuilder(URI.create(GET_USER_URL + "?access_token=" + getAccessToken()))
+                    .timeout(TIMEOUT)
+                    .header("Content-Type", "application/json")
+                    .POST(HttpRequest.BodyPublishers.ofString(objectMapper.writeValueAsString(body)))
+                    .build();
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            JsonNode json = objectMapper.readTree(response.body());
+            if (response.statusCode() != 200 || json.path("errcode").asInt(0) != 0) {
+                log.warn("dingtalk user/get failed: status={} body={}", response.statusCode(), response.body());
+                return null;
+            }
+            JsonNode result = json.path("result");
+            DingTalkUserProfile profile = new DingTalkUserProfile();
+            profile.setUserId(result.path("userid").asText(userId));
+            profile.setName(result.path("name").asText(""));
+            profile.setAvatar(result.path("avatar").asText(""));
+            profile.setMobile(result.path("mobile").asText(""));
+            return profile;
+        } catch (Exception e) {
+            log.warn("dingtalk user/get exception userId={}", userId, e);
+            return null;
         }
     }
 }
