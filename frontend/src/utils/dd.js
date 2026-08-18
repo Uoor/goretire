@@ -50,7 +50,7 @@ function getContainerCorpId() {
  * 钉钉 JSAPI 授权（dd.config）。
  * - 浏览器联调：非钉钉环境，直接 resolve(false)，一切走桩；
  * - 钉钉容器内：请求后端签名（jsapi_ticket 算法），再 dd.config 授权
- *   runtime.permission.requestAuthCode（免登）与 biz.util.openLink（打开名片页），
+ *   runtime.permission.requestAuthCode（免登）；联系房东走统一跳转协议 page/profile，
  *   dd.ready 后 resolve(true)。
  * 幂等：多次调用复用同一个 Promise。
  */
@@ -80,7 +80,7 @@ export function configDingtalk() {
           timeStamp: String(cfg.timeStamp),
           nonceStr: cfg.nonceStr,
           signature: cfg.signature,
-          jsApiList: ['runtime.permission.requestAuthCode', 'biz.util.openLink']
+          jsApiList: ['runtime.permission.requestAuthCode']
         })
         dd.ready(() => {
           clearTimeout(timer)
@@ -168,24 +168,15 @@ export function openSingleChat(userId) {
     }
     const corpId = backendCorpId || ''
     const profileUrl = `dingtalk://dingtalkclient/page/profile?corp_id=${encodeURIComponent(corpId)}&staff_id=${encodeURIComponent(userId)}`
-    // 用 openLink 唤起钉钉内部协议；失败回退 location.href 直接跳转
-    const doOpen = () => {
-      try {
-        if (typeof dd !== 'undefined' && dd.biz && typeof dd.biz.util.openLink === 'function') {
-          dd.biz.util.openLink({
-            url: profileUrl,
-            onSuccess: () => resolve(true),
-            onFail: () => { location.href = profileUrl; resolve(true) }
-          })
-        } else {
-          location.href = profileUrl
-          resolve(true)
-        }
-      } catch (e) {
-        location.href = profileUrl
-        resolve(true)
-      }
+    // 钉钉统一跳转协议直接通过 location.href 唤起（官方文档即 <a href> 方式）。
+    // 注意不要再用 dd.biz.util.openLink 传 dingtalk:// 协议——openLink 面向 http 链接，
+    // 传内部协议可能被容器拦截提示"操作太频繁"。
+    try {
+      // 协议跳转会离开当前页面，无需等待回调；立即 resolve 让调用方正常收尾
+      location.href = profileUrl
+      resolve(true)
+    } catch (e) {
+      reject(new Error(`无法打开房东名片: ${e?.message || e}`))
     }
-    doOpen()
   })
 }
