@@ -18,6 +18,33 @@ export function isDingTalk() {
 let configPromise = null
 
 /**
+ * 获取钉钉容器当前企业 corpId。
+ * 优先用 dd.runtime.info（容器注入的运行时信息，免鉴权），失败时回退到
+ * 后端签名接口返回的 corpId（应用所属企业）。
+ * 背景：钉钉多组织场景下，容器当前活跃企业可能与应用所属企业不一致，
+ * dd.config 校验 corpId 不匹配会报 invalid corpid。
+ */
+function getContainerCorpId() {
+  return new Promise((resolve) => {
+    try {
+      if (typeof dd !== 'undefined' && dd.runtime && typeof dd.runtime.info === 'function') {
+        dd.runtime.info({
+          onSuccess: (info) => {
+            const corpId = (info && (info.corpId || info.corpId2)) || ''
+            resolve(corpId || null)
+          },
+          onFail: () => resolve(null)
+        })
+      } else {
+        resolve(null)
+      }
+    } catch (e) {
+      resolve(null)
+    }
+  })
+}
+
+/**
  * 钉钉 JSAPI 授权（dd.config）。
  * - 浏览器联调：非钉钉环境，直接 resolve(false)，一切走桩；
  * - 钉钉容器内：请求后端签名（jsapi_ticket 算法），再 dd.config 授权
@@ -32,51 +59,55 @@ export function configDingtalk() {
   if (configPromise) return configPromise
   // 签名 url 与钉钉内实际页面 url 必须一致；hash 路由去掉 # 及之后部分
   const url = location.href.split('#')[0]
-  configPromise = request
-    .post('/dingtalk/jsapi-sign', { url })
-    .then((cfg) => new Promise((resolve, reject) => {
-      // 兜底：dd.config 后 8s 内既无 ready 也无 error（部分钉钉版本静默失败），
-      // 超时按失败处理，避免免登流程永久卡死。
-      const timer = setTimeout(() => {
+  configPromise = getContainerCorpId().then((containerCorpId) =>
+    request
+      .post('/dingtalk/jsapi-sign', { url })
+      .then((cfg) => new Promise((resolve, reject) => {
+        // 兜底：dd.config 后 8s 内既无 ready 也无 error（部分钉钉版本静默失败），
+        // 超时按失败处理，避免免登流程永久卡死。
+        const timer = setTimeout(() => {
+          configPromise = null
+          reject(new Error('钉钉授权超时（dd.config 无回调）'))
+        }, 8000)
+        // 容器当前企业优先（多组织场景跟随用户当前活跃企业），否则用应用所属企业
+        const corpId = containerCorpId || cfg.corpId
+        console.info('[dd.config] corpId 来源:', containerCorpId ? '容器' : '后端配置', corpId)
+        dd.config({
+          agentId: String(cfg.agentId),
+          corpId,
+          timeStamp: String(cfg.timeStamp),
+          nonceStr: cfg.nonceStr,
+          signature: cfg.signature,
+          jsApiList: ['runtime.permission.requestAuthCode', 'biz.chat.openSingleChat']
+        })
+        dd.ready(() => {
+          clearTimeout(timer)
+          resolve(true)
+        })
+        dd.error((err) => {
+          clearTimeout(timer)
+          configPromise = null // 授权失败允许下次重试
+          // 钉钉 dd.error 的 err 结构: {errorCode, errorMessage, errorMessageCN?}
+          const errorCode = err?.errorCode
+          const errorMessage = err?.errorMessageCN || err?.errorMessage || err?.message || JSON.stringify(err)
+          // 常见错误码提示
+          let friendlyMessage = '钉钉授权失败'
+          if (errorCode === 2 || errorCode === 3) {
+            friendlyMessage = '钉钉授权签名验证失败，请检查应用配置或联系管理员'
+          } else if (errorCode === 4) {
+            friendlyMessage = '钉钉应用未授权，请联系管理员开通权限'
+          } else if (errorCode === 7) {
+            friendlyMessage = '钉钉授权已过期，请刷新页面重试'
+          }
+          console.error('[dd.config] 授权失败:', { errorCode, errorMessage, corpId, url })
+          reject(new Error(`${friendlyMessage}（${errorCode}: ${errorMessage}）`))
+        })
+      }))
+      .catch((err) => {
         configPromise = null
-        reject(new Error('钉钉授权超时（dd.config 无回调）'))
-      }, 8000)
-      dd.config({
-        agentId: String(cfg.agentId),
-        corpId: cfg.corpId,
-        timeStamp: String(cfg.timeStamp),
-        nonceStr: cfg.nonceStr,
-        signature: cfg.signature,
-        jsApiList: ['runtime.permission.requestAuthCode', 'biz.chat.openSingleChat']
-      })
-      dd.ready(() => {
-        clearTimeout(timer)
-        resolve(true)
-      })
-      dd.error((err) => {
-        clearTimeout(timer)
-        configPromise = null // 授权失败允许下次重试
-        // 钉钉 dd.error 的 err 结构: {errorCode, errorMessage, errorMessageCN?}
-        const errorCode = err?.errorCode
-        const errorMessage = err?.errorMessageCN || err?.errorMessage || err?.message || JSON.stringify(err)
-        // 常见错误码提示
-        let friendlyMessage = '钉钉授权失败'
-        if (errorCode === 2 || errorCode === 3) {
-          friendlyMessage = '钉钉授权签名验证失败，请检查应用配置或联系管理员'
-        } else if (errorCode === 4) {
-          friendlyMessage = '钉钉应用未授权，请联系管理员开通权限'
-        } else if (errorCode === 7) {
-          friendlyMessage = '钉钉授权已过期，请刷新页面重试'
-        }
-        console.error('[dd.config] 授权失败:', { errorCode, errorMessage, url })
-        reject(new Error(`${friendlyMessage}（${errorCode}: ${errorMessage}）`))
-      })
-    }))
-    .catch((err) => {
-      configPromise = null
-      console.error('[dd.config] 签名请求失败:', err)
-      throw err
-    })
+        console.error('[dd.config] 签名请求失败:', err)
+        throw err
+      }))
   return configPromise
 }
 
@@ -87,13 +118,17 @@ export function getAuthCode() {
       resolve('dev-code')
       return
     }
-    dd.runtime.permission.requestAuthCode({
-      corpId: import.meta.env.VITE_DING_CORP_ID || '',
-      onSuccess: (result) => resolve(result.code),
-      onFail: (err) => {
-        const detail = err?.errorMessage || err?.errorCode || err?.message || JSON.stringify(err)
-        reject(new Error(`requestAuthCode: ${detail}`))
-      }
+    // 容器当前企业优先；拿不到时回退构建时配置的 VITE_DING_CORP_ID
+    getContainerCorpId().then((containerCorpId) => {
+      const corpId = containerCorpId || import.meta.env.VITE_DING_CORP_ID || ''
+      dd.runtime.permission.requestAuthCode({
+        corpId,
+        onSuccess: (result) => resolve(result.code),
+        onFail: (err) => {
+          const detail = err?.errorMessage || err?.errorCode || err?.message || JSON.stringify(err)
+          reject(new Error(`requestAuthCode: ${detail}`))
+        }
+      })
     })
   })
 }
