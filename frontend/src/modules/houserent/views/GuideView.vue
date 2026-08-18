@@ -58,7 +58,7 @@
 
     <div class="tip-strip">
       <i class="ph ph-lightbulb"></i>
-      <span>知识库由管理员在钉钉中维护，本站自动同步</span>
+      <span>{{ staticMode ? '当前为站内精简版，知识库开通后自动切换完整内容' : '知识库由管理员在钉钉中维护，本站自动同步' }}</span>
     </div>
   </div>
 </template>
@@ -75,8 +75,63 @@ const active = ref('')
 const items = ref([])
 const loading = ref(true)
 const spaceUrl = ref('')
+// 知识库未配置/读取失败时降级站内静态版
+const staticMode = ref(false)
 // 展开的条目 nodeId → 正文（懒加载）
 const openMap = ref({})
+
+/** 站内静态版避坑指南（知识库未开通时的兜底内容） */
+const STATIC_SECTIONS = [
+  { nodeId: 'static-contract', name: '合同要点' },
+  { nodeId: 'static-deposit', name: '押金清单' },
+  { nodeId: 'static-scam', name: '骗局案例' }
+]
+const STATIC_ITEMS = {
+  'static-contract': [
+    {
+      nodeId: 'static-contract-1',
+      name: '签约前必看的合同条款',
+      content:
+        '1. 核实出租人身份：房东看房产证 + 身份证；转租看原合同是否允许转租。\n' +
+        '2. 明确租期、租金、付款方式与涨租约定，全部写进合同。\n' +
+        '3. 写明押金金额与退还条件、退租提前通知天数。\n' +
+        '4. 水电燃气物业网的计费方式与起始表数写清。\n' +
+        '5. 维修责任划分：家电自然损耗谁修、谁承担费用。\n' +
+        '6. 口头承诺一律无效，所有约定落实为文字条款。'
+    },
+    {
+      nodeId: 'static-contract-2',
+      name: '合同模板哪里拿',
+      content:
+        '推荐使用当地住建部门发布的住房租赁合同示范文本，条款相对均衡。\n知识库开通后，可在「去钉钉知识库」入口下载管理员整理的模板与附件。'
+    }
+  ],
+  'static-deposit': [
+    {
+      nodeId: 'static-deposit-1',
+      name: '押金不被吞的 6 件事',
+      content:
+        '1. 入住当天拍照/录像记录房屋现状（墙面、家电、家具、表数），发给房东确认。\n' +
+        '2. 押金条/转账备注写明“××房屋押金”。\n' +
+        '3. 合同中写明押金退还时间与条件（如退租后 7 日内）。\n' +
+        '4. 退租前提前通知并约定验房时间，当面核对物品清单。\n' +
+        '5. 正常损耗不属于损坏，不应从押金扣除。\n' +
+        '6. 拒不退还可凭合同与记录向住建部门投诉或起诉。'
+    }
+  ],
+  'static-scam': [
+    {
+      nodeId: 'static-scam-1',
+      name: '常见租房骗局与识别方法',
+      content:
+        '1. “看房先交定金”：未看房、未验证身份前不转任何钱。\n' +
+        '2. “低价精装急租”：明显低于市场价的房源大概率是钓饵。\n' +
+        '3. 假房东：要求出示房产证与身份证并核对一致性，必要时物业/邻居交叉验证。\n' +
+        '4. 二房东超期转租：查看原合同租期是否覆盖你的租期。\n' +
+        '5. 一切付款走可追溯渠道（转账备注用途），拒收“只收现金”。'
+    }
+  ]
+}
 
 /** 打开钉钉链接：容器内用 JSAPI，浏览器 fallback 新窗口 */
 function openDingLink(url) {
@@ -103,7 +158,8 @@ async function switchSection(s) {
   items.value = []
   loading.value = true
   try {
-    items.value = await guideApi.items(s.nodeId)
+    // 静态版：内容已内置，不走接口
+    items.value = staticMode.value ? STATIC_ITEMS[s.nodeId] || [] : await guideApi.items(s.nodeId)
   } finally {
     loading.value = false
   }
@@ -134,11 +190,17 @@ async function toggle(item) {
 onMounted(async () => {
   try {
     const [secs, space] = await Promise.all([
-      guideApi.sections(),
+      guideApi.sections().catch(() => []),
       guideApi.spaceUrl().catch(() => ({ url: '' }))
     ])
-    sections.value = secs
     spaceUrl.value = space?.url || ''
+    if (secs.length) {
+      sections.value = secs
+    } else {
+      // 知识库未配置/读取失败：降级站内静态版（后端此时返回空列表）
+      staticMode.value = true
+      sections.value = STATIC_SECTIONS
+    }
     if (sections.value.length) {
       await switchSection(sections.value[0])
     }

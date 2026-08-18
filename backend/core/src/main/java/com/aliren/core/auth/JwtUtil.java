@@ -15,11 +15,17 @@ import java.util.Date;
 @Component
 public class JwtUtil {
 
+    /** 开发默认密钥（application.yml 内置值）：生产未覆盖时启动告警 */
+    private static final String DEFAULT_SECRET_MARKER = "please-change-in-prod";
+
     private final SecretKey key;
     private final long expireMillis;
 
     public JwtUtil(@Value("${aliren.jwt.secret}") String secret,
                    @Value("${aliren.jwt.expire-hours}") long expireHours) {
+        if (secret.contains(DEFAULT_SECRET_MARKER)) {
+            log.warn("!!! JWT 正在使用内置开发密钥，生产环境务必通过 JWT_SECRET 环境变量覆盖 !!!");
+        }
         this.key = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
         this.expireMillis = expireHours * 3600_000L;
     }

@@ -30,6 +30,13 @@ public class GuideService {
 
     private static final String API_HOST = "https://api.dingtalk.com";
     private static final Duration TIMEOUT = Duration.ofSeconds(8);
+    /**
+     * nodeId 白名单：钉钉 nodeId 为字母数字下划线/连字符。
+     * /api/guide/** 免登录，nodeId 会拼入钉钉 API 路径并携带应用级凭证，
+     * 必须严格校验，防止通过 / ? 等字符改路径形成 SSRF/越权读取。
+     */
+    private static final java.util.regex.Pattern NODE_ID_PATTERN =
+            java.util.regex.Pattern.compile("[A-Za-z0-9_-]{8,128}");
 
     private final String appKey;
     private final String appSecret;
@@ -72,6 +79,7 @@ public class GuideService {
 
     /** 某板块下的条目（文件夹内文档） */
     public List<GuideItem> items(String sectionNodeId) {
+        requireValidNodeId(sectionNodeId);
         JsonNode nodes = getJson("/v2.0/wiki/nodes?operatorId=" + operatorId
                 + "&spaceId=" + workspaceId + "&parentNodeId=" + sectionNodeId);
         List<GuideItem> out = new ArrayList<>();
@@ -88,9 +96,7 @@ public class GuideService {
 
     /** 条目正文（从 blocks 结构拼纯文本；nodeId = 节点列表返回的 nodeId） */
     public String content(String nodeId) {
-        if (nodeId == null || nodeId.isBlank()) {
-            throw new BusinessException("文档参数缺失");
-        }
+        requireValidNodeId(nodeId);
         JsonNode json = getJson("/v1.0/doc/suites/documents/" + nodeId + "/blocks?operatorId=" + operatorId);
         JsonNode data = json.path("result").path("data");
         if (!data.isArray() || data.isEmpty()) {
@@ -103,6 +109,13 @@ public class GuideService {
             if (!text.isBlank()) sb.append(text).append("\n\n");
         }
         return sb.toString().trim();
+    }
+
+    /** nodeId 白名单校验（防路径拼接注入） */
+    private void requireValidNodeId(String nodeId) {
+        if (nodeId == null || !NODE_ID_PATTERN.matcher(nodeId).matches()) {
+            throw new BusinessException("文档参数不合法");
+        }
     }
 
     /** 根节点 id：从 workspace 列表按 URL 匹配（URL 中的 /i/spaces/{shortId} 是稳定标识） */

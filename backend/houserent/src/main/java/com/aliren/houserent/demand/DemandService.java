@@ -7,6 +7,8 @@ import com.aliren.houserent.demand.dto.DemandResponse;
 import com.aliren.houserent.match.MatchService;
 import com.aliren.houserent.match.dto.MatchSearchResponse;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -19,6 +21,8 @@ import java.util.List;
  */
 @Service
 public class DemandService {
+
+    private static final ObjectMapper MAPPER = new ObjectMapper();
 
     private final DemandMapper demandMapper;
     private final MatchService matchService;
@@ -90,8 +94,11 @@ public class DemandService {
         if (StringUtils.hasText(req.getRegion())) sb.append(req.getRegion()).append(" ");
         if (StringUtils.hasText(req.getHouseType())) sb.append(req.getHouseType()).append(" ");
         if (StringUtils.hasText(req.getBudget())) {
-            // budget 是 JSON {"min":4000,"max":6000} → "4000-6000元"
-            sb.append(req.getBudget().replaceAll("[^0-9]", "")).append("元以内 ");
+            // budget 是 JSON {"min":4000,"max":6000} → "4000-6000元"（解析失败降级取数字）
+            String budget = budgetText(req.getBudget());
+            if (StringUtils.hasText(budget)) {
+                sb.append(budget).append(" ");
+            }
         }
         if (StringUtils.hasText(req.getRequirements())) {
             String r = req.getRequirements();
@@ -100,6 +107,36 @@ public class DemandService {
         }
         if (StringUtils.hasText(req.getDescription())) sb.append(req.getDescription());
         return sb.toString().trim();
+    }
+
+    /**
+     * 预算 JSON → 可读区间文本：{"min":4000,"max":6000} → "4000-6000元"。
+     * 只有 max 时 → "6000元以内"；非 JSON 纯文本（如 "6000以内"）降级取其中数字。
+     */
+    private String budgetText(String budget) {
+        String raw = budget.trim();
+        try {
+            JsonNode b = MAPPER.readTree(raw);
+            int min = b.path("min").asInt(0);
+            int max = b.path("max").asInt(0);
+            if (min > 0 && max > 0) {
+                return min + "-" + max + "元";
+            }
+            if (max > 0) {
+                return max + "元以内";
+            }
+            if (min > 0) {
+                return min + "元以上";
+            }
+            return "";
+        } catch (Exception e) {
+            // 非 JSON：纯文本预算直接取数字；非法 JSON 对象则跳过，避免拼出乱码喂给 LLM
+            if (raw.startsWith("{")) {
+                return "";
+            }
+            String digits = raw.replaceAll("[^0-9]", "");
+            return digits.isEmpty() ? "" : digits + "元以内";
+        }
     }
 
     /** 发布响应：需求 ID + 即时匹配结果 */

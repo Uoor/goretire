@@ -25,7 +25,7 @@ public class AdminAuditController {
     /** 待审核队列（含房号等审核敏感字段 + 发布人昵称，仅管理员） */
     @GetMapping("/audit/pending")
     public ApiResponse<List<Map<String, Object>>> pendingList() {
-        return ApiResponse.ok(adminAuditService.pendingList());
+        return ApiResponse.ok(adminAuditService.pendingList(UserContext.requireRole()));
     }
 
     /** 审核：通过/驳回（驳回必填原因）；通过后上层编排触发订阅/求租匹配 */
@@ -47,7 +47,7 @@ public class AdminAuditController {
     /** 举报列表（可按 status 过滤，仅管理员） */
     @GetMapping("/reports")
     public ApiResponse<List<Report>> reports(@RequestParam(required = false) Integer status) {
-        return ApiResponse.ok(adminAuditService.listReports(status));
+        return ApiResponse.ok(adminAuditService.listReports(UserContext.requireRole(), status));
     }
 
     /** 处理举报（仅管理员，result 必填） */
@@ -59,10 +59,10 @@ public class AdminAuditController {
         return ApiResponse.ok(null);
     }
 
-    /** 数据看板 */
+    /** 数据看板（仅管理员） */
     @GetMapping("/stats")
     public ApiResponse<Map<String, Object>> stats() {
-        return ApiResponse.ok(adminAuditService.stats());
+        return ApiResponse.ok(adminAuditService.stats(UserContext.requireRole()));
     }
 
     @Data

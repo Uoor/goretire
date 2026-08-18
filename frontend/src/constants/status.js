@@ -59,12 +59,21 @@ export const SUBSCRIBE_TYPE_TEXT = {
 }
 
 /**
- * 求租需求状态
+ * 求租需求状态（与后端 Demand.STATUS_* 一致：0 待匹配 / 1 已匹配 / 2 已成交；撤回为物理删除无状态）
  */
 export const DEMAND_STATUS = {
-  ACTIVE: 0,     // 进行中
-  COMPLETED: 1,  // 已完成
-  WITHDRAWN: 2   // 已撤回
+  PENDING: 0,    // 待匹配
+  MATCHED: 1,    // 已匹配
+  DONE: 2        // 已成交
+}
+
+/**
+ * 求租需求状态文本
+ */
+export const DEMAND_STATUS_TEXT = {
+  [DEMAND_STATUS.PENDING]: '待匹配',
+  [DEMAND_STATUS.MATCHED]: '已匹配',
+  [DEMAND_STATUS.DONE]: '已成交'
 }
 
 /**

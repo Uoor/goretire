@@ -17,6 +17,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalTime;
 import java.util.List;
 
 /**
@@ -75,6 +76,11 @@ public class PublishOrchestrator {
         for (SubscriptionHit hit : subHits) {
             Subscribe s = subscribeMapper.selectById(hit.getSubscribeId());
             if (s != null) {
+                // 防骚扰：用户设置的免打扰时段内不私聊（与每日上限同策略，不落库）
+                if (inQuietHours(s.getQuietHours())) {
+                    log.info("subscribe {} in quiet hours, skip", s.getId());
+                    continue;
+                }
                 // 防骚扰：该订阅今日推送已达上限则跳过私聊（仍不落库，避免误导"已推送"）
                 if (pushLogService.countTodayBySubscribe(s.getId()) >= dailySubLimit) {
                     log.info("subscribe {} daily push limit reached ({}), skip", s.getId(), dailySubLimit);
@@ -99,6 +105,37 @@ public class PublishOrchestrator {
             }
         }
         log.info("house {} audited: {} subscription hits, {} demand hits", houseId, subHits.size(), demandHits.size());
+    }
+
+    /**
+     * 免打扰时段判断：quiet_hours 为 JSON {"start":"22:00","end":"08:00"}，
+     * 支持跨零点区间；格式非法/未设置时不拦截。
+     */
+    private boolean inQuietHours(String quietHours) {
+        if (quietHours == null || quietHours.isBlank()) {
+            return false;
+        }
+        try {
+            JsonNode qh = objectMapper.readTree(quietHours);
+            String start = qh.path("start").asText("");
+            String end = qh.path("end").asText("");
+            if (start.isBlank() || end.isBlank()) {
+                return false;
+            }
+            LocalTime now = LocalTime.now();
+            LocalTime st = LocalTime.parse(start);
+            LocalTime en = LocalTime.parse(end);
+            if (st.equals(en)) {
+                return false;
+            }
+            // 同日区间 [st, en)；跨零点区间 [st, 24:00) ∪ [00:00, en)
+            return st.isBefore(en)
+                    ? !now.isBefore(st) && now.isBefore(en)
+                    : !now.isBefore(st) || now.isBefore(en);
+        } catch (Exception e) {
+            log.warn("quiet hours 解析失败，忽略: {}", quietHours);
+            return false;
+        }
     }
 
     /** 业务用户 id → 钉钉 userid（工作通知目标；dev 桩用户返回其自身，真实钉钉用户返回钉钉身份） */

@@ -8,8 +8,12 @@ import com.aliren.houserent.report.Report;
 import com.aliren.houserent.report.ReportService;
 import com.aliren.houserent.robot.PublishOrchestrator;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.util.StringUtils;
 
 import java.time.LocalDate;
@@ -19,6 +23,8 @@ import java.util.Map;
 
 @Service
 public class AdminAuditService {
+
+    private static final Logger log = LoggerFactory.getLogger(AdminAuditService.class);
 
     private final HouseMapper houseMapper;
     private final AuditLogService auditLogService;
@@ -62,8 +68,28 @@ public class AdminAuditService {
         auditLogService.record(operatorId, pass ? "AUDIT_PASS" : "AUDIT_REJECT", "house",
                 houseId, pass ? null : reason);
         if (pass) {
-            // 通过后编排：触发订阅/求租匹配 + 新上架卡片推送（同步，后续可异步化）
+            // 通过后编排：触发订阅/求租匹配 + 新上架卡片推送。
+            // 注册到事务提交后执行：推送含外部 HTTP 调用，不能持事务（占行锁/拖长事务）；
+            // 无事务上下文（如单测）时降级为同步调用。
+            if (TransactionSynchronizationManager.isSynchronizationActive()) {
+                TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                    @Override
+                    public void afterCommit() {
+                        runOrchestrator(houseId);
+                    }
+                });
+            } else {
+                runOrchestrator(houseId);
+            }
+        }
+    }
+
+    /** 编排失败不影响审核结果（状态已提交），仅记录日志 */
+    private void runOrchestrator(Long houseId) {
+        try {
             publishOrchestrator.onHouseAudited(houseId);
+        } catch (Exception e) {
+            log.warn("审核通过后编排推送失败: houseId={}", houseId, e);
         }
     }
 
@@ -128,7 +154,8 @@ public class AdminAuditService {
     }
 
     /** 待审核队列（含房号等审核敏感字段 + 发布人昵称，仅管理员） */
-    public List<Map<String, Object>> pendingList() {
+    public List<Map<String, Object>> pendingList(int operatorRole) {
+        requireAdmin(operatorRole);
         QueryWrapper<House> qw = new QueryWrapper<>();
         qw.eq("audit_status", House.AUDIT_PENDING).orderByAsc("created_at");
         return houseMapper.selectList(qw).stream().map(h -> {
@@ -163,7 +190,8 @@ public class AdminAuditService {
     }
 
     /** 举报列表（按状态过滤，仅管理员） */
-    public List<Report> listReports(Integer status) {
+    public List<Report> listReports(int operatorRole, Integer status) {
+        requireAdmin(operatorRole);
         return reportService.list(status);
     }
 
@@ -177,8 +205,9 @@ public class AdminAuditService {
         auditLogService.record(operatorId, "REPORT_HANDLE", "report", reportId, result);
     }
 
-    /** 数据看板：房源总数/待审核/已上架/已租出/今日新增 */
-    public Map<String, Object> stats() {
+    /** 数据看板：房源总数/待审核/已上架/已租出/今日新增（仅管理员） */
+    public Map<String, Object> stats(int operatorRole) {
+        requireAdmin(operatorRole);
         Map<String, Object> stats = new LinkedHashMap<>();
         stats.put("total", houseMapper.selectCount(null));
         stats.put("pending", houseMapper.selectCount(new QueryWrapper<House>()
@@ -190,6 +219,13 @@ public class AdminAuditService {
         stats.put("todayNew", houseMapper.selectCount(new QueryWrapper<House>()
                 .ge("created_at", LocalDate.now().atStartOfDay())));
         return stats;
+    }
+
+    /** 管理端读接口统一角色校验（待审核队列含房号、举报含举报人，不可对普通用户开放） */
+    private void requireAdmin(int operatorRole) {
+        if (operatorRole != 1) {
+            throw new BusinessException(403, "无权限：仅管理员可查看");
+        }
     }
 
     private House requirePending(Long houseId) {

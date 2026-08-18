@@ -11,7 +11,7 @@
  * @param {number} options.maxHeight - 最大高度，默认 1200
  * @param {number} options.quality - 压缩质量 0-1，默认 0.8
  * @param {string} options.type - 输出类型，默认 'image/jpeg'
- * @returns {Promise<Blob>} 压缩后的图片 Blob
+ * @returns {Promise<File|Blob>} 压缩后的图片（带文件名的 File；无法压缩时返回原文件）
  */
 export async function compressImage(file, options = {}) {
   const {
@@ -53,7 +53,10 @@ export async function compressImage(file, options = {}) {
           if (blob.size >= file.size) {
             resolve(file)
           } else {
-            resolve(blob)
+            // canvas.toBlob 产出无文件名的 Blob，multipart 默认文件名会是 "blob"，
+            // 后端按扩展名校验会直接拒绝；包装成带 .jpg 文件名的 File（输出固定 jpeg）
+            const name = (file.name || 'image').replace(/\.[^.]*$/, '') + '.jpg'
+            resolve(new File([blob], name, { type }))
           }
         } else {
           reject(new Error('图片压缩失败'))
@@ -72,10 +75,18 @@ export async function compressImage(file, options = {}) {
  */
 function loadImage(file) {
   return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file)
     const img = new Image()
-    img.onload = () => resolve(img)
-    img.onerror = () => reject(new Error('图片加载失败'))
-    img.src = URL.createObjectURL(file)
+    // 加载完成后释放 ObjectURL，避免连续选图时大图驻留内存（移动端 WebView 敏感）
+    img.onload = () => {
+      URL.revokeObjectURL(url)
+      resolve(img)
+    }
+    img.onerror = () => {
+      URL.revokeObjectURL(url)
+      reject(new Error('图片加载失败'))
+    }
+    img.src = url
   })
 }
 

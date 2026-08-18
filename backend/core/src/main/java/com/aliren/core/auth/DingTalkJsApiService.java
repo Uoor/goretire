@@ -34,6 +34,7 @@ public class DingTalkJsApiService {
     private static final String GET_TICKET_URL = "https://oapi.dingtalk.com/get_jsapi_ticket";
     private static final Duration TIMEOUT = Duration.ofSeconds(5);
     private static final long TICKET_TTL_MS = 7000_000L; // 官方 7200s，提前 200s 过期
+    private static final long TOKEN_TTL_MS = 7000_000L;  // access_token 同样 7200s，避免每次签名都 gettoken
 
     private final String appKey;
     private final String appSecret;
@@ -44,6 +45,8 @@ public class DingTalkJsApiService {
 
     private volatile String cachedTicket = "";
     private volatile long ticketExpireAt = 0;
+    private volatile String cachedToken = "";
+    private volatile long tokenExpireAt = 0;
 
     public DingTalkJsApiService(@Value("${aliren.dingtalk.app-key:}") String appKey,
                                 @Value("${aliren.dingtalk.app-secret:}") String appSecret,
@@ -119,9 +122,20 @@ public class DingTalkJsApiService {
     }
 
     private String getAccessToken() {
-        String token = httpGetString(GET_TOKEN_URL + "?appkey=" + appKey + "&appsecret=" + appSecret,
-                "access_token", "获取钉钉 token 失败");
-        return token;
+        long now = System.currentTimeMillis();
+        if (!cachedToken.isEmpty() && now < tokenExpireAt) {
+            return cachedToken;
+        }
+        synchronized (this) {
+            if (!cachedToken.isEmpty() && now < tokenExpireAt) {
+                return cachedToken;
+            }
+            String token = httpGetString(GET_TOKEN_URL + "?appkey=" + appKey + "&appsecret=" + appSecret,
+                    "access_token", "获取钉钉 token 失败");
+            cachedToken = token;
+            tokenExpireAt = now + TOKEN_TTL_MS;
+            return token;
+        }
     }
 
     private String httpGetString(String url, String field, String errMsg) {

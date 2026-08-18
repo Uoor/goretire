@@ -1,0 +1,75 @@
+{
+  "name": "code-review-team",
+  "id": "code-review-team",
+  "description": "从性能、安全、产品三个角度审查校友安居工程代码",
+  "captainSessionId": "session-6c460972-0f78-4e3f-a333-6ba9bfa00637",
+  "createdAt": 1786958463691,
+  "members": [
+    {
+      "id": "6d9784e6-88fc-44b3-8a8d-c3d38e3dbd8e",
+      "name": "performance-reviewer",
+      "role": "性能审查员：审查代码性能问题，包括数据库查询、缓存、并发、前端性能等",
+      "provider": "scnet",
+      "model": "GLM-5-Base",
+      "joinedAt": 1786958472536,
+      "status": "removed"
+    },
+    {
+      "id": "cc16245c-afb0-4f47-8b06-0fc8902eb674",
+      "name": "security-reviewer",
+      "role": "安全审查员：审查代码安全问题，包括认证授权、输入验证、SQL注入、XSS、敏感信息泄露等",
+      "provider": "scnet",
+      "model": "GLM-5-Base",
+      "joinedAt": 1786958472566,
+      "status": "removed"
+    },
+    {
+      "id": "de8078ce-ac91-4e1b-b37d-20e3c112adde",
+      "name": "product-reviewer",
+      "role": "产品审查员：审查代码是否符合产品设计，功能是否完整，用户体验是否良好",
+      "provider": "scnet",
+      "model": "GLM-5-Base",
+      "joinedAt": 1786958472583,
+      "status": "removed"
+    }
+  ],
+  "tasks": [
+    {
+      "id": "t1",
+      "subject": "性能审查",
+      "description": "从性能角度审查校友安居工程代码，包括：\n1. 后端性能：数据库查询效率、N+1问题、索引使用、缓存策略、并发处理\n2. 前端性能：资源加载、图片优化、代码分割、渲染性能\n3. 接口性能：响应时间、分页实现、批量操作\n\n重点检查：\n- backend/houserent/src/main/java/com/aliren/houserent/ 目录下的 Service 和 Mapper\n- frontend/src/modules/houserent/ 目录下的 Vue 组件\n- 数据库查询是否有 N+1 问题\n- 是否有缺失的索引\n- 前端是否有性能瓶颈\n\n输出格式：\n1. 发现的性能问题列表（按严重程度排序）\n2. 每个问题的具体位置和代码\n3. 优化建议",
+      "status": "pending",
+      "dependencies": [],
+      "attempt": 5255,
+      "createdAt": 1786958501374,
+      "updatedAt": 1786961109461,
+      "reassigning": false,
+      "handoffId": "f2e12d51-3f4e-40a9-9a34-564d825d3428"
+    },
+    {
+      "id": "t2",
+      "subject": "安全审查",
+      "description": "从安全角度审查校友安居工程代码，包括：\n1. 认证授权：JWT实现、权限校验、会话管理\n2. 输入验证：参数校验、SQL注入防护、XSS防护\n3. 敏感信息：密码存储、token处理、日志脱敏\n4. 接口安全：越权访问、敏感接口保护\n\n重点检查：\n- backend/core/src/main/java/com/aliren/core/auth/ 认证模块\n- backend/core/src/main/java/com/aliren/core/interceptor/ 拦截器\n- backend/houserent/src/main/java/com/aliren/houserent/house/HouseController.java 接口\n- frontend/src/utils/request.js 请求封装\n- frontend/src/router/index.js 路由守卫\n\n输出格式：\n1. 发现的安全问题列表（按严重程度排序）\n2. 每个问题的具体位置和代码\n3. 修复建议",
+      "status": "pending",
+      "dependencies": [],
+      "attempt": 5180,
+      "createdAt": 1786958501400,
+      "updatedAt": 1786961109461,
+      "reassigning": false,
+      "handoffId": "2110fdd5-02f6-433e-a290-e4c5a6b73a50"
+    },
+    {
+      "id": "t3",
+      "subject": "产品审查",
+      "description": "从产品角度审查校友安居工程代码，包括：\n1. 功能完整性：是否实现了产品设计文档中的所有功能\n2. 用户体验：交互流程是否顺畅、错误提示是否友好\n3. 业务逻辑：状态流转是否正确、边界情况是否处理\n4. 数据一致性：前后端数据格式是否一致\n\n参考文档：\n- docs/design/2026-08-14-校友安居-产品设计文档.md\n- docs/design/2026-08-16-校友安居-前端实现方案.md\n- frontend/DESIGN.md\n\n重点检查：\n- 房源发布流程是否符合产品设计\n- 审核流程是否完整\n- 订阅匹配功能是否实现\n- 用户状态管理是否正确\n\n输出格式：\n1. 发现的产品问题列表（按严重程度排序）\n2. 每个问题的具体位置和代码\n3. 改进建议",
+      "status": "pending",
+      "dependencies": [],
+      "attempt": 5187,
+      "createdAt": 1786958501419,
+      "updatedAt": 1786961109461,
+      "reassigning": false,
+      "handoffId": "a13fde2c-1006-4423-80bf-9524edbbff03"
+    }
+  ],
+  "taskSeq": 3
+}

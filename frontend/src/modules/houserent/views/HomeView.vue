@@ -208,9 +208,10 @@ function onScroll() {
   }
 }
 
-/** 匹配结果里取房源摘要（列表已加载的在租房源） */
+/** 匹配结果里取房源摘要：优先用已加载列表里的完整数据；
+ *  不在已加载分页内时回退用 HouseMatch 自带摘要字段（community/houseType/area/rent/region） */
 function houseOf(match) {
-  return houses.value.find((h) => h.id === match.houseId)
+  return houses.value.find((h) => h.id === match.houseId) || match
 }
 
 async function doSearch() {

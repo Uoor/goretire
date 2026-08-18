@@ -31,6 +31,8 @@ public class HouseResponse {
     private List<String> images;
     private String description;
     private Integer auditStatus;
+    /** 驳回原因：仅发布人本人（mine 接口）可见，供“驳回后修改重提”闭环 */
+    private String auditReason;
     private Integer rackStatus;
     private LocalDateTime createdAt;
     /** 发布人昵称（详情接口附带，仅公开可看信息） */

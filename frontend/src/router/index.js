@@ -15,7 +15,7 @@ const routes = [
   { path: '/me', name: 'me', component: () => import('@/modules/houserent/views/MeView.vue'), meta: { title: '我的', tab: true } },
   { path: '/guide', name: 'guide', component: () => import('@/modules/houserent/views/GuideView.vue'), meta: { title: '避坑指南' } },
   { path: '/report', name: 'report', component: () => import('@/modules/houserent/views/RentReportView.vue'), meta: { title: '租金周报' } },
-  { path: '/admin', name: 'admin', component: () => import('@/modules/houserent/views/admin/AdminView.vue'), meta: { title: '管理后台' } },
+  { path: '/admin', name: 'admin', component: () => import('@/modules/houserent/views/admin/AdminView.vue'), meta: { title: '管理后台', admin: true } },
   { path: '/join', name: 'join', component: () => import('@/modules/houserent/views/JoinView.vue'), meta: { title: '加入组织' } },
   { path: '/:pathMatch(.*)*', redirect: '/' }
 ]

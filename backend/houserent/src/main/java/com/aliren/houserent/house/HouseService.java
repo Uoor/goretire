@@ -179,6 +179,7 @@ public class HouseService {
         return houseMapper.selectList(qw).stream().map(h -> {
             HouseResponse r = HouseResponse.from(h);
             r.setRoomNo(h.getRoomNo()); // 仅本人可见
+            r.setAuditReason(h.getAuditReason()); // 驳回原因仅本人可见，供修改重提
             return r;
         }).toList();
     }

@@ -31,6 +31,8 @@ public class DingTalkPushClient implements PushClient {
     private static final String WORK_NOTICE_URL = "https://oapi.dingtalk.com/topapi/message/corpconversation/asyncsend_v2";
     private static final String GET_TOKEN_URL = "https://oapi.dingtalk.com/gettoken";
     private static final Duration TIMEOUT = Duration.ofSeconds(5);
+    /** access_token 官方有效期 7200s，提前 200s 过期；避免每条推送都请求 gettoken（有频控） */
+    private static final long TOKEN_TTL_MS = 7000_000L;
 
     private final String robotWebhook;
     private final String agentId;
@@ -38,6 +40,9 @@ public class DingTalkPushClient implements PushClient {
     private final String appSecret;
     private final HttpClient httpClient;
     private final ObjectMapper objectMapper = new ObjectMapper();
+
+    private volatile String cachedToken = "";
+    private volatile long tokenExpireAt = 0;
 
     public DingTalkPushClient(@Value("${aliren.robot.webhook:}") String robotWebhook,
                               @Value("${aliren.robot.agent-id:}") String agentId,
@@ -149,6 +154,22 @@ public class DingTalkPushClient implements PushClient {
     }
 
     private String getAccessToken() {
+        long now = System.currentTimeMillis();
+        if (!cachedToken.isEmpty() && now < tokenExpireAt) {
+            return cachedToken;
+        }
+        synchronized (this) {
+            if (!cachedToken.isEmpty() && now < tokenExpireAt) {
+                return cachedToken;
+            }
+            String token = fetchAccessToken();
+            cachedToken = token;
+            tokenExpireAt = now + TOKEN_TTL_MS;
+            return token;
+        }
+    }
+
+    private String fetchAccessToken() {
         try {
             URI uri = URI.create(GET_TOKEN_URL + "?appkey=" + appKey + "&appsecret=" + appSecret);
             HttpRequest request = HttpRequest.newBuilder(uri).timeout(TIMEOUT).GET().build();
