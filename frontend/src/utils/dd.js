@@ -17,6 +17,10 @@ export function isDingTalk() {
 // dd.config 幂等缓存：页面生命周期内只授权一次
 let configPromise = null
 
+// 后端 jsapi-sign 返回的 corpId（应用所属企业，已通过 dd.config 校验）。
+// requestAuthCode 优先用它，避免依赖构建时环境变量（线上构建可能缺失 VITE_DING_CORP_ID）。
+let backendCorpId = ''
+
 /** 诊断上报（静默失败，不影响主流程） */
 function reportDebug(event, payload) {
   try {
@@ -75,6 +79,7 @@ export function configDingtalk() {
     request
       .post('/dingtalk/jsapi-sign', { url })
       .then((cfg) => new Promise((resolve, reject) => {
+        backendCorpId = cfg.corpId || ''
         // 兜底：dd.config 后 8s 内既无 ready 也无 error（部分钉钉版本静默失败），
         // 超时按失败处理，避免免登流程永久卡死。
         const timer = setTimeout(() => {
@@ -158,9 +163,11 @@ export function getAuthCode() {
       resolve('dev-code')
       return
     }
-    // 容器当前企业优先；拿不到时回退构建时配置的 VITE_DING_CORP_ID
+    // corpId 取值优先级：后端 jsapi-sign 返回（已通过 dd.config 校验）>
+    // 容器当前企业 > 构建时 VITE_DING_CORP_ID。
+    // 注意：线上构建可能缺失 VITE_DING_CORP_ID，必须优先用后端返回值。
     getContainerCorpId().then((containerCorpId) => {
-      const corpId = containerCorpId || import.meta.env.VITE_DING_CORP_ID || ''
+      const corpId = backendCorpId || containerCorpId || import.meta.env.VITE_DING_CORP_ID || ''
       // 先带 corpId 试一次；失败再不带 corpId 重试（部分钉钉版本带 corpId 会失败，
       // 不带则跟随容器当前企业）
       requestAuthCodeOnce(corpId, resolve, reject)
