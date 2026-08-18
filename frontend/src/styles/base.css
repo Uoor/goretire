@@ -33,11 +33,19 @@ body {
 
 @media (min-width: 500px) {
   #app {
+    /* 桌面宽视口（PC 钉钉 / 普通浏览器 ≥500px）：整体缩放到 375 设计稿宽度，
+       解决 postcss vw 按视口宽度放大导致交互错乱的问题。
+       width: 100vw + zoom = 375/视口宽，视觉宽度正好等于 375px；
+       zoom 会连 fixed 元素（TabBar/van-popup）一起缩放，无需改组件。
+       缩放比例由 JS 动态计算（见 src/utils/viewport.js）。 */
+    width: 100vw;
+    max-width: none;
     margin: 24px auto;
     border-radius: 36px;
     overflow: hidden;
     min-height: calc(100vh - 48px);
     box-shadow: 0 0 0 8px #2c2c2e, 0 24px 60px rgba(0, 0, 0, 0.55);
+    zoom: var(--desktop-zoom, 1);
   }
 }
 
@@ -53,18 +61,19 @@ body {
 }
 
 /* ===== 手机壳适配（桌面 ≥500px 预览时） =====
-   fixed/sticky 元素默认相对视口；壳模式下需改为相对手机壳容器（居中 430px、上下 24px 边距） */
+   整体 zoom 缩放到 375 视觉宽后，fixed/sticky 元素相对缩放后的视口定位，
+   宽度直接占满（100%），无需再用 430px 手动居中。 */
 @media (min-width: 500px) {
   .fixed-shell {
-    left: 50% !important;
-    right: auto !important;
-    transform: translateX(-50%);
-    width: 430px;
-    bottom: 24px;
+    left: 0 !important;
+    right: 0 !important;
+    transform: none;
+    width: 100% !important;
+    bottom: 0;
   }
   .sticky-shell {
-    top: 24px !important;
-    border-radius: 36px 36px 0 0;
+    top: 0 !important;
+    border-radius: 0;
   }
 }
 
