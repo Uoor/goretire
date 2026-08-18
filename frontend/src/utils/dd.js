@@ -17,6 +17,13 @@ export function isDingTalk() {
 // dd.config 幂等缓存：页面生命周期内只授权一次
 let configPromise = null
 
+/** 诊断上报（静默失败，不影响主流程） */
+function reportDebug(event, payload) {
+  try {
+    request.post('/dingtalk/jsapi-debug', { event, ...payload }).catch(() => {})
+  } catch (e) { /* 上报失败不影响主流程 */ }
+}
+
 /**
  * 获取钉钉容器当前企业 corpId。
  * 优先用 dd.runtime.info（容器注入的运行时信息，免鉴权），失败时回退到
@@ -72,11 +79,27 @@ export function configDingtalk() {
         // 超时按失败处理，避免免登流程永久卡死。
         const timer = setTimeout(() => {
           configPromise = null
+          // 超时也上报诊断（很多版本 dd.config 静默失败，只有超时能暴露）
+          reportDebug('dd.config.timeout', {
+            containerCorpId,
+            runtimeInfo: lastRuntimeInfo,
+            backendCorpId: cfg.corpId,
+            agentId: cfg.agentId,
+            pageUrl: location.href
+          })
           reject(new Error('钉钉授权超时（dd.config 无回调）'))
         }, 8000)
         // 容器当前企业优先（多组织场景跟随用户当前活跃企业），否则用应用所属企业
         const corpId = containerCorpId || cfg.corpId
         console.info('[dd.config] corpId 来源:', containerCorpId ? '容器' : '后端配置', corpId)
+        reportDebug('dd.config.calling', {
+          containerCorpId,
+          runtimeInfo: lastRuntimeInfo,
+          backendCorpId: cfg.corpId,
+          usedCorpId: corpId,
+          agentId: cfg.agentId,
+          pageUrl: location.href
+        })
         dd.config({
           agentId: String(cfg.agentId),
           corpId,
@@ -87,6 +110,7 @@ export function configDingtalk() {
         })
         dd.ready(() => {
           clearTimeout(timer)
+          reportDebug('dd.config.ready', { usedCorpId: corpId, pageUrl: location.href })
           resolve(true)
         })
         dd.error((err) => {
@@ -106,19 +130,16 @@ export function configDingtalk() {
           }
           console.error('[dd.config] 授权失败:', { errorCode, errorMessage, corpId, url })
           // 诊断上报：容器 corpId vs 后端配置 corpId 的差异是排查 invalid corpid 的关键
-          try {
-            request.post('/dingtalk/jsapi-debug', {
-              event: 'dd.config.error',
-              errorCode,
-              errorMessage,
-              containerCorpId,
-              runtimeInfo: lastRuntimeInfo,
-              backendCorpId: cfg.corpId,
-              usedCorpId: corpId,
-              agentId: cfg.agentId,
-              pageUrl: location.href
-            }).catch(() => {})
-          } catch (e) { /* 上报失败不影响主流程 */ }
+          reportDebug('dd.config.error', {
+            errorCode,
+            errorMessage,
+            containerCorpId,
+            runtimeInfo: lastRuntimeInfo,
+            backendCorpId: cfg.corpId,
+            usedCorpId: corpId,
+            agentId: cfg.agentId,
+            pageUrl: location.href
+          })
           reject(new Error(`${friendlyMessage}（${errorCode}: ${errorMessage}）`))
         })
       }))
