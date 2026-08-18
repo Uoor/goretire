@@ -161,16 +161,33 @@ export function getAuthCode() {
     // 容器当前企业优先；拿不到时回退构建时配置的 VITE_DING_CORP_ID
     getContainerCorpId().then((containerCorpId) => {
       const corpId = containerCorpId || import.meta.env.VITE_DING_CORP_ID || ''
-      dd.runtime.permission.requestAuthCode({
-        corpId,
-        onSuccess: (result) => resolve(result.code),
-        onFail: (err) => {
-          const detail = err?.errorMessage || err?.errorCode || err?.message || JSON.stringify(err)
-          reject(new Error(`requestAuthCode: ${detail}`))
-        }
-      })
+      // 先带 corpId 试一次；失败再不带 corpId 重试（部分钉钉版本带 corpId 会失败，
+      // 不带则跟随容器当前企业）
+      requestAuthCodeOnce(corpId, resolve, reject)
     })
   })
+}
+
+function requestAuthCodeOnce(corpId, resolve, reject, triedWithoutCorpId = false) {
+  const options = { onSuccess, onFail }
+  if (corpId && !triedWithoutCorpId) {
+    options.corpId = corpId
+  }
+  function onSuccess(result) {
+    resolve(result.code)
+  }
+  function onFail(err) {
+    const detail = err?.errorMessage || err?.errorCode || err?.message || JSON.stringify(err)
+    console.warn('[authCode] requestAuthCode 失败:', { corpId, detail })
+    reportDebug('requestAuthCode.fail', { corpId, detail, triedWithoutCorpId, pageUrl: location.href })
+    if (corpId && !triedWithoutCorpId) {
+      // 降级重试：不带 corpId（跟随容器当前企业）
+      requestAuthCodeOnce(corpId, resolve, reject, true)
+    } else {
+      reject(new Error(`requestAuthCode: ${detail}`))
+    }
+  }
+  dd.runtime.permission.requestAuthCode(options)
 }
 
 /**
