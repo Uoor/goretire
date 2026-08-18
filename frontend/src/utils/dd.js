@@ -154,19 +154,28 @@ function requestAuthCodeOnce(corpId, resolve, reject, triedWithoutCorpId = false
 }
 
 /**
- * 唤起钉钉单聊窗口（联系房东：拿到 staffId 后直接开聊）。
+ * 唤起钉钉单聊窗口（联系房东：拿到钉钉 userid 后直接开聊）。
  * 非钉钉环境直接拒绝（调用方降级提示）。
+ * 注：不同钉钉版本对参数名要求不一（userid / staffId），同时传两者兼容；
+ * 部分版本还需 corpId（当前企业），一并带上。
  */
-export function openSingleChat(staffId) {
+export function openSingleChat(userId) {
   return new Promise((resolve, reject) => {
-    if (!isDingTalk() || !staffId) {
+    if (!isDingTalk() || !userId) {
       reject(new Error('请在钉钉内使用此功能'))
       return
     }
-    dd.biz.chat.openSingleChat({
-      staffId,
-      onSuccess: () => resolve(true),
-      onFail: (err) => reject(err)
-    })
+    function onSuccess() {
+      resolve(true)
+    }
+    function onFail(err) {
+      const detail = err?.errorMessage || err?.errorCode || err?.message || JSON.stringify(err)
+      reject(new Error(`打开钉钉会话失败: ${detail}`))
+    }
+    // 优先用后端签名接口返回的 corpId（已通过 dd.config 校验），再补容器企业
+    const corpId = backendCorpId || ''
+    const params = { userid: userId, staffId: userId, onSuccess, onFail }
+    if (corpId) params.corpId = corpId
+    dd.biz.chat.openSingleChat(params)
   })
 }
