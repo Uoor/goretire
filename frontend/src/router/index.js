@@ -70,10 +70,9 @@ router.beforeEach(async (to) => {
   } catch (e) {
     // 免登失败（非组织成员/JSAPI 被拦等）：先弹窗说明，用户确认后再引导加入组织
     if (e?.__loginFailed) {
-      const detail = e instanceof Error ? e.message : String(e)
       await showDialog({
         title: '校友专属服务',
-        message: `「校友安居」是面向阿里/蚂蚁校友社群的专属租房服务，需要先加入社群组织才能使用。\n\n（诊断: ${detail}）`,
+        message: '「校友安居」是面向阿里/蚂蚁校友社群的专属租房服务，需要先加入社群组织才能使用。',
         confirmButtonText: '查看如何加入',
         closeOnClickOverlay: false
       }).catch(() => {})

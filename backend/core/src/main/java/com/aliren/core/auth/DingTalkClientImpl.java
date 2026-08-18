@@ -61,10 +61,6 @@ public class DingTalkClientImpl implements DingTalkClient {
         if (authCode == null || authCode.isBlank()) {
             throw new BusinessException(401, "免登失败");
         }
-        log.info("[auth] code received: len={} head={} tail={}",
-                authCode.length(),
-                authCode.length() > 6 ? authCode.substring(0, 6) : authCode,
-                authCode.length() > 6 ? authCode.substring(authCode.length() - 6) : "");
         // 本地浏览器联调桩：dev-code 直接放行（对应前端 utils/dd.js 的浏览器桩）。
         // 生产必须关闭（aliren.auth.dev-code-enabled=false），否则任何人可伪装身份。
         if (devCodeEnabled && "dev-code".equals(authCode)) {

@@ -1,7 +1,6 @@
 // 钉钉 JSAPI 封装（免登 / 单聊 / dd.config 授权）
 // 参考: 钉钉开放平台 H5 免登流程（requestAuthCode → 后端换 userid → JWT）
 // 参考: 钉钉开放平台 JSAPI 鉴权（dd.config，需后端 /api/dingtalk/jsapi-sign 签名）
-// CorpId 从 frontend/.env 的 VITE_DING_CORP_ID 读取（钉钉容器内使用）
 //
 // 注意：dd 全局由 index.html 引入的官方 JSAPI SDK 提供，普通浏览器也会注入
 // （dd.env.platform === 'notInDingTalk'），因此一律用 isDingTalk() 判断环境，
@@ -21,35 +20,22 @@ let configPromise = null
 // requestAuthCode 优先用它，避免依赖构建时环境变量（线上构建可能缺失 VITE_DING_CORP_ID）。
 let backendCorpId = ''
 
-/** 诊断上报（静默失败，不影响主流程） */
-function reportDebug(event, payload) {
-  try {
-    request.post('/dingtalk/jsapi-debug', { event, ...payload }).catch(() => {})
-  } catch (e) { /* 上报失败不影响主流程 */ }
-}
-
 /**
- * 获取钉钉容器当前企业 corpId。
- * 优先用 dd.runtime.info（容器注入的运行时信息，免鉴权），失败时回退到
- * 后端签名接口返回的 corpId（应用所属企业）。
- * 背景：钉钉多组织场景下，容器当前活跃企业可能与应用所属企业不一致，
- * dd.config 校验 corpId 不匹配会报 invalid corpid。
+ * 获取钉钉容器当前企业 corpId（dd.runtime.info，免鉴权）。
+ * 多组织场景下，容器当前活跃企业可能与应用所属企业不一致，
+ * dd.config 校验 corpId 不匹配会报 invalid corpid，因此优先跟随容器。
+ * 容器不可用时返回 null，由调用方回退到后端配置的 corpId。
  */
-let lastRuntimeInfo = null
 function getContainerCorpId() {
   return new Promise((resolve) => {
     try {
       if (typeof dd !== 'undefined' && dd.runtime && typeof dd.runtime.info === 'function') {
         dd.runtime.info({
           onSuccess: (info) => {
-            lastRuntimeInfo = info || null
             const corpId = (info && (info.corpId || info.corpId2)) || ''
             resolve(corpId || null)
           },
-          onFail: (err) => {
-            lastRuntimeInfo = { error: err?.errorMessage || err?.message || 'onFail' }
-            resolve(null)
-          }
+          onFail: () => resolve(null)
         })
       } else {
         resolve(null)
@@ -84,27 +70,10 @@ export function configDingtalk() {
         // 超时按失败处理，避免免登流程永久卡死。
         const timer = setTimeout(() => {
           configPromise = null
-          // 超时也上报诊断（很多版本 dd.config 静默失败，只有超时能暴露）
-          reportDebug('dd.config.timeout', {
-            containerCorpId,
-            runtimeInfo: lastRuntimeInfo,
-            backendCorpId: cfg.corpId,
-            agentId: cfg.agentId,
-            pageUrl: location.href
-          })
           reject(new Error('钉钉授权超时（dd.config 无回调）'))
         }, 8000)
         // 容器当前企业优先（多组织场景跟随用户当前活跃企业），否则用应用所属企业
         const corpId = containerCorpId || cfg.corpId
-        console.info('[dd.config] corpId 来源:', containerCorpId ? '容器' : '后端配置', corpId)
-        reportDebug('dd.config.calling', {
-          containerCorpId,
-          runtimeInfo: lastRuntimeInfo,
-          backendCorpId: cfg.corpId,
-          usedCorpId: corpId,
-          agentId: cfg.agentId,
-          pageUrl: location.href
-        })
         dd.config({
           agentId: String(cfg.agentId),
           corpId,
@@ -115,7 +84,6 @@ export function configDingtalk() {
         })
         dd.ready(() => {
           clearTimeout(timer)
-          reportDebug('dd.config.ready', { usedCorpId: corpId, pageUrl: location.href })
           resolve(true)
         })
         dd.error((err) => {
@@ -134,17 +102,6 @@ export function configDingtalk() {
             friendlyMessage = '钉钉授权已过期，请刷新页面重试'
           }
           console.error('[dd.config] 授权失败:', { errorCode, errorMessage, corpId, url })
-          // 诊断上报：容器 corpId vs 后端配置 corpId 的差异是排查 invalid corpid 的关键
-          reportDebug('dd.config.error', {
-            errorCode,
-            errorMessage,
-            containerCorpId,
-            runtimeInfo: lastRuntimeInfo,
-            backendCorpId: cfg.corpId,
-            usedCorpId: corpId,
-            agentId: cfg.agentId,
-            pageUrl: location.href
-          })
           reject(new Error(`${friendlyMessage}（${errorCode}: ${errorMessage}）`))
         })
       }))
@@ -186,7 +143,6 @@ function requestAuthCodeOnce(corpId, resolve, reject, triedWithoutCorpId = false
   function onFail(err) {
     const detail = err?.errorMessage || err?.errorCode || err?.message || JSON.stringify(err)
     console.warn('[authCode] requestAuthCode 失败:', { corpId, detail })
-    reportDebug('requestAuthCode.fail', { corpId, detail, triedWithoutCorpId, pageUrl: location.href })
     if (corpId && !triedWithoutCorpId) {
       // 降级重试：不带 corpId（跟随容器当前企业）
       requestAuthCodeOnce(corpId, resolve, reject, true)
