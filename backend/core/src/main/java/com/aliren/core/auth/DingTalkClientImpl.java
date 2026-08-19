@@ -10,16 +10,10 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.stereotype.Component;
 
 import java.net.URI;
-import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.nio.charset.StandardCharsets;
 import java.time.Duration;
-import java.util.Base64;
-
-import javax.crypto.Mac;
-import javax.crypto.spec.SecretKeySpec;
 
 /**
  * 钉钉免登换号（生产实现，企业内部应用 H5 微应用免登链路）：
@@ -42,8 +36,9 @@ public class DingTalkClientImpl implements DingTalkClient {
     private static final String GET_USERINFO_URL = "https://oapi.dingtalk.com/topapi/v2/user/getuserinfo";
     private static final String GET_USER_URL = "https://oapi.dingtalk.com/topapi/v2/user/get";
     private static final String GET_USER_BY_UNIONID_URL = "https://oapi.dingtalk.com/topapi/user/getbyunionid";
-    // OAuth2 网页扫码登录（login.dingtalk.com 授权码兑换）
-    private static final String SNS_GETUSERINFO_BYCODE_URL = "https://oapi.dingtalk.com/sns/getuserinfo_bycode";
+    // OAuth2 网页扫码登录（新版 API）
+    private static final String OAUTH2_TOKEN_URL = "https://api.dingtalk.com/v1.0/oauth2/userAccessToken";
+    private static final String OAUTH2_USER_ME_URL = "https://api.dingtalk.com/v1.0/contact/users/me";
     private static final Duration TIMEOUT = Duration.ofSeconds(5);
     private static final long TOKEN_TTL_MS = 7000_000L; // access_token 7200s，提前 200s 过期
 
@@ -150,56 +145,72 @@ public class DingTalkClientImpl implements DingTalkClient {
         if (authCode == null || authCode.isBlank()) {
             throw new BusinessException(401, "扫码登录失败");
         }
-        // 网页扫码授权码（login.dingtalk.com 回调的 authCode）走 sns 专用接口：
-        // POST https://oapi.dingtalk.com/sns/getuserinfo_bycode
-        //   ?accessKey={appKey}&timestamp={ts}&signature={urlencoded HMAC-SHA256(AppSecret, ts)}
-        // body: {"tmp_auth_code": authCode}
+        // 优先尝试：OAuth code 直接调 /topapi/v2/user/getuserinfo（应用 token，无需 Contact.User.Read scope）
+        // 钉钉 OAuth2 的 code 与企业内部免登 code 格式相同，可复用 getUserInfo 接口。
         try {
-            String timestamp = String.valueOf(System.currentTimeMillis());
-            String signature = signSns(timestamp);
+            String appToken = getAccessToken();
+            String userId = fetchUserIdByCode(authCode, appToken);
+            if (userId != null && !userId.isBlank()) {
+                return userId;
+            }
+        } catch (Exception e) {
+            log.info("[auth] getUserInfo with OAuth code failed, fallback to unionId flow: {}", e.getMessage());
+        }
+        // 降级：OAuth2 code → 用户 token → unionId → userId（需要 Contact.User.Read scope）
+        String userAccessToken = exchangeOAuthCode(authCode);
+        String unionId = getUnionIdByUserToken(userAccessToken);
+        return getUserIdByUnionId(unionId);
+    }
+
+    /** OAuth2 授权码换用户 accessToken */
+    private String exchangeOAuthCode(String authCode) {
+        try {
             ObjectNode body = objectMapper.createObjectNode();
-            body.put("tmp_auth_code", authCode);
-            String url = SNS_GETUSERINFO_BYCODE_URL
-                    + "?accessKey=" + URLEncoder.encode(appKey, StandardCharsets.UTF_8)
-                    + "&timestamp=" + timestamp
-                    + "&signature=" + signature;
-            HttpRequest request = HttpRequest.newBuilder(URI.create(url))
+            body.put("clientId", appKey);
+            body.put("clientSecret", appSecret);
+            body.put("code", authCode);
+            body.put("grantType", "authorization_code");
+            HttpRequest request = HttpRequest.newBuilder(URI.create(OAUTH2_TOKEN_URL))
                     .timeout(TIMEOUT)
                     .header("Content-Type", "application/json")
                     .POST(HttpRequest.BodyPublishers.ofString(objectMapper.writeValueAsString(body)))
                     .build();
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
             JsonNode json = objectMapper.readTree(response.body());
-            if (response.statusCode() != 200 || json.path("errcode").asInt(0) != 0) {
-                log.warn("dingtalk sns/getuserinfo_bycode failed: status={} body={}",
-                        response.statusCode(), response.body());
+            String accessToken = json.path("accessToken").asText("");
+            if (accessToken.isEmpty()) {
+                log.warn("dingtalk oauth2 token failed: status={} body={}", response.statusCode(), response.body());
                 throw new BusinessException(401, "扫码登录失败");
             }
-            JsonNode userInfo = json.path("user_info");
-            String unionId = userInfo.path("unionid").asText("");
-            if (unionId.isBlank()) {
-                log.warn("dingtalk sns/getuserinfo_bycode empty unionid: body={}", response.body());
-                throw new BusinessException(401, "扫码登录失败");
-            }
-            // sns 返回的是全局 unionId；反查应用所属企业内的 userid（非组织成员抛 403）
-            return getUserIdByUnionId(unionId);
+            return accessToken;
         } catch (BusinessException e) {
             throw e;
         } catch (Exception e) {
-            log.warn("dingtalk sns/getuserinfo_bycode exception", e);
+            log.warn("dingtalk oauth2 token exception", e);
             throw new BusinessException(401, "扫码登录失败");
         }
     }
 
-    /** 钉钉网页扫码登录签名：HMAC-SHA256(AppSecret, timestamp) → Base64 → URL 编码 */
-    private String signSns(String timestamp) {
+    /** 用户 accessToken → /contact/users/me → unionId */
+    private String getUnionIdByUserToken(String userAccessToken) {
         try {
-            Mac mac = Mac.getInstance("HmacSHA256");
-            SecretKeySpec key = new SecretKeySpec(appSecret.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
-            mac.init(key);
-            byte[] raw = mac.doFinal(timestamp.getBytes(StandardCharsets.UTF_8));
-            return URLEncoder.encode(Base64.getEncoder().encodeToString(raw), StandardCharsets.UTF_8);
+            HttpRequest request = HttpRequest.newBuilder(URI.create(OAUTH2_USER_ME_URL))
+                    .timeout(TIMEOUT)
+                    .header("x-acs-dingtalk-access-token", userAccessToken)
+                    .GET()
+                    .build();
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            JsonNode json = objectMapper.readTree(response.body());
+            String unionId = json.path("unionId").asText("");
+            if (unionId.isEmpty()) {
+                log.warn("dingtalk /contact/users/me empty unionId: status={} body={}", response.statusCode(), response.body());
+                throw new BusinessException(401, "扫码登录失败");
+            }
+            return unionId;
+        } catch (BusinessException e) {
+            throw e;
         } catch (Exception e) {
+            log.warn("dingtalk /contact/users/me exception", e);
             throw new BusinessException(401, "扫码登录失败");
         }
     }
