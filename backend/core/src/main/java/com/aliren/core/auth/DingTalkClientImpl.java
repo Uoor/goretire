@@ -179,7 +179,12 @@ public class DingTalkClientImpl implements DingTalkClient {
             JsonNode json = objectMapper.readTree(response.body());
             String accessToken = json.path("accessToken").asText("");
             if (accessToken.isEmpty()) {
-                log.warn("dingtalk oauth2 token failed: status={} body={}", response.statusCode(), response.body());
+                // 诊断：记录 authCode 指纹与完整响应，定位兑换失败原因
+                log.warn("dingtalk oauth2 token failed: status={} codeLen={} codeHead={} clientId={} body={}",
+                        response.statusCode(),
+                        authCode == null ? -1 : authCode.length(),
+                        authCode != null && authCode.length() > 6 ? authCode.substring(0, 6) : (authCode == null ? "null" : authCode),
+                        appKey, response.body());
                 throw new BusinessException(401, "扫码登录失败");
             }
             return accessToken;

@@ -62,6 +62,11 @@ public class AuthController {
                               @RequestParam(required = false) String state,
                               jakarta.servlet.http.HttpServletRequest request,
                               jakarta.servlet.http.HttpServletResponse response) throws IOException {
+        // 诊断：记录回调参数指纹（authCode 长度/头 + 完整 state + Referer），定位兑换失败根因
+        log.info("[auth] oauth callback: codeLen={} codeHead={} state={} referer={}",
+                authCode == null ? -1 : authCode.length(),
+                authCode != null && authCode.length() > 6 ? authCode.substring(0, 6) : (authCode == null ? "null" : authCode),
+                state, request.getHeader("Referer"));
         FrontendTarget target = resolveFrontendTarget(state, request);
         AuthResponse authResult;
         try {
