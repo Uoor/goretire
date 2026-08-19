@@ -18,14 +18,16 @@ export default defineConfig({
     allowedHosts: true,
     proxy: {
       '/api': {
-        // 本机 8080 被占用，后端以 --server.port=8081 启动
-        target: 'http://localhost:8081',
-        changeOrigin: true
+        // 本地开发连接远程服务器
+        target: 'https://test.nekomiao.com',
+        changeOrigin: true,
+        secure: true
       },
       // 上传图片静态访问
       '/uploads': {
-        target: 'http://localhost:8081',
-        changeOrigin: true
+        target: 'https://test.nekomiao.com',
+        changeOrigin: true,
+        secure: true
       }
     }
   }

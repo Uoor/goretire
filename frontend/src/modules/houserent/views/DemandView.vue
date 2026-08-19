@@ -476,6 +476,13 @@ onMounted(() => {
   box-shadow: 0 2px 0 var(--primary-deep);
   margin-top: 6px;
 }
+@media (min-width: 768px) {
+  .btn-primary {
+    width: auto;
+    max-width: 320px;
+    margin: 6px auto 0;
+  }
+}
 .btn-primary:active {
   transform: translateY(1px);
   box-shadow: none;

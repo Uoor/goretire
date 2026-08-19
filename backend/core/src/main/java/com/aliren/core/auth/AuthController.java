@@ -45,13 +45,17 @@ public class AuthController {
     /**
      * 钉钉 OAuth2 网页扫码登录回调：
      * 钉钉授权页回调带 authCode → 换 userId → 签发 JWT → 302 重定向到前端（token 在 URL hash 中）。
+     * state 参数：前端传递的 base64 编码 origin，用于支持本地开发时重定向到 localhost。
      */
     @GetMapping("/dingtalk/callback")
     public void oauthCallback(@RequestParam String authCode,
+                              @RequestParam(required = false) String state,
+                              jakarta.servlet.http.HttpServletRequest request,
                               jakarta.servlet.http.HttpServletResponse response) throws IOException {
         AuthResponse authResult = authService.authenticateOAuth(authCode);
         // 重定向到前端，token 和用户信息放在 URL hash 中（不经过服务端日志）
-        String frontendBase = h5BaseUrl.isBlank() ? "/" : h5BaseUrl;
+        // 优先使用 state 参数（前端 origin），否则用配置的 h5BaseUrl，最后用 Referer
+        String frontendBase = resolveFrontendBase(state, request);
         String tokenEncoded = URLEncoder.encode(authResult.getToken(), StandardCharsets.UTF_8);
         String userJson = URLEncoder.encode(
                 String.format("{\"userId\":%d,\"nickname\":\"%s\",\"role\":%d,\"dingtalkUserId\":\"%s\"}",
@@ -62,5 +66,41 @@ public class AuthController {
                 StandardCharsets.UTF_8);
         String redirectUrl = frontendBase + "/#/oauth-callback?token=" + tokenEncoded + "&user=" + userJson;
         response.sendRedirect(redirectUrl);
+    }
+
+    /**
+     * 解析前端 base URL：
+     * 1. 优先用 state 参数（前端传递的 base64 编码 origin，支持本地开发）
+     * 2. 其次用配置的 h5BaseUrl
+     * 3. 最后用 Referer（兜底）
+     */
+    private String resolveFrontendBase(String state, jakarta.servlet.http.HttpServletRequest request) {
+        // 1. state 参数：前端 origin 的 base64 编码
+        if (state != null && !state.isBlank()) {
+            try {
+                String origin = new String(java.util.Base64.getUrlDecoder().decode(state), StandardCharsets.UTF_8);
+                if (origin.startsWith("http://") || origin.startsWith("https://")) {
+                    return origin;
+                }
+            } catch (Exception e) {
+                // state 解码失败，忽略
+            }
+        }
+        // 2. 配置的 h5BaseUrl
+        if (!h5BaseUrl.isBlank()) {
+            return h5BaseUrl;
+        }
+        // 3. Referer 兜底
+        String referer = request.getHeader("Referer");
+        if (referer != null && !referer.isBlank()) {
+            try {
+                java.net.URI uri = new java.net.URI(referer);
+                return uri.getScheme() + "://" + uri.getHost() + (uri.getPort() > 0 ? ":" + uri.getPort() : "");
+            } catch (Exception e) {
+                // Referer 解析失败，忽略
+            }
+        }
+        // 最终兜底
+        return "";
     }
 }

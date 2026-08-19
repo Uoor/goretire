@@ -483,6 +483,13 @@ onMounted(load)
   cursor: pointer;
   box-shadow: 0 2px 0 var(--primary-deep);
 }
+@media (min-width: 768px) {
+  .btn-primary {
+    width: auto;
+    max-width: 320px;
+    margin: 14px auto 0;
+  }
+}
 .btn-primary:active {
   transform: translateY(1px);
   box-shadow: none;

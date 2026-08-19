@@ -198,3 +198,22 @@ export function openSingleChat(userId) {
     }
   })
 }
+
+/**
+ * 跳转钉钉 OAuth2 网页扫码登录页（浏览器环境用）。
+ * prompt=auto：首次授权后不再弹授权页，直接登录。
+ */
+export function redirectToDingTalkOAuth() {
+  const appKey = import.meta.env.VITE_DING_APP_KEY
+  if (!appKey) {
+    console.error('[dd] VITE_DING_APP_KEY 未配置，无法发起 OAuth2 登录')
+    return
+  }
+  // 回调地址：后端处理 OAuth code 并签发 JWT，然后 302 重定向到前端 oauth-callback 页
+  const callbackUrl = encodeURIComponent(`${location.origin}/api/auth/dingtalk/callback`)
+  // state 参数：传递当前 origin，让后端知道重定向到哪里（支持本地开发）
+  const state = encodeURIComponent(btoa(location.origin))
+  // prompt=auto：首次授权后不再弹授权页，直接登录
+  const oauthUrl = `https://login.dingtalk.com/oauth2/auth?client_id=${appKey}&redirect_uri=${callbackUrl}&response_type=code&scope=openid&prompt=auto&state=${state}`
+  location.href = oauthUrl
+}

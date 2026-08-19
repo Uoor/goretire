@@ -405,6 +405,7 @@ onMounted(load)
   flex: 1;
   width: auto;          /* 覆盖 .btn-primary 的 width: 100% */
   max-width: 320px;     /* PC 端上限 */
+  margin: 0 auto;       /* 居中 */
 }
 /* 已租出/已下架的禁用态按钮：灰底，无立体边，不可点 */
 .action-bar .btn-disabled {
