@@ -236,27 +236,27 @@ onMounted(async () => {
   gap: 10px;
   margin: 10px 16px 0;
   padding: 12px 14px;
-  background: #eff6ff;
-  border: 1px solid #bfdbfe;
+  background: var(--transfer-soft);
+  border: 1px solid var(--transfer-border);
   border-radius: 12px;
   cursor: pointer;
 }
 .kb-entry > i:first-child {
-  color: #2563eb;
+  color: var(--transfer);
   font-size: 1.3rem;
 }
 .kb-entry > i:last-child {
   margin-left: auto;
-  color: #2563eb;
+  color: var(--transfer);
 }
 .kb-tx b {
   display: block;
   font-size: 0.78rem;
-  color: #1e40af;
+  color: var(--transfer-text);
 }
 .kb-tx span {
   font-size: 0.68rem;
-  color: #64748b;
+  color: var(--fg2);
 }
 .seg-tabs {
   display: flex;
@@ -279,7 +279,7 @@ onMounted(async () => {
   border-radius: 999px;
   border: 1px solid var(--border);
   color: var(--fg2);
-  background: #fff;
+  background: var(--card);
   white-space: nowrap;
   cursor: pointer;
   flex-shrink: 0;
@@ -355,10 +355,10 @@ onMounted(async () => {
   gap: 4px;
   margin-top: 10px;
   padding: 8px 10px;
-  background: #eff6ff;
+  background: var(--transfer-soft);
   border-radius: 8px;
   font-size: 0.72rem;
-  color: #2563eb;
+  color: var(--transfer);
   white-space: nowrap;
   cursor: pointer;
 }
@@ -368,11 +368,11 @@ onMounted(async () => {
   gap: 8px;
   margin: 16px;
   padding: 12px;
-  background: #fffbe6;
-  border: 1px solid #ffe58f;
+  background: var(--warning-soft);
+  border: 1px solid var(--warning-border);
   border-radius: 12px;
   font-size: 0.7rem;
-  color: #874d00;
+  color: var(--warning-text);
   line-height: 1.5;
 }
 .tip-strip i {

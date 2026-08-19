@@ -32,6 +32,7 @@
   /* 中性色 */
   --bg: #f5f5f4;
   --card: #ffffff;
+  --input-fill: #f2f2f1;
   --fg: rgba(0, 0, 0, 0.85);
   --fg2: rgba(0, 0, 0, 0.55);
   --fg3: rgba(0, 0, 0, 0.35);

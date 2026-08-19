@@ -1,6 +1,5 @@
 <template>
   <div class="me-page">
-    <TopBar />
     <div class="me-hero">
       <div class="avatar num">{{ (store.nickname || '校')[0] }}</div>
       <div>
@@ -78,7 +77,6 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { showConfirmDialog, showToast, showSuccessToast } from 'vant'
-import TopBar from '@/modules/houserent/components/TopBar.vue'
 import { useUserStore } from '@/store/user'
 import { houseApi } from '@/modules/houserent/api'
 import { AUDIT_STATUS, RACK_STATUS, getHouseStatusText, getHouseStatusClass } from '@/constants/status'
@@ -423,7 +421,7 @@ onMounted(load)
   box-shadow: none;
 }
 .btn-ghost {
-  background: #fff;
+  background: var(--card);
   color: var(--fg);
   border: 1px solid var(--border);
 }

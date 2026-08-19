@@ -206,7 +206,13 @@ public class DingTalkClientImpl implements DingTalkClient {
         }
     }
 
-    /** unionId + 应用 accessToken → /topapi/user/getbyunionid → userId */
+    /**
+     * unionId + 应用 accessToken → /topapi/user/getbyunionid → userId
+     *
+     * 关键语义：反查的是「应用所属企业」内的 userid。用户不在应用所属企业
+     * （即非「阿里人·一起提前退休」社群组织成员）时，此接口报错/返回空，
+     * 抛 403 供上层区分"非组织成员"（引导加入社群）与普通登录失败。
+     */
     private String getUserIdByUnionId(String unionId) {
         try {
             String accessToken = getAccessToken();
@@ -221,12 +227,12 @@ public class DingTalkClientImpl implements DingTalkClient {
             JsonNode json = objectMapper.readTree(response.body());
             if (response.statusCode() != 200 || json.path("errcode").asInt(0) != 0) {
                 log.warn("dingtalk getbyunionid failed: status={} body={}", response.statusCode(), response.body());
-                throw new BusinessException(401, "扫码登录失败");
+                throw new BusinessException(403, "非组织成员");
             }
             String userId = json.path("result").path("userid").asText("");
             if (userId.isBlank()) {
                 log.warn("dingtalk getbyunionid empty userid: body={}", response.body());
-                throw new BusinessException(401, "扫码登录失败");
+                throw new BusinessException(403, "非组织成员");
             }
             return userId;
         } catch (BusinessException e) {

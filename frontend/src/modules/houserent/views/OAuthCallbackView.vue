@@ -20,8 +20,9 @@ onMounted(() => {
   const token = route.query.token
   const userJson = route.query.user
   if (!token || !userJson) {
+    // 参数缺失：登录未完成，回到登录页重试
     error.value = '登录参数缺失，请重新扫码'
-    setTimeout(() => router.replace({ name: 'home' }), 2000)
+    setTimeout(() => router.replace({ name: 'login' }), 2000)
     return
   }
   try {

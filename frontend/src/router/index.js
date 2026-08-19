@@ -74,18 +74,22 @@ router.beforeEach(async (to) => {
   if (to.name === 'join') {
     return useUserStore().isLoggedIn ? { name: 'home' } : true
   }
-  // OAuth 回调页 & 登录引导页：不检查登录
-  if (to.name === 'oauth-callback' || to.name === 'login') {
+  // OAuth 回调页不检查登录；登录引导页：已登录直接回首页（登录页只服务未登录用户）
+  if (to.name === 'oauth-callback') {
     return true
   }
+  if (to.name === 'login') {
+    return useUserStore().isLoggedIn ? { name: 'home' } : true
+  }
   try {
-    await ensureLogin()
+    const result = await ensureLogin()
+    if (result) return result
   } catch (e) {
     // 免登失败（非组织成员/JSAPI 被拦等）：先弹窗说明，用户确认后再引导加入组织
     if (e?.__loginFailed) {
       await showDialog({
         title: '校友专属服务',
-        message: '「校友安居」是面向阿里/蚂蚁校友社群的专属租房服务，需要先加入社群组织才能使用。',
+        message: '「校友安居」是「阿里人·一起提前退休」社群专属的租房服务，需要先加入社群组织才能使用。',
         confirmButtonText: '查看如何加入',
         closeOnClickOverlay: false
       }).catch(() => {})

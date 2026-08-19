@@ -98,3 +98,35 @@ a {
   }
   /* Vant toast / dialog 保持居中（默认行为即可） */
 }
+
+/* ===== 钉钉登录按钮 ===== */
+.dingtalk-login-btn {
+  width: 100%;
+  padding: 14px 24px;
+  background: #0089FF;
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  transition: all 0.15s ease;
+  box-shadow: 0 2px 0 #0070E0;
+}
+
+.dingtalk-login-btn:hover {
+  background: #0070E0;
+}
+
+.dingtalk-login-btn:active {
+  transform: translateY(1px);
+  box-shadow: none;
+}
+
+.dingtalk-icon {
+  flex-shrink: 0;
+}

@@ -1,10 +1,9 @@
 <template>
   <div class="page-home">
-    <TopBar />
     <div class="searchbar" @click="showSearch = true">
       <div class="search-input" :class="{ active: showSearch }">
         <i class="ph ph-magnifying-glass"></i>
-        <span v-if="!showSearch">说人话找房：西溪附近 6000 以内两居</span>
+        <span v-if="!showSearch">一句话找房：西溪附近 6000 以内两居</span>
         <input
           v-else
           v-model="query"
@@ -90,7 +89,6 @@
 import { computed, onMounted, onUnmounted, ref, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { showToast } from 'vant'
-import TopBar from '@/modules/houserent/components/TopBar.vue'
 import HouseCard from '@/modules/houserent/components/HouseCard.vue'
 import FilterChips from '@/modules/houserent/components/FilterChips.vue'
 import EmptyState from '@/modules/houserent/components/EmptyState.vue'
@@ -275,8 +273,8 @@ onUnmounted(() => {
   align-items: center;
 }
 .search-input {
-  background: #f2f2f1;
-  border-radius: 10px;
+  background: var(--input-fill);
+  border-radius: var(--radius-md);
   padding: 10px 14px;
   font-size: 0.85rem;
   color: var(--fg3);
@@ -290,7 +288,7 @@ onUnmounted(() => {
 .search-input.active {
   border-color: var(--primary);
   color: var(--fg);
-  background: #fff;
+  background: var(--card);
 }
 .search-input input {
   border: none;

@@ -1,8 +1,8 @@
 <template>
   <div class="topbar sticky-shell">
     <button v-if="back" class="back" @click="goBack"><i class="ph ph-arrow-left"></i></button>
-    <div v-else class="brand">🏡 校友<span>安居</span></div>
     <div v-if="title" class="title-center">{{ title }}</div>
+    <div v-else class="brand">🏡 校友<span>安居</span></div>
     <div class="spacer"></div>
   </div>
 </template>

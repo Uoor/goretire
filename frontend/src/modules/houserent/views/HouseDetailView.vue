@@ -5,7 +5,7 @@
     <div v-if="house">
       <div class="detail-hero">
         <div class="hero-img" :class="thumbClass">
-          <img v-if="images.length" :src="images[imgIndex]" alt="" />
+          <img v-if="images.length" :src="images[imgIndex]" alt="" @click="previewImage" />
           <!-- 多图：左右切换 + 指示点（产品 4.2 图集） -->
           <template v-if="images.length > 1">
             <div class="hero-nav prev" @click="switchImg(-1)"><i class="ph ph-caret-left"></i></div>
@@ -101,7 +101,7 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { showToast, showSuccessToast } from 'vant'
+import { showToast, showSuccessToast, showImagePreview } from 'vant'
 import TopBar from '@/modules/houserent/components/TopBar.vue'
 import EmptyState from '@/modules/houserent/components/EmptyState.vue'
 import { houseApi } from '@/modules/houserent/api'
@@ -127,6 +127,15 @@ function switchImg(dir) {
   const len = images.value.length
   if (len <= 1) return
   imgIndex.value = (imgIndex.value + dir + len) % len
+}
+
+/** 点击图片全屏预览 */
+function previewImage() {
+  showImagePreview({
+    images: images.value,
+    startPosition: imgIndex.value,
+    closeable: true
+  })
 }
 
 async function load() {
@@ -237,7 +246,7 @@ onMounted(load)
   background: rgba(255, 255, 255, 0.5);
 }
 .dots i.on {
-  background: #fff;
+  background: var(--card);
 }
 .detail-body {
   background: var(--card);
@@ -354,8 +363,8 @@ onMounted(load)
 }
 .guide-strip {
   cursor: pointer;
-  background: #fffbe6;
-  border: 1px solid #ffe58f;
+  background: var(--warning-soft);
+  border: 1px solid var(--warning-border);
   border-radius: 12px;
   padding: 12px;
   display: flex;
@@ -370,18 +379,17 @@ onMounted(load)
 }
 .guide-arr {
   margin-left: auto;
-  color: #d48806;
+  color: var(--warning);
   font-size: 1rem;
   flex-shrink: 0;
 }
 .guide-strip .tx {
   font-size: 0.74rem;
-  color: #874d00;
+  color: var(--warning-text);
   line-height: 1.5;
 }
 .guide-strip .tx b {
-  color: #d48806;
-  color: #d48806;
+  color: var(--warning);
 }
 .action-bar {
   background: var(--card);
@@ -399,6 +407,7 @@ onMounted(load)
   .action-bar {
     max-width: 1200px;
     margin: 0 auto;
+    justify-content: center;
   }
 }
 .action-bar .btn-primary {
@@ -418,7 +427,7 @@ onMounted(load)
   width: 46px;
   border: 1px solid var(--border);
   border-radius: 10px;
-  background: #fff;
+  background: var(--card);
   color: var(--fg2);
   font-size: 1.1rem;
   display: flex;

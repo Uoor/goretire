@@ -394,7 +394,7 @@ onMounted(() => {
   padding: 4px 10px;
   border-radius: 999px;
   border: 1px solid var(--border);
-  background: #fff;
+  background: var(--card);
   color: var(--fg2);
   cursor: pointer;
   transition: all 0.15s ease;
@@ -437,7 +437,7 @@ onMounted(() => {
   border-radius: 8px;
   border: 1px solid var(--border);
   color: var(--fg2);
-  background: #fff;
+  background: var(--card);
   cursor: pointer;
   transition: all 0.15s ease;
 }
@@ -461,6 +461,9 @@ onMounted(() => {
   .submit-wrap {
     max-width: 1200px;
     margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
   }
 }
 .submit-tip {
@@ -484,7 +487,6 @@ onMounted(() => {
 }
 @media (min-width: 768px) {
   .btn-primary {
-    width: auto;
     max-width: 320px;
     margin: 0 auto;
   }

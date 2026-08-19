@@ -253,7 +253,7 @@ function clearAll() {
   padding: 11px;
   border-radius: 10px;
   border: 1px solid var(--border);
-  background: #fff;
+  background: var(--card);
   color: var(--fg2);
   font-size: 0.82rem;
   font-weight: 600;
@@ -265,7 +265,7 @@ function clearAll() {
   border-radius: 10px;
   border: none;
   background: var(--primary);
-  color: #fff;
+  color: var(--card);
   font-size: 0.82rem;
   font-weight: 700;
   cursor: pointer;

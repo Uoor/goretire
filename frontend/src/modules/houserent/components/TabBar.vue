@@ -46,6 +46,12 @@ function go(name) {
   padding-bottom: 8px;
   z-index: 100;
 }
+
+@media (min-width: 768px) {
+  .tabbar {
+    max-width: 1200px;
+  }
+}
 .tab {
   flex: 1;
   display: flex;

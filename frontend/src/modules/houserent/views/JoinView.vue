@@ -93,7 +93,7 @@ const inviteUrl =
 }
 .join-hero .badge {
   display: inline-block;
-  background: #fff;
+  background: var(--card);
   color: var(--primary);
   padding: 4px 16px;
   border-radius: 20px;
@@ -113,12 +113,12 @@ const inviteUrl =
 }
 .join-hero .subtitle {
   font-size: 0.82rem;
-  color: rgba(0, 0, 0, 0.55);
+  color: var(--fg2);
   margin-top: 8px;
 }
 .join-hero .tagline {
   font-size: 0.74rem;
-  color: rgba(0, 0, 0, 0.45);
+  color: var(--fg3);
   margin-top: 6px;
   line-height: 1.6;
 }
@@ -138,7 +138,7 @@ const inviteUrl =
 }
 .join-hero .stats .k {
   font-size: 0.66rem;
-  color: rgba(0, 0, 0, 0.4);
+  color: var(--fg3);
   margin-top: 2px;
 }
 .join-body {
@@ -236,15 +236,78 @@ const inviteUrl =
   line-height: 1.8;
 }
 .join-vision .tags {
-  color: rgba(0, 0, 0, 0.25);
+  color: var(--fg3);
   font-size: 0.68rem;
+  opacity: 0.7;
+}
+
+/* ===== PC 端（≥768px）：hero 更大气，内容限宽居中，避免全宽稀疏 ===== */
+@media (min-width: 768px) {
+  .join-hero {
+    padding: 64px 20px 48px;
+  }
+  .join-hero h1 {
+    font-size: 2.1rem;
+  }
+  .join-hero .subtitle {
+    font-size: 0.95rem;
+  }
+  .join-hero .tagline {
+    font-size: 0.85rem;
+  }
+  .join-hero .stats {
+    gap: 48px;
+    margin-top: 24px;
+  }
+  .join-hero .stats .num {
+    font-size: 1.6rem;
+  }
+  .join-hero .stats .k {
+    font-size: 0.74rem;
+  }
+
+  /* 内容区限宽居中（App.vue 壳层已是 1200px 容器，这里再收窄让行宽舒适、信息密集） */
+  .join-body {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 24px 16px 40px;
+  }
+  .join-intro {
+    font-size: 0.9rem;
+    padding: 18px 20px;
+  }
+  .value-c {
+    padding: 18px 16px;
+  }
+  .value-c h4 {
+    font-size: 0.9rem;
+  }
+  .value-c p {
+    font-size: 0.76rem;
+  }
+  .step {
+    padding: 14px 18px;
+  }
+  .step .tx b {
+    font-size: 0.9rem;
+  }
+  .step .tx p {
+    font-size: 0.76rem;
+  }
+  .join-vision {
+    font-size: 0.82rem;
+    margin-top: 24px;
+  }
+  .join-vision .tags {
+    font-size: 0.74rem;
+  }
 }
 .join-cta {
   position: fixed;
   bottom: 0;
   left: 0;
   right: 0;
-  background: #fff;
+  background: var(--card);
   padding: 10px 16px;
   display: flex;
   align-items: center;
@@ -252,10 +315,16 @@ const inviteUrl =
   border-top: 1px solid var(--border);
   box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.06);
 }
+@media (min-width: 768px) {
+  .join-cta {
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+}
 .cta-btn {
   display: inline-block;
   background: var(--primary);
-  color: #fff;
+  color: var(--card);
   border: none;
   padding: 8px 24px;
   border-radius: 8px;
@@ -263,9 +332,18 @@ const inviteUrl =
   font-size: 0.8rem;
   cursor: pointer;
   text-decoration: none;
+  /* 按钮文字居中（PC 下 width:100% 限宽后文字靠左的问题） */
+  text-align: center;
+}
+@media (min-width: 768px) {
+  .cta-btn {
+    max-width: 320px;
+    width: 100%;
+    padding: 10px 24px;
+  }
 }
 .cta-btn:hover {
-  background: #ff8533;
+  background: var(--primary-deep);
 }
 .cta-btn:active {
   opacity: 0.9;

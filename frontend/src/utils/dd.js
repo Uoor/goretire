@@ -202,18 +202,35 @@ export function openSingleChat(userId) {
 /**
  * 跳转钉钉 OAuth2 网页扫码登录页（浏览器环境用）。
  * prompt=auto：首次授权后不再弹授权页，直接登录。
+ * 显式传 corpId（应用所属企业）：钉钉授权页直接锁定社群企业，不再让用户选择企业，
+ * 非该企业成员在授权页即被钉钉官方拦截——比后端失败更早，也与「仅限社群成员」的信任叙事一致。
  */
-export function redirectToDingTalkOAuth() {
+export async function redirectToDingTalkOAuth() {
   const appKey = import.meta.env.VITE_DING_APP_KEY
   if (!appKey) {
     console.error('[dd] VITE_DING_APP_KEY 未配置，无法发起 OAuth2 登录')
     return
   }
-  // 回调地址：后端处理 OAuth code 并签发 JWT，然后 302 重定向到前端 oauth-callback 页
-  const callbackUrl = encodeURIComponent(`${location.origin}/api/auth/dingtalk/callback`)
+  // corpId 优先级：后端 jsapi-sign 返回 > 构建时 VITE_DING_CORP_ID（拿不到则不带 corpId，由钉钉授权页处理）
+  const corpId = await fetchBackendCorpId()
+  // 回调地址：始终使用生产环境的回调 URL（钉钉只允许已配置的回调地址）
+  // 通过 state 参数传递实际的前端 origin，让后端知道最终重定向到哪里
+  const callbackUrl = encodeURIComponent('https://test.nekomiao.com/api/auth/dingtalk/callback')
   // state 参数：传递当前 origin，让后端知道重定向到哪里（支持本地开发）
   const state = encodeURIComponent(btoa(location.origin))
+  const params = [
+    `client_id=${appKey}`,
+    `redirect_uri=${callbackUrl}`,
+    'response_type=code',
+    // 钉钉规则：scope 只支持 openid 或 openid corpid（空格分隔）；传 corpId 参数时 scope 必须包含 corpid
+    // （官方文档 obtain-identity-credentials：corpId 仅在 scope 包含 corpid 时有意义）
+    `scope=${encodeURIComponent(corpId ? 'openid corpid' : 'openid')}`,
+    'prompt=auto',
+    `state=${state}`
+  ]
+  // 显式指定应用所属企业，钉钉授权页不再展示"选择企业"，非成员直接在授权页被拦
+  if (corpId) params.push(`corpId=${encodeURIComponent(corpId)}`)
   // prompt=auto：首次授权后不再弹授权页，直接登录
-  const oauthUrl = `https://login.dingtalk.com/oauth2/auth?client_id=${appKey}&redirect_uri=${callbackUrl}&response_type=code&scope=openid&prompt=auto&state=${state}`
+  const oauthUrl = `https://login.dingtalk.com/oauth2/auth?${params.join('&')}`
   location.href = oauthUrl
 }

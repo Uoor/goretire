@@ -1,6 +1,5 @@
 <template>
   <div class="subscribe-page">
-    <TopBar />
     <div class="prompt-hero">
       <div class="big">🔔 订阅你想要的，新房源主动找你</div>
       <div class="small">用一句话订阅，AI 帮你盯着：房源或租客一出现就提醒你</div>
@@ -78,7 +77,6 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
 import { showToast, showSuccessToast } from 'vant'
-import TopBar from '@/modules/houserent/components/TopBar.vue'
 import EmptyState from '@/modules/houserent/components/EmptyState.vue'
 import { subscribeApi } from '@/modules/houserent/api'
 
@@ -246,7 +244,7 @@ onMounted(load)
   margin-bottom: 12px;
 }
 .prompt-input {
-  background: #fff;
+  background: var(--card);
   border-radius: 12px;
   padding: 13px 14px;
   font-size: 0.85rem;
@@ -281,7 +279,7 @@ onMounted(load)
   border-radius: 8px;
   border: 1px solid rgba(255, 106, 0, 0.35);
   color: var(--fg2);
-  background: #fff;
+  background: var(--card);
   cursor: pointer;
   transition: all 0.15s ease;
 }
@@ -368,7 +366,7 @@ onMounted(load)
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  background: #fff;
+  background: var(--card);
   transition: left 0.2s;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
 }
@@ -457,7 +455,7 @@ onMounted(load)
   font-size: 0.8rem;
   font-family: inherit;
   color: var(--fg);
-  background: #fff;
+  background: var(--card);
 }
 .qh-row span {
   font-size: 0.72rem;

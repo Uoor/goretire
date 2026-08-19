@@ -1,6 +1,5 @@
 <template>
   <div class="demand-page">
-    <TopBar />
     <div class="prompt-hero">
       <div class="big">🔍 求租需求墙</div>
       <div class="small">暂时没找到合适的？挂上需求，新房源自动匹配提醒你</div>
@@ -106,7 +105,6 @@
 import { onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { showConfirmDialog, showToast, showSuccessToast } from 'vant'
-import TopBar from '@/modules/houserent/components/TopBar.vue'
 import EmptyState from '@/modules/houserent/components/EmptyState.vue'
 import { demandApi } from '@/modules/houserent/api'
 import { formatMoney } from '@/utils/format'
@@ -308,7 +306,7 @@ onMounted(() => {
   margin-bottom: 12px;
 }
 .prompt-input {
-  background: #fff;
+  background: var(--card);
   border-radius: 12px;
   padding: 13px 14px;
   font-size: 0.85rem;
@@ -431,7 +429,7 @@ onMounted(() => {
   cursor: default;
 }
 .op-btn.ghost {
-  background: #fff;
+  background: var(--card);
   color: var(--fg2);
   border: 1px solid var(--border);
 }
