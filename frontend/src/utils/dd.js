@@ -158,22 +158,25 @@ function requestAuthCodeOnce(corpId, resolve, reject, triedWithoutCorpId = false
  * 使用钉钉统一跳转协议 page/profile（官方支持，无需 openSingleChat 的 JSAPI 权限）：
  *   dingtalk://dingtalkclient/page/profile?corp_id={corp_id}&staff_id={staff_id}
  * 用户可在名片页查看资料并自行发起会话。
- * 非钉钉环境直接拒绝（调用方降级提示）。
+ * - 钉钉容器内：直接 location.href 跳转（当前页面离开）
+ * - 浏览器环境：window.open 新标签页打开协议（唤起本地钉钉客户端）
  */
 export function openSingleChat(userId) {
   return new Promise((resolve, reject) => {
-    if (!isDingTalk() || !userId) {
-      reject(new Error('请在钉钉内使用此功能'))
+    if (!userId) {
+      reject(new Error('房东信息缺失'))
       return
     }
     const corpId = backendCorpId || ''
     const profileUrl = `dingtalk://dingtalkclient/page/profile?corp_id=${encodeURIComponent(corpId)}&staff_id=${encodeURIComponent(userId)}`
-    // 钉钉统一跳转协议直接通过 location.href 唤起（官方文档即 <a href> 方式）。
-    // 注意不要再用 dd.biz.util.openLink 传 dingtalk:// 协议——openLink 面向 http 链接，
-    // 传内部协议可能被容器拦截提示"操作太频繁"。
     try {
-      // 协议跳转会离开当前页面，无需等待回调；立即 resolve 让调用方正常收尾
-      location.href = profileUrl
+      if (isDingTalk()) {
+        // 钉钉容器内：直接跳转（离开当前页面）
+        location.href = profileUrl
+      } else {
+        // 浏览器环境：新标签页打开协议，唤起本地钉钉客户端
+        window.open(profileUrl, '_blank')
+      }
       resolve(true)
     } catch (e) {
       reject(new Error(`无法打开房东名片: ${e?.message || e}`))
