@@ -226,7 +226,9 @@ export async function redirectToDingTalkOAuth(redirect) {
     `redirect_uri=${callbackUrl}`,
     'response_type=code',
     'scope=openid',
-    'prompt=auto',
+    // 教程/官方示例用 prompt=consent（明确弹授权页）。prompt=auto 在部分配置下
+    // 生成无法兑换的静默 code，导致 authCode 兑换报"不合法的临时授权码"。
+    'prompt=consent',
     `state=${state}`
   ]
   // prompt=auto：首次授权后不再弹授权页，直接登录
