@@ -196,6 +196,11 @@ onMounted(load)
 .me-page {
   padding-bottom: 76px;
 }
+@media (min-width: 768px) {
+  .me-page {
+    padding-bottom: 0;
+  }
+}
 .me-hero {
   background: linear-gradient(135deg, var(--primary-soft), #ffe3cc);
   padding: 24px 16px 20px;

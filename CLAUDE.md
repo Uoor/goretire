@@ -102,6 +102,30 @@ frontend/src/
 
 **注意**：`docs/harness/` 下的指南描述的是 TestNG + JPA + Flyway 技术栈，本仓库使用 **JUnit 5 + MyBatis-Plus**，仅借鉴其通用规则（命名、日志占位符、并发等），不套用框架/包名约定。
 
+## 部署
+
+生产环境部署到 **ecs-alr**（阿里云 ECS），通过 SSH 执行远程脚本。前后端分开部署，均有版本管理和回滚能力。
+
+### 后端
+
+```bash
+./scripts/deploy-remote.sh               # 完整部署（拉代码 → mvn 编译 → 停旧服务 → 启动）
+./scripts/deploy-remote.sh --skip-build   # 只重启，不编译
+./scripts/deploy-remote.sh --rollback     # 回滚到上一个版本
+```
+
+本地 `deploy-remote.sh` 通过 SSH 连接 `ecs-alr`，执行远程的 `deploy-ecs.sh`。远程脚本在 ECS 上编译 jar 并放入 `/root/aliren-data/releases/`，通过软链 `current.jar` 切换版本。服务端口 8080，nginx 反代 80 → 8080。
+
+### 前端
+
+```bash
+./scripts/deploy-frontend-remote.sh               # 完整部署（拉代码 → npm install → 构建）
+./scripts/deploy-frontend-remote.sh --skip-build   # 只切换版本
+./scripts/deploy-frontend-remote.sh --rollback     # 回滚到上一个版本
+```
+
+本地 `deploy-frontend-remote.sh` 通过 SSH 连接 `ecs-alr`，执行远程的 `deploy-frontend-ecs.sh`。构建产物放入 `/root/aliren-data/frontend/releases/`，通过软链 `current` 切换版本，nginx 直接指向 `current` 目录。
+
 ---
 
 ## 关键约定与坑

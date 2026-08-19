@@ -286,6 +286,11 @@ onMounted(() => {
 .demand-page {
   padding-bottom: 76px;
 }
+@media (min-width: 768px) {
+  .demand-page {
+    padding-bottom: 0;
+  }
+}
 .prompt-hero {
   background: linear-gradient(135deg, var(--primary-soft), #ffebd6);
   padding: 18px 16px;

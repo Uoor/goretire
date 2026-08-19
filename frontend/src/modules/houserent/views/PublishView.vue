@@ -336,6 +336,11 @@ onMounted(() => {
 .publish-page {
   padding-bottom: 120px;
 }
+@media (min-width: 768px) {
+  .publish-page {
+    padding-bottom: 0;
+  }
+}
 .form-sec {
   background: var(--card);
   padding: 14px 16px;
@@ -447,12 +452,16 @@ onMounted(() => {
   bottom: 0;
   left: 0;
   right: 0;
-  max-width: 480px;
-  margin: 0 auto;
   background: var(--card);
   border-top: 1px solid var(--border);
   padding: 12px 16px 24px;
   z-index: 50;
+}
+@media (min-width: 768px) {
+  .submit-wrap {
+    max-width: 1200px;
+    margin: 0 auto;
+  }
 }
 .submit-tip {
   text-align: center;

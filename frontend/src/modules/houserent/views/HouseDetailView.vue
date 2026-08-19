@@ -171,6 +171,11 @@ onMounted(load)
   padding-bottom: 76px;
   min-height: 100vh;
 }
+@media (min-width: 768px) {
+  .detail-page {
+    padding-bottom: 0;
+  }
+}
 .detail-hero {
   height: 210px;
   position: relative;
@@ -388,9 +393,13 @@ onMounted(load)
   bottom: 0;
   left: 0;
   right: 0;
-  max-width: 480px;
-  margin: 0 auto;
   z-index: 50;
+}
+@media (min-width: 768px) {
+  .action-bar {
+    max-width: 1200px;
+    margin: 0 auto;
+  }
 }
 .action-bar .btn-primary {
   flex: 1;

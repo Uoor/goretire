@@ -1,14 +1,18 @@
 <template>
   <header class="topnav">
     <div class="topnav-inner">
+      <!-- 品牌区 -->
       <div class="topnav-brand" @click="go('home')">
-        <span class="topnav-logo">校友安居</span>
+        <span class="brand-icon">🏠</span>
+        <span class="brand-text">校友安居</span>
       </div>
-      <nav class="topnav-tabs">
+
+      <!-- 导航区 -->
+      <nav class="topnav-nav">
         <a
           v-for="item in tabs"
           :key="item.name"
-          class="topnav-tab"
+          class="nav-item"
           :class="{ on: route.name === item.name }"
           @click="go(item.name)"
         >
@@ -16,9 +20,12 @@
           <span>{{ item.label }}</span>
         </a>
       </nav>
+
+      <!-- 操作区 -->
       <div class="topnav-actions">
-        <button class="publish-btn" @click="go('publish')">
-          <i class="ph ph-plus"></i> 发布房源
+        <button class="btn-publish" @click="go('publish')">
+          <i class="ph ph-plus"></i>
+          <span>发布房源</span>
         </button>
       </div>
     </div>
@@ -44,88 +51,144 @@ function go(name) {
 }
 </script>
 
-<style scoped>
+<!-- 全局样式（非 scoped）：postcss-pxtorem 将 px 转为 rem，rootValue=16 即 1rem=16px -->
+<style>
 .topnav {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   z-index: 200;
-  background: rgba(255, 255, 255, 0.97);
-  backdrop-filter: blur(10px);
+  height: 56px;
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--border);
-  height: 60px;
-  display: flex;
-  align-items: center;
 }
 .topnav-inner {
-  width: 100%;
-  max-width: 1200px;
-  margin: 0 auto;
+  height: 100%;
   padding: 0 24px;
   display: flex;
   align-items: center;
-  gap: 32px;
+  gap: 24px;
 }
 .topnav-brand {
-  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
   flex-shrink: 0;
+  cursor: pointer;
+  user-select: none;
 }
-.topnav-logo {
-  font-size: 18px;
+.brand-icon {
+  font-size: 1.25rem;
+  line-height: 1;
+}
+.brand-text {
+  font-size: 1rem;
   font-weight: 700;
   color: var(--primary);
   letter-spacing: -0.3px;
 }
-.topnav-tabs {
+.topnav-nav {
   display: flex;
-  gap: 4px;
+  align-items: center;
+  gap: 2px;
   flex: 1;
+  min-width: 0;
 }
-.topnav-tab {
+.nav-item {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 8px 16px;
+  padding: 6px 14px;
   border-radius: 8px;
-  font-size: 14px;
+  font-size: 0.875rem;
   color: var(--fg2);
-  cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease;
   text-decoration: none;
+  cursor: pointer;
   user-select: none;
+  white-space: nowrap;
+  flex-shrink: 1;
+  min-width: 0;
+  transition: color 0.15s, background 0.15s;
+  position: relative;
 }
-.topnav-tab:hover {
-  background: var(--card);
+.nav-item i {
+  font-size: 1rem;
+}
+.nav-item:hover {
   color: var(--fg);
+  background: var(--bg);
 }
-.topnav-tab.on {
-  background: rgba(255, 106, 0, 0.08);
+.nav-item.on {
   color: var(--primary);
   font-weight: 600;
+  background: var(--primary-soft);
 }
-.topnav-tab i {
-  font-size: 16px;
+.nav-item.on::after {
+  content: '';
+  position: absolute;
+  bottom: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 16px;
+  height: 2.5px;
+  border-radius: 2px;
+  background: var(--primary);
 }
 .topnav-actions {
-  flex-shrink: 0;
+  flex-shrink: 1;
 }
-.publish-btn {
+.btn-publish {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 18px;
-  border-radius: 10px;
+  gap: 5px;
+  padding: 7px 16px;
+  border-radius: 8px;
   background: var(--primary);
   color: #fff;
-  font-size: 14px;
+  font-size: 0.8125rem;
   font-weight: 600;
   border: none;
   cursor: pointer;
-  transition: opacity 0.15s ease;
   user-select: none;
+  transition: opacity 0.15s, transform 0.1s;
+  box-shadow: 0 1px 3px rgba(255, 106, 0, 0.25);
 }
-.publish-btn:hover {
-  opacity: 0.9;
+.btn-publish i {
+  font-size: 0.9rem;
+}
+.btn-publish:hover {
+  opacity: 0.92;
+}
+.btn-publish:active {
+  transform: scale(0.97);
+}
+@media (max-width: 640px) {
+  .topnav-inner {
+    padding: 0 12px;
+    gap: 12px;
+  }
+  .nav-item {
+    padding: 6px 8px;
+    font-size: 0.8125rem;
+  }
+  .nav-item i {
+    display: none;
+  }
+  .brand-icon {
+    display: none;
+  }
+  .btn-publish span {
+    display: none;
+  }
+  .btn-publish {
+    padding: 8px;
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    justify-content: center;
+  }
 }
 </style>

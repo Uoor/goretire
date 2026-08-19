@@ -28,13 +28,15 @@ body {
   background: var(--bg);
 }
 
-/* PC 端（≥768px）：移除深色壳，纯白底全宽铺满 */
+/* PC 端（≥768px）：居中宽内容区 + 纯白底 */
 @media (min-width: 768px) {
   body {
     background: var(--bg);
   }
   #app {
     min-height: 100vh;
+    max-width: 1200px;
+    margin: 0 auto;
   }
 }
 
@@ -82,4 +84,17 @@ a {
   .grid-pc {
     grid-template-columns: repeat(3, 1fr);
   }
+}
+
+/* ===== PC 端全局覆盖（≥768px） ===== */
+@media (min-width: 768px) {
+  /* Vant bottom-sheet popup → 居中窄条（480px），不再铺满底边 */
+  .van-popup--bottom {
+    max-width: 480px;
+    left: 50% !important;
+    right: auto !important;
+    transform: translateX(-50%) !important;
+    border-radius: 12px 12px 0 0;
+  }
+  /* Vant toast / dialog 保持居中（默认行为即可） */
 }

@@ -38,13 +38,13 @@ onBeforeUnmount(() => {
 
 /* PC 端：顶部导航 + 居中宽内容区 */
 .app-shell.is-pc {
-  padding-top: 60px; /* 顶部导航高度 */
+  padding-top: 56px; /* 顶部导航高度 */
 }
 .app-shell.is-pc .app-content {
   max-width: 1200px;
   margin: 0 auto;
   padding: 24px;
-  min-height: calc(100vh - 60px);
+  min-height: calc(100vh - 56px);
 }
 
 /* 移动端：无额外 padding */
