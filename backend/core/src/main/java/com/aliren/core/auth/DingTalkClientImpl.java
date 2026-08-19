@@ -152,16 +152,18 @@ public class DingTalkClientImpl implements DingTalkClient {
         }
         // 网页扫码授权码（login.dingtalk.com 回调的 authCode）走 sns 专用接口：
         // POST https://oapi.dingtalk.com/sns/getuserinfo_bycode
-        // header: x-ww-sns-token ？不需要；body: {tmp_auth_code, signature, timestamp}
-        // 签名 = HMAC-SHA256(AppSecret, timestamp)，Base64 后 URL 编码
+        //   ?accessKey={appKey}&timestamp={ts}&signature={urlencoded HMAC-SHA256(AppSecret, ts)}
+        // body: {"tmp_auth_code": authCode}
         try {
             String timestamp = String.valueOf(System.currentTimeMillis());
             String signature = signSns(timestamp);
             ObjectNode body = objectMapper.createObjectNode();
             body.put("tmp_auth_code", authCode);
-            body.put("signature", signature);
-            body.put("timestamp", timestamp);
-            HttpRequest request = HttpRequest.newBuilder(URI.create(SNS_GETUSERINFO_BYCODE_URL))
+            String url = SNS_GETUSERINFO_BYCODE_URL
+                    + "?accessKey=" + URLEncoder.encode(appKey, StandardCharsets.UTF_8)
+                    + "&timestamp=" + timestamp
+                    + "&signature=" + signature;
+            HttpRequest request = HttpRequest.newBuilder(URI.create(url))
                     .timeout(TIMEOUT)
                     .header("Content-Type", "application/json")
                     .POST(HttpRequest.BodyPublishers.ofString(objectMapper.writeValueAsString(body)))
