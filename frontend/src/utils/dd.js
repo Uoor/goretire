@@ -231,5 +231,14 @@ export async function redirectToDingTalkOAuth(redirect) {
   ]
   // prompt=auto：首次授权后不再弹授权页，直接登录
   const oauthUrl = `https://login.dingtalk.com/oauth2/auth?${params.join('&')}`
+  // 诊断上报：记录实际跳转的 OAuth URL（定位 authCode 兑换失败的根因）
+  try {
+    request.post('/dingtalk/jsapi-debug', {
+      event: 'oauth.redirect',
+      oauthUrl,
+      origin: location.origin,
+      pageUrl: location.href
+    }).catch(() => {})
+  } catch (e) { /* 上报失败不影响主流程 */ }
   location.href = oauthUrl
 }
