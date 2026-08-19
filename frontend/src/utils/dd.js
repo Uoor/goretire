@@ -20,6 +20,21 @@ let configPromise = null
 // requestAuthCode 优先用它，避免依赖构建时环境变量（线上构建可能缺失 VITE_DING_CORP_ID）。
 let backendCorpId = ''
 
+/** 从后端获取 corpId（浏览器环境用，钉钉容器内由 configDingtalk 设置） */
+function fetchBackendCorpId() {
+  if (backendCorpId) return Promise.resolve(backendCorpId)
+  // 用一个占位 URL 调 jsapi-sign，只取 corpId
+  return request
+    .post('/dingtalk/jsapi-sign', { url: location.href.split('#')[0] })
+    .then((cfg) => {
+      backendCorpId = cfg.corpId || import.meta.env.VITE_DING_CORP_ID || ''
+      return backendCorpId
+    })
+    .catch(() => {
+      return import.meta.env.VITE_DING_CORP_ID || ''
+    })
+}
+
 /**
  * 获取钉钉容器当前企业 corpId（dd.runtime.info，免鉴权）。
  * 多组织场景下，容器当前活跃企业可能与应用所属企业不一致，
@@ -162,12 +177,12 @@ function requestAuthCodeOnce(corpId, resolve, reject, triedWithoutCorpId = false
  * - 浏览器环境：window.open 新标签页打开协议（唤起本地钉钉客户端）
  */
 export function openSingleChat(userId) {
-  return new Promise((resolve, reject) => {
-    if (!userId) {
-      reject(new Error('房东信息缺失'))
-      return
-    }
-    const corpId = backendCorpId || ''
+  if (!userId) {
+    return Promise.reject(new Error('房东信息缺失'))
+  }
+  // 获取 corpId（钉钉容器内已有，浏览器环境需从后端获取）
+  const corpIdPromise = backendCorpId ? Promise.resolve(backendCorpId) : fetchBackendCorpId()
+  return corpIdPromise.then((corpId) => {
     const profileUrl = `dingtalk://dingtalkclient/page/profile?corp_id=${encodeURIComponent(corpId)}&staff_id=${encodeURIComponent(userId)}`
     try {
       if (isDingTalk()) {
@@ -177,9 +192,9 @@ export function openSingleChat(userId) {
         // 浏览器环境：新标签页打开协议，唤起本地钉钉客户端
         window.open(profileUrl, '_blank')
       }
-      resolve(true)
+      return true
     } catch (e) {
-      reject(new Error(`无法打开房东名片: ${e?.message || e}`))
+      throw new Error(`无法打开房东名片: ${e?.message || e}`)
     }
   })
 }
