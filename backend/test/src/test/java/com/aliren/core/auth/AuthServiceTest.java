@@ -146,6 +146,6 @@ class AuthServiceTest {
         when(dingTalkClient.getUserIdByCode("code-4")).thenReturn("");
         assertThatThrownBy(() -> authService.authenticate("code-4"))
                 .isInstanceOf(BusinessException.class)
-                .hasMessageContaining("免登失败");
+                .hasMessageContaining("登录失败");
     }
 }

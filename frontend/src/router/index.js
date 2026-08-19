@@ -17,6 +17,8 @@ const routes = [
   { path: '/report', name: 'report', component: () => import('@/modules/houserent/views/RentReportView.vue'), meta: { title: '租金周报' } },
   { path: '/admin', name: 'admin', component: () => import('@/modules/houserent/views/admin/AdminView.vue'), meta: { title: '管理后台', admin: true } },
   { path: '/join', name: 'join', component: () => import('@/modules/houserent/views/JoinView.vue'), meta: { title: '加入组织' } },
+  // OAuth2 扫码登录回调页：从 URL 参数读取 token 和用户信息，存入 store 后跳首页
+  { path: '/oauth-callback', name: 'oauth-callback', component: () => import('@/modules/houserent/views/OAuthCallbackView.vue'), meta: { title: '登录中' } },
   { path: '/:pathMatch(.*)*', redirect: '/' }
 ]
 
@@ -42,11 +44,18 @@ async function ensureLogin() {
   }
   if (store.isLoggedIn) return
   try {
-    // 钉钉容器内先 dd.config 授权 JSAPI，再取免登 code；浏览器联调直接跳过
-    await configDingtalk()
-    const code = await getAuthCode()
-    const data = await authApi.login(code)
-    store.setSession(data.token, data.user)
+    if (inDingTalk) {
+      // 钉钉容器内：JSAPI 免登
+      await configDingtalk()
+      const code = await getAuthCode()
+      const data = await authApi.login(code)
+      store.setSession(data.token, data.user)
+    } else {
+      // 浏览器环境：跳转钉钉 OAuth2 扫码登录页
+      redirectToDingTalkOAuth()
+      // 返回一个永不 resolve 的 Promise，阻止后续路由逻辑继续
+      return new Promise(() => {})
+    }
   } catch (e) {
     // 钉钉容器内免登失败（含换 userid 失败、requestAuthCode/JSAPI 被拦）：
     // 用户无法完成身份验证，统一标记引导「加入组织」页
@@ -57,6 +66,19 @@ async function ensureLogin() {
     }
     throw e
   }
+}
+
+/** 跳转钉钉 OAuth2 网页扫码登录页 */
+function redirectToDingTalkOAuth() {
+  const appKey = import.meta.env.VITE_DING_APP_KEY
+  if (!appKey) {
+    console.error('[router] VITE_DING_APP_KEY 未配置，无法发起 OAuth2 登录')
+    return
+  }
+  // 回调地址：后端处理 OAuth code 并签发 JWT，然后 302 重定向到前端 oauth-callback 页
+  const callbackUrl = encodeURIComponent(`${location.origin}/api/auth/dingtalk/callback`)
+  const oauthUrl = `https://login.dingtalk.com/oauth2/auth?client_id=${appKey}&redirect_uri=${callbackUrl}&response_type=code&scope=openid&prompt=consent`
+  location.href = oauthUrl
 }
 
 router.beforeEach(async (to) => {

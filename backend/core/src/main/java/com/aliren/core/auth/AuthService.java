@@ -25,15 +25,19 @@ public class AuthService {
 
     @Transactional(rollbackFor = Exception.class)
     public AuthResponse authenticate(String authCode) {
-        String dingtalkUserId;
-        try {
-            dingtalkUserId = dingTalkClient.getUserIdByCode(authCode);
-        } catch (Exception e) {
-            log.warn("dingtalk getUserIdByCode failed", e);
-            throw new BusinessException(401, "免登失败");
-        }
+        return doAuthenticate(dingTalkClient.getUserIdByCode(authCode));
+    }
+
+    /** OAuth2 网页扫码登录（浏览器环境） */
+    @Transactional(rollbackFor = Exception.class)
+    public AuthResponse authenticateOAuth(String authCode) {
+        return doAuthenticate(dingTalkClient.getUserIdByOAuthCode(authCode));
+    }
+
+    /** 公共登录逻辑：userId → 查找/创建用户 → 签发 JWT */
+    private AuthResponse doAuthenticate(String dingtalkUserId) {
         if (dingtalkUserId == null || dingtalkUserId.isBlank()) {
-            throw new BusinessException(401, "免登失败");
+            throw new BusinessException(401, "登录失败");
         }
         User user = userMapper.selectByDingtalkUserId(dingtalkUserId);
         // 拉取钉钉真实资料（昵称/头像），失败返回 null 不影响登录

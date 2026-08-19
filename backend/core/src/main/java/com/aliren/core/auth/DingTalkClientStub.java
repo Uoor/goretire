@@ -34,6 +34,12 @@ public class DingTalkClientStub implements DingTalkClient {
     }
 
     @Override
+    public String getUserIdByOAuthCode(String authCode) {
+        // 开发桩：不支持 OAuth2 扫码登录
+        throw new BusinessException(401, "扫码登录失败");
+    }
+
+    @Override
     public DingTalkUserProfile getUserProfile(String userId) {
         // 开发桩：无真实钉钉资料，返回默认占位
         if (devCodeEnabled && "dev-code".equals(userId)) {

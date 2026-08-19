@@ -35,6 +35,10 @@ public class DingTalkClientImpl implements DingTalkClient {
     private static final String GET_TOKEN_URL = "https://oapi.dingtalk.com/gettoken";
     private static final String GET_USERINFO_URL = "https://oapi.dingtalk.com/topapi/v2/user/getuserinfo";
     private static final String GET_USER_URL = "https://oapi.dingtalk.com/topapi/v2/user/get";
+    private static final String GET_USER_BY_UNIONID_URL = "https://oapi.dingtalk.com/topapi/user/getbyunionid";
+    // OAuth2 网页扫码登录（新版 API）
+    private static final String OAUTH2_TOKEN_URL = "https://api.dingtalk.com/v1.0/oauth2/userAccessToken";
+    private static final String OAUTH2_USER_ME_URL = "https://api.dingtalk.com/v1.0/contact/users/me";
     private static final Duration TIMEOUT = Duration.ofSeconds(5);
     private static final long TOKEN_TTL_MS = 7000_000L; // access_token 7200s，提前 200s 过期
 
@@ -133,6 +137,103 @@ public class DingTalkClientImpl implements DingTalkClient {
         } catch (Exception e) {
             log.warn("dingtalk getuserinfo exception", e);
             throw new BusinessException(401, "免登失败");
+        }
+    }
+
+    @Override
+    public String getUserIdByOAuthCode(String authCode) {
+        if (authCode == null || authCode.isBlank()) {
+            throw new BusinessException(401, "扫码登录失败");
+        }
+        // 1. OAuth2 code → 用户级 accessToken
+        String userAccessToken = exchangeOAuthCode(authCode);
+        // 2. 用户 accessToken → /contact/users/me → unionId
+        String unionId = getUnionIdByUserToken(userAccessToken);
+        // 3. unionId + 应用 accessToken → /topapi/user/getbyunionid → userId
+        return getUserIdByUnionId(unionId);
+    }
+
+    /** OAuth2 授权码换用户 accessToken */
+    private String exchangeOAuthCode(String authCode) {
+        try {
+            ObjectNode body = objectMapper.createObjectNode();
+            body.put("clientId", appKey);
+            body.put("clientSecret", appSecret);
+            body.put("code", authCode);
+            body.put("grantType", "authorization_code");
+            HttpRequest request = HttpRequest.newBuilder(URI.create(OAUTH2_TOKEN_URL))
+                    .timeout(TIMEOUT)
+                    .header("Content-Type", "application/json")
+                    .POST(HttpRequest.BodyPublishers.ofString(objectMapper.writeValueAsString(body)))
+                    .build();
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            JsonNode json = objectMapper.readTree(response.body());
+            String accessToken = json.path("accessToken").asText("");
+            if (accessToken.isEmpty()) {
+                log.warn("dingtalk oauth2 token failed: status={} body={}", response.statusCode(), response.body());
+                throw new BusinessException(401, "扫码登录失败");
+            }
+            return accessToken;
+        } catch (BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            log.warn("dingtalk oauth2 token exception", e);
+            throw new BusinessException(401, "扫码登录失败");
+        }
+    }
+
+    /** 用户 accessToken → /contact/users/me → unionId */
+    private String getUnionIdByUserToken(String userAccessToken) {
+        try {
+            HttpRequest request = HttpRequest.newBuilder(URI.create(OAUTH2_USER_ME_URL))
+                    .timeout(TIMEOUT)
+                    .header("x-acs-dingtalk-access-token", userAccessToken)
+                    .GET()
+                    .build();
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            JsonNode json = objectMapper.readTree(response.body());
+            String unionId = json.path("unionId").asText("");
+            if (unionId.isEmpty()) {
+                log.warn("dingtalk /contact/users/me empty unionId: status={} body={}", response.statusCode(), response.body());
+                throw new BusinessException(401, "扫码登录失败");
+            }
+            return unionId;
+        } catch (BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            log.warn("dingtalk /contact/users/me exception", e);
+            throw new BusinessException(401, "扫码登录失败");
+        }
+    }
+
+    /** unionId + 应用 accessToken → /topapi/user/getbyunionid → userId */
+    private String getUserIdByUnionId(String unionId) {
+        try {
+            String accessToken = getAccessToken();
+            ObjectNode body = objectMapper.createObjectNode();
+            body.put("unionid", unionId);
+            HttpRequest request = HttpRequest.newBuilder(URI.create(GET_USER_BY_UNIONID_URL + "?access_token=" + accessToken))
+                    .timeout(TIMEOUT)
+                    .header("Content-Type", "application/json")
+                    .POST(HttpRequest.BodyPublishers.ofString(objectMapper.writeValueAsString(body)))
+                    .build();
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            JsonNode json = objectMapper.readTree(response.body());
+            if (response.statusCode() != 200 || json.path("errcode").asInt(0) != 0) {
+                log.warn("dingtalk getbyunionid failed: status={} body={}", response.statusCode(), response.body());
+                throw new BusinessException(401, "扫码登录失败");
+            }
+            String userId = json.path("result").path("userid").asText("");
+            if (userId.isBlank()) {
+                log.warn("dingtalk getbyunionid empty userid: body={}", response.body());
+                throw new BusinessException(401, "扫码登录失败");
+            }
+            return userId;
+        } catch (BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            log.warn("dingtalk getbyunionid exception", e);
+            throw new BusinessException(401, "扫码登录失败");
         }
     }
 
