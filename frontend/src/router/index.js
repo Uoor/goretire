@@ -87,6 +87,10 @@ router.beforeEach(async (to) => {
   if (to.name === 'join') {
     return useUserStore().isLoggedIn ? { name: 'home' } : true
   }
+  // OAuth 回调页：不检查登录（用户正在存 token，检查会误跳扫码页）
+  if (to.name === 'oauth-callback') {
+    return true
+  }
   try {
     await ensureLogin()
   } catch (e) {
