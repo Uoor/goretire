@@ -126,7 +126,7 @@ public class AuthController {
         }
         // 2. 配置的 h5BaseUrl
         if (!h5BaseUrl.isBlank()) {
-            return h5BaseUrl;
+            return new FrontendTarget(h5BaseUrl, null);
         }
         // 3. Referer 兜底
         String referer = request.getHeader("Referer");
