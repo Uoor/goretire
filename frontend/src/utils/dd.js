@@ -204,8 +204,9 @@ export function openSingleChat(userId) {
  * prompt=auto：首次授权后不再弹授权页，直接登录。
  * 显式传 corpId（应用所属企业）：钉钉授权页直接锁定社群企业，不再让用户选择企业，
  * 非该企业成员在授权页即被钉钉官方拦截——比后端失败更早，也与「仅限社群成员」的信任叙事一致。
+ * @param redirect 登录成功后要回跳的前端 hash 路径（如 "/house/123"）；经 state 参数带回，后端解码后拼进回调 URL
  */
-export async function redirectToDingTalkOAuth() {
+export async function redirectToDingTalkOAuth(redirect) {
   const appKey = import.meta.env.VITE_DING_APP_KEY
   if (!appKey) {
     console.error('[dd] VITE_DING_APP_KEY 未配置，无法发起 OAuth2 登录')
@@ -216,8 +217,11 @@ export async function redirectToDingTalkOAuth() {
   // 回调地址：始终使用生产环境的回调 URL（钉钉只允许已配置的回调地址）
   // 通过 state 参数传递实际的前端 origin，让后端知道最终重定向到哪里
   const callbackUrl = encodeURIComponent('https://test.nekomiao.com/api/auth/dingtalk/callback')
-  // state 参数：传递当前 origin，让后端知道重定向到哪里（支持本地开发）
-  const state = encodeURIComponent(btoa(location.origin))
+  // state 参数：origin + 可选 redirect（JSON 后 base64），后端解码出 origin 重定向，
+  // 并把 redirect 追加到回调 URL，实现扫码后回跳目标页（群卡片落地页免登）
+  const statePayload = { origin: location.origin }
+  if (redirect) statePayload.redirect = redirect
+  const state = encodeURIComponent(btoa(JSON.stringify(statePayload)))
   const params = [
     `client_id=${appKey}`,
     `redirect_uri=${callbackUrl}`,

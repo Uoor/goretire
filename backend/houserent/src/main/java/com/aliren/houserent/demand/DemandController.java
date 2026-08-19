@@ -44,6 +44,19 @@ public class DemandController {
         return ApiResponse.ok(demandService.detail(id));
     }
 
+    /** 编辑需求（仅本人）：更新字段并重新匹配一轮 */
+    @PutMapping("/{id}")
+    public ApiResponse<DemandResponse> update(@PathVariable Long id,
+                                             @Valid @RequestBody DemandCreateRequest req) {
+        return ApiResponse.ok(demandService.update(UserContext.requireUserId(), id, req));
+    }
+
+    /** 联系租客（求租墙 → 房东找租客）：返回发布者钉钉身份（staffId），前端唤起钉钉单聊 */
+    @PostMapping("/{id}/contact")
+    public ApiResponse<com.aliren.houserent.house.dto.ContactResponse> contact(@PathVariable Long id) {
+        return ApiResponse.ok(demandService.contact(UserContext.requireUserId(), id));
+    }
+
     /** 撤回（仅本人） */
     @PostMapping("/{id}/withdraw")
     public ApiResponse<Void> withdraw(@PathVariable Long id) {

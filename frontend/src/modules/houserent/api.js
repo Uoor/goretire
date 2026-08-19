@@ -30,9 +30,12 @@ export const demandApi = {
   mine: () => request.get('/demands/mine'),
   detail: (id) => request.get(`/demands/${id}`),
   create: (data) => request.post('/demands', data),
+  update: (id, data) => request.put(`/demands/${id}`, data),
   withdraw: (id) => request.post(`/demands/${id}/withdraw`),
   complete: (id) => request.post(`/demands/${id}/complete`),
-  rematch: (id) => request.post(`/demands/${id}/rematch`)
+  rematch: (id) => request.post(`/demands/${id}/rematch`),
+  // 联系租客（求租墙 → 房东找租客）：返回发布者钉钉身份 { nickname, staffId }
+  contact: (id) => request.post(`/demands/${id}/contact`)
 }
 
 export const subscribeApi = {

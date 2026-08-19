@@ -88,13 +88,17 @@ a {
 
 /* ===== PC 端全局覆盖（≥768px） ===== */
 @media (min-width: 768px) {
-  /* Vant bottom-sheet popup → 居中窄条（480px），不再铺满底边 */
+  /* Vant bottom-sheet popup → PC 端居中弹窗（不再贴底，贴底窄条在 PC 上违和） */
   .van-popup--bottom {
     max-width: 480px;
     left: 50% !important;
     right: auto !important;
-    transform: translateX(-50%) !important;
-    border-radius: 12px 12px 0 0;
+    top: 50% !important;
+    bottom: auto !important;
+    transform: translate(-50%, -50%) !important;
+    border-radius: 12px;
+    max-height: 80vh;
+    overflow-y: auto;
   }
   /* Vant toast / dialog 保持居中（默认行为即可） */
 }

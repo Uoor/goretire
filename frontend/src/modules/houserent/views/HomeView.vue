@@ -358,9 +358,6 @@ onUnmounted(() => {
 .load-more.end {
   letter-spacing: 0.05em;
 }
-.sk {
-  border-radius: 14px;
-}
 .match-panel {
   background: var(--card);
   padding: 10px 16px;
@@ -407,14 +404,6 @@ onUnmounted(() => {
 }
 .to-demand:active {
   opacity: 0.85;
-}
-.match-card {
-  background: var(--card);
-  border-radius: 14px;
-  padding: 14px;
-  border: 1px solid var(--border);
-  margin-bottom: 10px;
-  cursor: pointer;
 }
 .mc-head {
   display: flex;

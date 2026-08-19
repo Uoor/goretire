@@ -28,8 +28,13 @@ onMounted(() => {
   try {
     const user = JSON.parse(decodeURIComponent(userJson))
     store.setSession(token, user)
-    // 登录成功，跳首页
-    router.replace({ name: 'home' })
+    // 登录成功：优先跳回原目标页（群卡片落地页扫码场景，redirect 由后端从 state 带回），否则首页
+    const redirect = (route.query.redirect || '').toString()
+    if (redirect && redirect.startsWith('/')) {
+      router.replace({ path: redirect })
+    } else {
+      router.replace({ name: 'home' })
+    }
   } catch (e) {
     error.value = '登录信息解析失败，请重新扫码'
     setTimeout(() => router.replace({ name: 'home' }), 2000)

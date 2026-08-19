@@ -1,0 +1,368 @@
+/* ============================================================
+   校友安居 · 全局组件样式（DESIGN.md §4 组件规范）
+   所有跨页面复用的组件类在此统一定义，页面内只保留特有布局。
+   规范见 frontend/DESIGN.md 与 CLAUDE.md「前端样式规范」。
+   ============================================================ */
+
+/* ===== 按钮 ===== */
+/* 主按钮：橙色 CTA，全宽；PC 端由页面 @media 限宽居中 */
+.btn-primary {
+  background: var(--primary);
+  color: var(--card);
+  border: none;
+  border-radius: var(--radius-md);
+  padding: 10px 16px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  width: 100%;
+  box-shadow: 0 2px 0 var(--primary-deep);
+  transition: all 0.15s ease;
+}
+.btn-primary:active {
+  transform: translateY(1px);
+  box-shadow: 0 0 0 var(--primary-deep);
+}
+.btn-primary:disabled {
+  opacity: 0.5;
+  box-shadow: none;
+  cursor: default;
+}
+
+/* 次按钮：白底描边 */
+.btn-ghost {
+  background: var(--card);
+  color: var(--fg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 10px 16px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.btn-ghost:active {
+  background: var(--bg);
+}
+
+/* 操作小按钮（列表行内） */
+.op-btn {
+  font-size: 0.7rem;
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  border: none;
+  background: var(--primary);
+  color: var(--card);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.op-btn:active {
+  opacity: 0.85;
+}
+.op-btn:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+.op-btn.ghost {
+  background: var(--card);
+  color: var(--fg2);
+  border: 1px solid var(--border);
+}
+.op-btn.danger {
+  background: var(--destructive-soft);
+  color: var(--destructive);
+}
+
+/* 删除按钮（危险描边） */
+.del-btn {
+  width: 100%;
+  margin-top: 16px;
+  padding: 10px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--destructive-border);
+  background: var(--card);
+  color: var(--destructive);
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
+/* 图标按钮（46×46） */
+.icon-btn {
+  width: 46px;
+  height: 46px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--card);
+  color: var(--fg2);
+  font-size: 1.1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.icon-btn:active {
+  background: var(--bg);
+}
+
+/* ===== 表单 ===== */
+/* 输入行 */
+.form-field {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 10px 12px;
+  margin-bottom: 10px;
+  font-size: 0.8rem;
+  color: var(--fg2);
+  display: flex;
+  align-items: center;
+  background: var(--card);
+}
+.form-field input {
+  border: none;
+  outline: none;
+  flex: 1;
+  font-size: 0.8rem;
+  font-family: inherit;
+  color: var(--fg);
+  background: transparent;
+}
+
+/* 分段选择器（单选 chip） */
+.seg-item {
+  font-size: 0.74rem;
+  padding: 6px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  color: var(--fg2);
+  background: var(--card);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.seg-item.on {
+  background: var(--primary-soft);
+  border-color: var(--primary);
+  color: var(--primary-deep);
+  font-weight: 600;
+}
+
+/* 快速选择 chip */
+.qc-chip {
+  font-size: 0.7rem;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--fg2);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.qc-chip.on {
+  background: var(--primary-soft);
+  border-color: var(--primary);
+  color: var(--primary-deep);
+  font-weight: 600;
+}
+
+/* ===== 语义标签 ===== */
+.tag {
+  font-size: 0.62rem;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 4px;
+}
+.tag.owner {
+  background: var(--primary-soft);
+  color: var(--primary-deep);
+}
+.tag.verify {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+/* ===== 头像 ===== */
+.avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #ffb98a, #ff8a3d);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--card);
+  font-weight: 700;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+
+/* ===== prompt hero（求租/订阅首屏） ===== */
+.prompt-hero {
+  background: linear-gradient(135deg, var(--primary-soft), #ffebd6);
+  padding: 18px 16px;
+  border-bottom: 1px solid var(--border);
+}
+.prompt-hero .big {
+  font-size: 0.98rem;
+  font-weight: 700;
+  color: var(--fg);
+  margin-bottom: 4px;
+}
+.prompt-hero .small {
+  font-size: 0.72rem;
+  color: var(--fg2);
+  margin-bottom: 12px;
+}
+
+/* prompt 输入框 */
+.prompt-input {
+  background: var(--card);
+  border-radius: 12px;
+  padding: 13px 14px;
+  font-size: 0.85rem;
+  color: var(--fg3);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--primary);
+  box-shadow: 0 4px 14px rgba(255, 106, 0, 0.12);
+}
+.prompt-input i {
+  color: var(--primary);
+}
+.prompt-input input {
+  border: none;
+  outline: none;
+  flex: 1;
+  font-size: 0.85rem;
+  font-family: inherit;
+  color: var(--fg);
+  background: transparent;
+  min-width: 0;
+}
+
+/* ===== 匹配卡片 ===== */
+.match-card {
+  background: var(--card);
+  border-radius: 14px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  margin-bottom: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.match-card:active {
+  box-shadow: 0 4px 16px rgba(255, 106, 0, 0.15);
+}
+
+/* ===== 避坑提醒条 ===== */
+.guide-strip {
+  cursor: pointer;
+  background: var(--warning-soft);
+  border: 1px solid var(--warning-border);
+  border-radius: 12px;
+  padding: 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 14px;
+}
+.guide-strip > i {
+  color: var(--warning);
+  font-size: 1.3rem;
+  flex-shrink: 0;
+}
+.guide-strip .tx {
+  font-size: 0.74rem;
+  color: var(--warning-text);
+  line-height: 1.5;
+}
+.guide-strip .tx b {
+  color: var(--warning);
+}
+
+/* ===== AI 条件提示条 ===== */
+.cond-strip {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 10px;
+  padding: 10px 12px;
+  background: linear-gradient(90deg, var(--primary-soft), #fff7e6);
+  border: 1px solid rgba(255, 106, 0, 0.2);
+  border-radius: 10px;
+  font-size: 0.72rem;
+  color: var(--warning-text);
+  line-height: 1.5;
+}
+.cond-strip i {
+  color: var(--primary);
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+/* ===== 免打扰时段行 ===== */
+.qh-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.qh-row input {
+  flex: 1;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 9px 10px;
+  font-size: 0.8rem;
+  font-family: inherit;
+  color: var(--fg);
+  background: var(--card);
+}
+.qh-row span {
+  font-size: 0.72rem;
+  color: var(--fg3);
+}
+.qh-clear {
+  font-size: 0.68rem;
+  color: var(--destructive);
+  background: none;
+  border: none;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+/* ===== 弹层头部（标题 + 关闭） ===== */
+.dp-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.dp-head h4 {
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+.dp-head i {
+  color: var(--fg3);
+  font-size: 1.1rem;
+  cursor: pointer;
+}
+
+/* ===== 表单分区标签 ===== */
+.form-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  margin: 12px 0 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.form-label .hint {
+  font-weight: 400;
+  font-size: 0.66rem;
+  color: var(--fg3);
+}
+
+/* ===== 骨架圆角 ===== */
+.sk {
+  border-radius: 14px;
+}

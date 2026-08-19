@@ -70,8 +70,9 @@ public class PublishOrchestrator {
         }
         List<SubscriptionHit> subHits = matchService.matchSubscriptions(houseId);
         List<DemandHit> demandHits = matchService.matchDemands(houseId);
-        // 新上架卡片：结构化 markdown + 「查看详情」按钮（配置 H5 地址后生效）
-        String detailUrl = h5BaseUrl.isBlank() ? "" : h5BaseUrl + "/#/house/" + houseId;
+        // 详情链接走落地页（蚂蚁钉限制域名无法容器内打开，只能跳系统浏览器）：
+        // 有 token 直接跳目标页，无 token 自动扫码并在登录后回跳，首次扫码后浏览器即免登
+        String detailUrl = h5BaseUrl.isBlank() ? "" : buildLandingUrl("/house/" + houseId);
         pushClient.sendGroupCardAction("🏠 新上架 · " + h.getCommunity(), buildHouseCard(h), detailUrl);
         for (SubscriptionHit hit : subHits) {
             Subscribe s = subscribeMapper.selectById(hit.getSubscribeId());
@@ -173,6 +174,20 @@ public class PublishOrchestrator {
             sb.append("👉 [查看房源详情](").append(dingtalkPageLink(detailUrl)).append(")");
         }
         return sb.toString();
+    }
+
+    /**
+     * 落地页链接：h5BaseUrl + "/#/landing?redirect={hashPath}"。
+     * redirect 只含前端 hash 路径（如 /house/123），不含任何凭据；
+     * 落地页负责免登（有 token 直接跳，无 token 自动扫码后回跳）。
+     */
+    private String buildLandingUrl(String hashPath) {
+        try {
+            return h5BaseUrl + "/#/landing?redirect="
+                    + java.net.URLEncoder.encode(hashPath, java.nio.charset.StandardCharsets.UTF_8);
+        } catch (Exception e) {
+            return h5BaseUrl + "/#/landing";
+        }
     }
 
     /**

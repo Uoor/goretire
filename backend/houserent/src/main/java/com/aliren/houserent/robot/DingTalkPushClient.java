@@ -133,7 +133,7 @@ public class DingTalkPushClient implements PushClient {
             ObjectNode msg = body.putObject("msg");
             msg.put("msgtype", "markdown");
             ObjectNode md = msg.putObject("markdown");
-            md.put("title", "校友安居");
+            md.put("title", "校友直租");
             md.put("text", markdown);
             HttpRequest request = HttpRequest.newBuilder(
                             URI.create(WORK_NOTICE_URL + "?access_token=" + accessToken))

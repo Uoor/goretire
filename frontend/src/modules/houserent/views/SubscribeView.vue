@@ -1,23 +1,17 @@
 <template>
   <div class="subscribe-page">
     <div class="prompt-hero">
-      <div class="big">🔔 订阅你想要的，新房源主动找你</div>
-      <div class="small">用一句话订阅，AI 帮你盯着：房源或租客一出现就提醒你</div>
-      <div class="prompt-input">
-        <i class="ph ph-bell-ring"></i>
-        <input
-          v-model="rawText"
-          placeholder="如：西溪附近 6000 以内两居，能养猫"
-          @keyup.enter="create"
-        />
+      <div class="big">🔔 订阅管理</div>
+      <div class="small">新房源会自动提醒你，可随时暂停、编辑或删除订阅</div>
+    </div>
+
+    <!-- 引导：创建入口已并入发布需求 -->
+    <div class="guide-strip" @click="goPublish">
+      <div class="gs-tx">
+        <b>想要新房源提醒？</b>
+        <span>发布求租需求时勾选「同时创建订阅」即可</span>
       </div>
-      <div class="type-seg">
-        <div class="seg-item" :class="{ on: type === 1 }" @click="type = 1">找房源</div>
-        <div class="seg-item" :class="{ on: type === 2 }" @click="type = 2">找租客</div>
-      </div>
-      <button class="sub-btn" :disabled="!rawText.trim() || creating" @click="create">
-        {{ creating ? '创建中…' : '创建订阅' }}
-      </button>
+      <div class="gs-btn">去发布<i class="ph ph-arrow-up-right"></i></div>
     </div>
 
     <div class="list">
@@ -31,7 +25,9 @@
           </div>
           <div class="sw" :class="{ on: s.status === 0 }" @click.stop="toggle(s)"></div>
         </div>
-        <EmptyState v-if="subs.length === 0" icon="ph ph-bell" text="还没有订阅，创建一条试试" />
+        <EmptyState v-if="subs.length === 0" icon="ph ph-bell" text="还没有订阅，去发布一条求租需求吧">
+          <button class="empty-btn" @click="goPublish">去发布需求</button>
+        </EmptyState>
       </template>
     </div>
 
@@ -76,20 +72,25 @@
 
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { showToast, showSuccessToast } from 'vant'
 import EmptyState from '@/modules/houserent/components/EmptyState.vue'
 import { subscribeApi } from '@/modules/houserent/api'
 
+const router = useRouter()
+
 const subs = ref([])
 const loading = ref(false)
-const rawText = ref('')
-const type = ref(1)
-const creating = ref(false)
 
 const showDetail = ref(false)
 const current = ref(null)
 const pushes = ref([])
 const edit = reactive({ rawText: '', qStart: '', qEnd: '' })
+
+/** 引导去发布需求：跳求租页（发布弹层由用户点击 prompt-input 打开） */
+function goPublish() {
+  router.push({ name: 'demand' })
+}
 
 /** 展示 AI 解析条件（structured_condition JSON → 可读文本） */
 const conditionText = computed(() => {
@@ -189,22 +190,6 @@ async function load() {
   }
 }
 
-async function create() {
-  const text = rawText.value.trim()
-  if (!text) return
-  creating.value = true
-  try {
-    await subscribeApi.create({ type: type.value, rawText: text })
-    showSuccessToast('订阅已创建，新房源会自动提醒你')
-    rawText.value = ''
-    load()
-  } catch (e) {
-    showToast(e.message || '创建失败')
-  } finally {
-    creating.value = false
-  }
-}
-
 async function toggle(s) {
   const next = s.status === 0 ? 1 : 0
   try {
@@ -243,78 +228,68 @@ onMounted(load)
   color: var(--fg2);
   margin-bottom: 12px;
 }
-.prompt-input {
-  background: var(--card);
-  border-radius: 12px;
-  padding: 13px 14px;
-  font-size: 0.85rem;
-  color: var(--fg3);
+/* 引导条：发布需求时勾选创建订阅 */
+.guide-strip {
   display: flex;
   align-items: center;
-  gap: 8px;
-  border: 1px solid var(--primary);
-  box-shadow: 0 4px 14px rgba(255, 106, 0, 0.12);
-}
-.prompt-input i {
-  color: var(--primary);
-}
-.prompt-input input {
-  border: none;
-  outline: none;
-  flex: 1;
-  font-size: 0.85rem;
-  font-family: inherit;
-  color: var(--fg);
-  background: transparent;
-  min-width: 0;
-}
-.type-seg {
-  display: flex;
-  gap: 8px;
-  margin-top: 10px;
-}
-.seg-item {
-  font-size: 0.74rem;
-  padding: 6px 14px;
-  border-radius: 8px;
-  border: 1px solid rgba(255, 106, 0, 0.35);
-  color: var(--fg2);
-  background: var(--card);
+  justify-content: space-between;
+  gap: 12px;
+  margin: 10px 16px 0;
+  padding: 12px 14px;
+  background: linear-gradient(90deg, var(--primary-soft), #fff7e6);
+  border: 1px solid rgba(255, 106, 0, 0.2);
+  border-radius: 12px;
   cursor: pointer;
   transition: all 0.15s ease;
 }
-.seg-item.on {
-  background: var(--primary-soft);
-  border-color: var(--primary);
-  color: var(--primary-deep);
-  font-weight: 600;
+.guide-strip:active {
+  opacity: 0.85;
 }
-.sub-btn {
-  width: 100%;
-  margin-top: 12px;
-  background: var(--primary);
-  color: #fff;
+.gs-tx {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.gs-tx b {
+  font-size: 0.8rem;
+  color: var(--fg);
+}
+.gs-tx span {
+  font-size: 0.68rem;
+  color: var(--fg3);
+  line-height: 1.4;
+}
+.gs-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--primary);
+}
+.gs-btn i {
+  font-size: 0.85rem;
+}
+/* 空态按钮 */
+.empty-btn {
+  margin-top: 4px;
+  padding: 9px 28px;
   border: none;
   border-radius: 10px;
-  padding: 12px;
-  font-size: 0.9rem;
+  background: var(--primary);
+  color: #fff;
+  font-size: 0.82rem;
   font-weight: 600;
   cursor: pointer;
   box-shadow: 0 2px 0 var(--primary-deep);
 }
-.sub-btn:active {
+.empty-btn:active {
   transform: translateY(1px);
-  box-shadow: none;
-}
-.sub-btn:disabled {
-  opacity: 0.5;
   box-shadow: none;
 }
 .list {
   padding: 12px 16px;
-}
-.sk {
-  border-radius: 14px;
 }
 .sub-item {
   background: var(--card);
@@ -381,117 +356,6 @@ onMounted(load)
   max-height: 70vh;
   overflow-y: auto;
 }
-.dp-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 14px;
-}
-.dp-head h4 {
-  font-size: 0.95rem;
-  font-weight: 600;
-}
-.dp-head i {
-  color: var(--fg3);
-  font-size: 1.1rem;
-}
-.form-label {
-  font-size: 0.8rem;
-  font-weight: 600;
-  margin: 12px 0 8px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-.form-label .hint {
-  font-weight: 400;
-  font-size: 0.66rem;
-  color: var(--fg3);
-}
-.form-field {
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 10px 12px;
-  display: flex;
-  align-items: center;
-}
-.form-field input {
-  border: none;
-  outline: none;
-  flex: 1;
-  font-size: 0.8rem;
-  font-family: inherit;
-  color: var(--fg);
-  background: transparent;
-}
-.cond-strip {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  margin-top: 10px;
-  padding: 10px 12px;
-  background: linear-gradient(90deg, var(--primary-soft), #fff7e6);
-  border: 1px solid rgba(255, 106, 0, 0.2);
-  border-radius: 10px;
-  font-size: 0.72rem;
-  color: var(--warning-text);
-  line-height: 1.5;
-}
-.cond-strip i {
-  color: var(--primary);
-  margin-top: 2px;
-  flex-shrink: 0;
-}
-.qh-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.qh-row input {
-  flex: 1;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 9px 10px;
-  font-size: 0.8rem;
-  font-family: inherit;
-  color: var(--fg);
-  background: var(--card);
-}
-.qh-row span {
-  font-size: 0.72rem;
-  color: var(--fg3);
-}
-.qh-clear {
-  font-size: 0.68rem;
-  color: var(--destructive);
-  background: none;
-  border: none;
-  white-space: nowrap;
-}
-.btn-primary {
-  width: 100%;
-  margin-top: 14px;
-  background: var(--primary);
-  color: #fff;
-  border: none;
-  border-radius: 10px;
-  padding: 12px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  cursor: pointer;
-  box-shadow: 0 2px 0 var(--primary-deep);
-}
-@media (min-width: 768px) {
-  .btn-primary {
-    width: auto;
-    max-width: 320px;
-    margin: 14px auto 0;
-  }
-}
-.btn-primary:active {
-  transform: translateY(1px);
-  box-shadow: none;
-}
 .pushes-label {
   margin-top: 18px;
 }
@@ -516,15 +380,14 @@ onMounted(load)
   color: var(--fg3);
   margin-top: 4px;
 }
-.del-btn {
-  width: 100%;
-  margin-top: 16px;
-  padding: 11px;
-  border-radius: 10px;
-  border: 1px solid var(--destructive-border);
-  background: var(--card);
-  color: var(--destructive);
-  font-size: 0.82rem;
-  cursor: pointer;
+/* PC 端主按钮/删除按钮限宽居中（公共样式见 styles/components.css） */
+@media (min-width: 768px) {
+  .btn-primary,
+  .del-btn {
+    display: block;
+    width: auto;
+    max-width: 320px;
+    margin: 14px auto 0;
+  }
 }
 </style>

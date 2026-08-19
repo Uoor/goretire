@@ -19,7 +19,9 @@ const routes = [
   { path: '/join', name: 'join', component: () => import('@/modules/houserent/views/JoinView.vue'), meta: { title: '加入组织' } },
   // 登录引导页：说明应用 + 钉钉扫码登录按钮
   { path: '/login', name: 'login', component: () => import('@/modules/houserent/views/LoginView.vue'), meta: { title: '登录' } },
-  // OAuth2 扫码登录回调页：从 URL 参数读取 token 和用户信息，存入 store 后跳首页
+  // 群卡片/推送落地页：无 token 自动扫码，有 token 直接跳目标页（redirect 参数）
+  { path: '/landing', name: 'landing', component: () => import('@/modules/houserent/views/LandingView.vue'), meta: { title: '跳转中' } },
+  // OAuth2 扫码登录回调页：从 URL 参数读取 token 和用户信息，存入 store 后跳目标页
   { path: '/oauth-callback', name: 'oauth-callback', component: () => import('@/modules/houserent/views/OAuthCallbackView.vue'), meta: { title: '登录中' } },
   { path: '/:pathMatch(.*)*', redirect: '/' }
 ]
@@ -69,13 +71,13 @@ async function ensureLogin() {
 }
 
 router.beforeEach(async (to) => {
-  document.title = to.meta.title ? `校友安居 · ${to.meta.title}` : '校友安居'
+  document.title = to.meta.title ? `校友直租 · ${to.meta.title}` : '校友直租'
   // 加入组织页：已登录回首页；未登录直接放行（不再触发免登，避免死循环）
   if (to.name === 'join') {
     return useUserStore().isLoggedIn ? { name: 'home' } : true
   }
-  // OAuth 回调页不检查登录；登录引导页：已登录直接回首页（登录页只服务未登录用户）
-  if (to.name === 'oauth-callback') {
+  // OAuth 回调页 / 落地页不检查登录（LandingView 自己处理扫码与跳转）
+  if (to.name === 'oauth-callback' || to.name === 'landing') {
     return true
   }
   if (to.name === 'login') {
@@ -89,7 +91,7 @@ router.beforeEach(async (to) => {
     if (e?.__loginFailed) {
       await showDialog({
         title: '校友专属服务',
-        message: '「校友安居」是「阿里人·一起提前退休」社群专属的租房服务，需要先加入社群组织才能使用。',
+        message: '「校友直租」是「阿里人·一起提前退休」社群专属的租房服务，需要先加入社群组织才能使用。',
         confirmButtonText: '查看如何加入',
         closeOnClickOverlay: false
       }).catch(() => {})

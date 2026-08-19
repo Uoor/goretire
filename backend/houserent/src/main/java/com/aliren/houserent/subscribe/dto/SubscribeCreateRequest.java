@@ -4,6 +4,7 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 /** 创建订阅请求体（自然语言订阅，MVP 阶段结构化条件由前端可选传入或后续 LLM 解析填充） */
@@ -15,13 +16,16 @@ public class SubscribeCreateRequest {
     @Max(value = 2, message = "订阅类型不合法")
     private Integer type;
 
-    /** 自然语言原文（如"西溪附近 6000 以内两居，能养猫"） */
+    /** 自然语言原文（如"西溪附近 6000 以内两居，能养猫"）——进 LLM，限制长度防成本攻击 */
     @NotBlank(message = "订阅内容不能为空")
+    @Size(max = 200, message = "订阅内容最多 200 字")
     private String rawText;
 
     /** 结构化条件（JSON，可选；MVP 可省略，后续由 LLM 解析填充） */
+    @Size(max = 500, message = "结构化条件过长")
     private String structuredCondition;
 
     /** 免打扰时段（JSON，可选，如 {"start":"22:00","end":"08:00"}） */
+    @Size(max = 100, message = "免打扰时段过长")
     private String quietHours;
 }

@@ -52,7 +52,7 @@
               <div class="nm">{{ house.publisherName || '校友' }}</div>
               <div class="sub">已通过校友身份认证</div>
             </div>
-            <span class="verify-chip">✅ 已核实</span>
+            <span class="verify-chip"><i class="ph ph-seal-check"></i> 已核实</span>
           </div>
         </div>
 
@@ -330,19 +330,6 @@ onMounted(load)
   border: 1px solid var(--border);
   border-radius: 12px;
 }
-.avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #ffb98a, #ff8a3d);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #fff;
-  font-weight: 700;
-  font-size: 0.85rem;
-  flex-shrink: 0;
-}
 .landlord .nm {
   font-size: 0.82rem;
   font-weight: 600;
@@ -360,36 +347,18 @@ onMounted(load)
   border-radius: 999px;
   font-weight: 600;
   white-space: nowrap;
-}
-.guide-strip {
-  cursor: pointer;
-  background: var(--warning-soft);
-  border: 1px solid var(--warning-border);
-  border-radius: 12px;
-  padding: 12px;
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 10px;
-  margin-top: 14px;
+  gap: 3px;
 }
-.guide-strip > i {
-  color: var(--warning);
-  font-size: 1.3rem;
-  flex-shrink: 0;
+.verify-chip i {
+  font-size: 0.72rem;
 }
 .guide-arr {
   margin-left: auto;
   color: var(--warning);
   font-size: 1rem;
   flex-shrink: 0;
-}
-.guide-strip .tx {
-  font-size: 0.74rem;
-  color: var(--warning-text);
-  line-height: 1.5;
-}
-.guide-strip .tx b {
-  color: var(--warning);
 }
 .action-bar {
   background: var(--card);
@@ -423,21 +392,6 @@ onMounted(load)
   box-shadow: none;
   font-weight: 500;
 }
-.icon-btn {
-  width: 46px;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  background: var(--card);
-  color: var(--fg2);
-  font-size: 1.1rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-}
-.icon-btn:active {
-  background: var(--bg);
-}
 .detail-sk {
   margin: 16px;
   border-radius: 14px;
@@ -452,26 +406,5 @@ onMounted(load)
 }
 .report-btn {
   margin-top: 14px;
-}
-.btn-primary {
-  background: var(--primary);
-  color: #fff;
-  border: none;
-  border-radius: 10px;
-  padding: 12px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  cursor: pointer;
-  width: 100%;
-  box-shadow: 0 2px 0 var(--primary-deep);
-  transition: all 0.15s;
-}
-.btn-primary:active {
-  transform: translateY(1px);
-  box-shadow: 0 0 0 var(--primary-deep);
-}
-.btn-primary:disabled {
-  opacity: 0.5;
-  box-shadow: none;
 }
 </style>

@@ -3,7 +3,7 @@
     <div class="prompt-hero">
       <div class="big">🔍 求租需求墙</div>
       <div class="small">暂时没找到合适的？挂上需求，新房源自动匹配提醒你</div>
-      <div class="prompt-input" @click="showCreate = true">
+      <div class="prompt-input" @click="openCreate">
         <i class="ph ph-plus-circle"></i>
         <span>{{ createForm.region ? '已填写需求，点击修改' : '发布我的求租需求…' }}</span>
       </div>
@@ -17,14 +17,11 @@
     <div class="wall" v-if="tab === 'wall'">
       <van-skeleton v-if="loading" v-for="i in 3" :key="i" title :row="2" class="sk" />
       <template v-else>
-        <div v-for="d in wall" :key="d.id" class="match-card">
+        <div v-for="d in wall" :key="d.id" class="match-card" @click="openDetail(d)">
         <div class="mc-top">
           <b>{{ d.region }}</b>
           <span v-if="d.houseType" class="mc-tag">{{ d.houseType }}</span>
           <span v-if="d.budget" class="mc-tag">{{ budgetText(d.budget) }}</span>
-          <span class="mc-status" :class="d.matchStatus === 1 ? 's-matched' : ''">
-            {{ d.matchStatus === 1 ? '已匹配' : '待匹配' }}
-          </span>
         </div>
         <div v-if="d.description" class="mc-desc">{{ d.description }}</div>
         <div v-if="d.requirements" class="mc-reqs">
@@ -39,7 +36,7 @@
     <div class="wall" v-else>
       <van-skeleton v-if="loading" v-for="i in 3" :key="i" title :row="2" class="sk" />
       <template v-else>
-        <div v-for="d in mine" :key="d.id" class="match-card">
+        <div v-for="d in mine" :key="d.id" class="match-card" @click="openMyDetail(d)">
         <div class="mc-top">
           <b>{{ d.region }}</b>
           <span v-if="d.houseType" class="mc-tag">{{ d.houseType }}</span>
@@ -47,9 +44,9 @@
         </div>
         <div v-if="d.description" class="mc-desc">{{ d.description }}</div>
         <div class="mc-ops">
-          <button v-if="d.matchStatus !== 2" class="op-btn ghost" @click="complete(d)">标记已成交</button>
-          <button class="op-btn" :disabled="rematching" @click="rematch(d)">{{ rematching ? '匹配中…' : '重新匹配' }}</button>
-          <button class="op-btn" @click="withdraw(d)">撤回</button>
+          <button v-if="d.matchStatus !== 2" class="op-btn" @click.stop="editDemand(d)">
+            <i class="ph ph-pencil-simple"></i>编辑
+          </button>
         </div>
       </div>
       <EmptyState v-if="mine.length === 0" text="还没有发布过求租需求" />
@@ -59,7 +56,7 @@
     <!-- 发布/编辑需求弹层 -->
     <van-popup v-model:show="showCreate" position="bottom" round>
       <div class="create-panel">
-        <h4>发布求租需求</h4>
+        <h4>{{ editingId ? '编辑求租需求' : '发布求租需求' }}</h4>
         <div class="form-field"><input v-model="createForm.region" placeholder="目标区域 *（如：杭州西溪）" /></div>
         <div class="form-field"><input v-model="createForm.houseType" placeholder="期望户型（如：2室1厅）" /></div>
         <div class="form-field"><input v-model="createForm.budget" placeholder="预算区间（如：4000-6000）" /></div>
@@ -67,9 +64,56 @@
         <div class="form-field"><input v-model="createForm.leaseTerm" placeholder="期望租期（如：一年）" /></div>
         <div class="form-field"><input v-model="createForm.requirements" placeholder="特殊要求（可空，逗号分隔：如 可养宠,带车位,南向）" /></div>
         <div class="form-field"><input v-model="createForm.description" placeholder="一句话描述（可空）" /></div>
+        <!-- 创建订阅勾选：需求合并订阅入口（新房源自动提醒）；编辑时隐藏 -->
+        <div v-if="!editingId" class="sub-check" @click="createForm.createSubscription = !createForm.createSubscription">
+          <span class="ck" :class="{ on: createForm.createSubscription }">
+            <i v-if="createForm.createSubscription" class="ph ph-check"></i>
+          </span>
+          <span class="ck-tx">
+            <b>同时创建订阅</b>
+            <small>新房源上架自动提醒你（可在「订阅」页管理）</small>
+          </span>
+        </div>
         <button class="btn-primary" :disabled="creating" @click="create">
-          {{ creating ? '发布中…' : '发布到求租墙' }}
+          {{ creating ? '保存中…' : editingId ? '保存修改' : '发布到求租墙' }}
         </button>
+      </div>
+    </van-popup>
+
+    <!-- 需求详情弹层：求租墙打开=联系租客；我的需求打开=管理（编辑/成交/重匹配/撤回） -->
+    <van-popup v-model:show="showDetail" position="bottom" round>
+      <div class="create-panel" v-if="detailData">
+        <div class="dp-head">
+          <h4>求租需求</h4>
+          <i class="ph ph-x" @click="showDetail = false"></i>
+        </div>
+        <div class="dd-row"><b class="dd-label">区域</b><span>{{ detailData.region }}</span></div>
+        <div v-if="detailData.houseType" class="dd-row"><b class="dd-label">户型</b><span>{{ detailData.houseType }}</span></div>
+        <div v-if="detailData.budget" class="dd-row"><b class="dd-label">预算</b><span>{{ budgetText(detailData.budget) }}</span></div>
+        <div v-if="detailData.moveInDate" class="dd-row"><b class="dd-label">入住</b><span>{{ detailData.moveInDate }}</span></div>
+        <div v-if="detailData.leaseTerm" class="dd-row"><b class="dd-label">租期</b><span>{{ detailData.leaseTerm }}</span></div>
+        <div v-if="detailData.description" class="dd-row dd-desc"><b class="dd-label">描述</b><span>{{ detailData.description }}</span></div>
+        <div v-if="detailData.requirements" class="dd-reqs">
+          <span v-for="r in reqs(detailData.requirements)" :key="r" class="req-tag">{{ r }}</span>
+        </div>
+        <div class="mc-meta" v-if="detailMode === 'mine'">
+          状态：{{ statusText(detailData.matchStatus) }}
+        </div>
+
+        <!-- 求租墙视角：房东联系租客 -->
+        <template v-if="detailMode === 'wall'">
+          <button class="btn-primary" :disabled="contacting" @click="contactRenter(detailData)">
+            {{ contacting ? '唤起中…' : '钉钉内联系租客' }}
+          </button>
+        </template>
+
+        <!-- 我的需求视角：管理操作（编辑在卡片上，这里只留低频操作） -->
+        <template v-else>
+          <div class="dd-ops">
+            <button v-if="detailData.matchStatus !== 2" class="op-btn ghost" @click="complete(detailData)">标记已成交</button>
+            <button class="op-btn ghost danger" @click="withdraw(detailData)">撤回</button>
+          </div>
+        </template>
       </div>
     </van-popup>
 
@@ -107,6 +151,7 @@ import { useRouter } from 'vue-router'
 import { showConfirmDialog, showToast, showSuccessToast } from 'vant'
 import EmptyState from '@/modules/houserent/components/EmptyState.vue'
 import { demandApi } from '@/modules/houserent/api'
+import { openSingleChat } from '@/utils/dd'
 import { formatMoney } from '@/utils/format'
 
 const router = useRouter()
@@ -124,9 +169,86 @@ const showCreate = ref(false)
 const showMatchResult = ref(false)
 const immediateMatches = ref([])
 const immediateDegraded = ref(false)
-const rematching = ref(false)
 const creating = ref(false)
-const createForm = reactive({ region: '', houseType: '', budget: '', moveInDate: '', leaseTerm: '', requirements: '', description: '' })
+// 需求详情弹层：点求租墙卡片打开（wall 视角=联系租客）；点我的需求打开（mine 视角=管理）
+const showDetail = ref(false)
+const detailData = ref(null)
+const detailMode = ref('wall')
+const contacting = ref(false)
+const createForm = reactive({ region: '', houseType: '', budget: '', moveInDate: '', leaseTerm: '', requirements: '', description: '', createSubscription: false })
+// 编辑模式：null=新建，有值=编辑该 id 的需求
+const editingId = ref(null)
+
+/** 预算 JSON → 输入框文本（{"min":4000,"max":6000} → "4000-6000"） */
+function budgetInput(budget) {
+  try {
+    const b = JSON.parse(budget)
+    const parts = []
+    if (b.min != null) parts.push(b.min)
+    if (b.max != null) parts.push(b.max)
+    return parts.join('-')
+  } catch {
+    return budget || ''
+  }
+}
+
+/** 特殊要求 JSON 数组 → 逗号分隔输入框文本 */
+function requirementsInput(requirements) {
+  try {
+    const arr = JSON.parse(requirements)
+    return Array.isArray(arr) ? arr.join(',') : ''
+  } catch {
+    return ''
+  }
+}
+
+/** 打开发布弹层（新建模式）：重置编辑态 */
+function openCreate() {
+  editingId.value = null
+  showCreate.value = true
+}
+
+/** 编辑需求：预填表单并打开弹层 */
+function editDemand(d) {
+  editingId.value = d.id
+  createForm.region = d.region || ''
+  createForm.houseType = d.houseType || ''
+  createForm.budget = budgetInput(d.budget)
+  createForm.moveInDate = d.moveInDate || ''
+  createForm.leaseTerm = d.leaseTerm || ''
+  createForm.requirements = requirementsInput(d.requirements)
+  createForm.description = d.description || ''
+  createForm.createSubscription = false
+  showCreate.value = true
+}
+
+/** 打开需求详情弹层（求租墙卡片点击，房东视角：联系租客） */
+async function openDetail(d) {
+  detailMode.value = 'wall'
+  detailData.value = d
+  showDetail.value = true
+}
+
+/** 打开我的需求详情弹层（发布者视角：编辑/成交/重匹配/撤回） */
+function openMyDetail(d) {
+  detailMode.value = 'mine'
+  detailData.value = d
+  showDetail.value = true
+}
+
+/** 钉钉内联系租客：调后端拿发布者 staffId → 唤起钉钉单聊（对齐房源侧联系房东） */
+async function contactRenter(d) {
+  if (contacting.value) return
+  contacting.value = true
+  try {
+    const renter = await demandApi.contact(d.id)
+    await openSingleChat(renter.staffId)
+  } catch (e) {
+    showToast(e.message || '暂时无法联系，请稍后再试')
+  } finally {
+    contacting.value = false
+  }
+}
 
 function budgetText(budget) {
   try {
@@ -161,6 +283,7 @@ async function rematch(d) {
     d.matchStatus = res?.matches?.length ? 1 : 0
     immediateMatches.value = res?.matches || []
     immediateDegraded.value = !!res?.degraded
+    showDetail.value = false
     showMatchResult.value = true
   } catch (e) {
     showToast(e.message || '匹配失败')
@@ -206,7 +329,7 @@ async function create() {
     const requirements = createForm.requirements
       ? JSON.stringify(createForm.requirements.split(/[,，]/).map((s) => s.trim()).filter(Boolean))
       : null
-    const res = await demandApi.create({
+    const payload = {
       region: createForm.region.trim(),
       houseType: createForm.houseType.trim(),
       budget,
@@ -214,17 +337,28 @@ async function create() {
       leaseTerm: createForm.leaseTerm.trim(),
       requirements,
       description: createForm.description.trim()
-    })
-    // 发布后即时匹配：有结果展示，无结果提示等待新房源
-    immediateMatches.value = res?.matches || []
-    immediateDegraded.value = !!res?.degraded
-    showMatchResult.value = true
-    showCreate.value = false
-    Object.keys(createForm).forEach((k) => (createForm[k] = ''))
-    loadWall()
-    loadMine()
+    }
+    if (editingId.value) {
+      // 编辑：保存并重新匹配（后端返回更新后的需求）
+      await demandApi.update(editingId.value, payload)
+      showSuccessToast('已保存修改')
+      showCreate.value = false
+      editingId.value = null
+      loadMine()
+      loadWall()
+    } else {
+      // 新建：发布 + 即时匹配
+      const res = await demandApi.create({ ...payload, createSubscription: createForm.createSubscription })
+      immediateMatches.value = res?.matches || []
+      immediateDegraded.value = !!res?.degraded
+      showMatchResult.value = true
+      showCreate.value = false
+      Object.keys(createForm).forEach((k) => (createForm[k] = ''))
+      loadWall()
+      loadMine()
+    }
   } catch (e) {
-    showToast(e.message || '发布失败')
+    showToast(e.message || '操作失败')
   } finally {
     creating.value = false
   }
@@ -245,6 +379,7 @@ async function complete(d) {
   try {
     await demandApi.complete(d.id)
     showSuccessToast('已标记成交')
+    showDetail.value = false
     loadMine()
     loadWall()
   } catch (e) {
@@ -267,6 +402,7 @@ async function withdraw(d) {
   try {
     await demandApi.withdraw(d.id)
     showSuccessToast('已撤回')
+    showDetail.value = false
     loadMine()
     loadWall()
   } catch (e) {
@@ -289,37 +425,9 @@ onMounted(() => {
     padding-bottom: 0;
   }
 }
-.prompt-hero {
-  background: linear-gradient(135deg, var(--primary-soft), #ffebd6);
-  padding: 18px 16px;
-  border-bottom: 1px solid var(--border);
-}
-.prompt-hero .big {
-  font-size: 0.98rem;
-  font-weight: 700;
-  color: var(--fg);
-  margin-bottom: 4px;
-}
-.prompt-hero .small {
-  font-size: 0.72rem;
-  color: var(--fg2);
-  margin-bottom: 12px;
-}
+/* prompt-input 可点击（公共样式见 styles/components.css） */
 .prompt-input {
-  background: var(--card);
-  border-radius: 12px;
-  padding: 13px 14px;
-  font-size: 0.85rem;
-  color: var(--fg3);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  border: 1px solid var(--primary);
-  box-shadow: 0 4px 14px rgba(255, 106, 0, 0.12);
   cursor: pointer;
-}
-.prompt-input i {
-  color: var(--primary);
 }
 .seg-tabs {
   display: flex;
@@ -343,15 +451,91 @@ onMounted(() => {
 .wall {
   padding: 12px 16px;
 }
-.sk {
-  border-radius: 14px;
+/* 匹配卡片 hover（公共基础见 styles/components.css） */
+.match-card:hover {
+  border-color: rgba(255, 106, 0, 0.35);
+  box-shadow: 0 4px 16px rgba(255, 106, 0, 0.12);
 }
-.match-card {
+/* 需求详情弹层 */
+.dd-row {
+  display: flex;
+  gap: 10px;
+  padding: 6px 0;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--fg2);
+}
+.dd-row .dd-label {
+  flex-shrink: 0;
+  width: 44px;
+  color: var(--fg3);
+  font-weight: 500;
+}
+.dd-row.dd-desc span {
+  flex: 1;
+}
+.dd-reqs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 6px 0 14px;
+}
+/* 我的需求管理操作：主按钮下方一行次按钮 */
+.dd-ops {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+/* 操作按钮（卡片 + 详情弹层共用） */
+.op-btn {
+  flex: 1;
+  font-size: 0.74rem;
+  padding: 9px 0;
+  border-radius: 10px;
+  border: none;
+  background: var(--primary);
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.op-btn.ghost {
   background: var(--card);
-  border-radius: 14px;
-  padding: 14px;
+  color: var(--fg2);
   border: 1px solid var(--border);
-  margin-bottom: 10px;
+}
+.op-btn.ghost.danger {
+  color: var(--destructive);
+  border-color: var(--destructive-border);
+}
+.op-btn:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+.op-btn:active {
+  opacity: 0.85;
+}
+/* 我的需求卡片操作行：单个高频按钮，右对齐窄宽，不占满整行 */
+.mc-ops {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 10px;
+}
+.mc-ops .op-btn {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 7px 14px;
+  font-size: 0.76rem;
+}
+.mc-ops .op-btn i {
+  font-size: 0.9rem;
+}
+.d-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 .mc-top {
   display: flex;
@@ -408,34 +592,6 @@ onMounted(() => {
   color: var(--fg3);
   margin-top: 6px;
 }
-.mc-ops {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  margin-top: 10px;
-}
-.op-btn {
-  font-size: 0.7rem;
-  padding: 6px 12px;
-  border-radius: 8px;
-  border: none;
-  background: var(--primary);
-  color: #fff;
-  font-weight: 600;
-  cursor: pointer;
-}
-.op-btn:disabled {
-  opacity: 0.55;
-  cursor: default;
-}
-.op-btn.ghost {
-  background: var(--card);
-  color: var(--fg2);
-  border: 1px solid var(--border);
-}
-.op-btn:active {
-  opacity: 0.85;
-}
 .create-panel {
   padding: 20px 16px 28px;
 }
@@ -444,50 +600,70 @@ onMounted(() => {
   font-weight: 600;
   margin-bottom: 14px;
 }
-.form-field {
+/* 创建订阅勾选 */
+.sub-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  margin-bottom: 12px;
   border: 1px solid var(--border);
   border-radius: 10px;
-  padding: 10px 12px;
-  margin-bottom: 10px;
+  background: var(--card);
+  cursor: pointer;
+}
+.sub-check .ck {
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--card);
   display: flex;
   align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 1px;
+  transition: all 0.15s ease;
 }
-.form-field input {
-  border: none;
-  outline: none;
-  flex: 1;
-  font-size: 0.8rem;
-  font-family: inherit;
-  color: var(--fg);
-  background: transparent;
-}
-.btn-primary {
+.sub-check .ck.on {
   background: var(--primary);
-  color: #fff;
-  border: none;
-  border-radius: 10px;
-  padding: 12px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  cursor: pointer;
-  width: 100%;
-  box-shadow: 0 2px 0 var(--primary-deep);
-  margin-top: 6px;
+  border-color: var(--primary);
 }
+.sub-check .ck i {
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+.sub-check .ck-tx {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.sub-check .ck-tx b {
+  font-size: 0.8rem;
+  color: var(--fg);
+}
+.sub-check .ck-tx small {
+  font-size: 0.66rem;
+  color: var(--fg3);
+  line-height: 1.4;
+}
+.seg-item {
+  font-size: 0.74rem;
+  padding: 6px 14px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 106, 0, 0.35);
+  color: var(--fg2);
+  background: var(--card);
+}
+/* PC 端主按钮限宽居中（公共样式见 styles/components.css） */
 @media (min-width: 768px) {
   .btn-primary {
+    display: block;
     width: auto;
     max-width: 320px;
     margin: 6px auto 0;
   }
-}
-.btn-primary:active {
-  transform: translateY(1px);
-  box-shadow: none;
-}
-.btn-primary:disabled {
-  opacity: 0.5;
-  box-shadow: none;
 }
 .match-panel {
   padding: 16px;
@@ -543,5 +719,12 @@ onMounted(() => {
 .mp-done {
   width: 100%;
   margin-top: 10px;
+}
+@media (min-width: 768px) {
+  .mp-done {
+    display: block;
+    max-width: 320px;
+    margin: 10px auto 0;
+  }
 }
 </style>

@@ -4,7 +4,7 @@
       <!-- 品牌区 -->
       <div class="topnav-brand" @click="go('home')">
         <span class="brand-icon">🏠</span>
-        <span class="brand-text">校友安居</span>
+        <span class="brand-text">校友直租</span>
       </div>
 
       <!-- 导航区 -->

@@ -40,7 +40,7 @@
 
       <div class="story-strip" v-if="report.weekRented > 0">
         <i class="ph ph-heart"></i>
-        <span>🎉 本周 <b>{{ report.weekRented }}</b> 位校友通过「校友安居」找到新家，愿你们在新家安居。</span>
+        <span>🎉 本周 <b>{{ report.weekRented }}</b> 位校友通过「校友直租」找到新家，愿你们在新家住得踏实。</span>
       </div>
     </div>
 

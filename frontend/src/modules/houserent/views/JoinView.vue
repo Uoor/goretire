@@ -16,7 +16,7 @@
     <div class="join-body">
       <!-- 安居定位 -->
       <div class="join-intro">
-        <p>「<span class="hl">校友安居</span>」是社群生态子群之一，只面向<span class="hl">阿里 / 蚂蚁</span>在职与离职校友的专属租房网络。</p>
+        <p>「<span class="hl">校友直租</span>」是社群生态子群之一，只面向<span class="hl">阿里 / 蚂蚁</span>在职与离职校友的专属租房网络。</p>
         <p>你当前使用的账号<span class="strong">不在校友社群组织中</span>，加入后即可使用租房服务。</p>
       </div>
 
@@ -29,7 +29,7 @@
         </div>
         <div class="value-c">
           <span class="icon">🏠</span>
-          <h4>校友安居</h4>
+          <h4>校友直租</h4>
           <p>直租免中介 · 身份互见 · 真实房源 · 互相托底</p>
         </div>
       </div>

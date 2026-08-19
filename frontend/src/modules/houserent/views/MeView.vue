@@ -60,7 +60,7 @@
         <h4>房子租出去了？</h4>
         <p class="fb-sub">
           标记后房源将从广场下架。<br />
-          顺便告诉我们：这房子是租给通过「校友安居」认识的人吗？<br />
+          顺便告诉我们：这房子是租给通过「校友直租」认识的人吗？<br />
           每周「安居故事」会统计有多少校友通过安居找到新家。
         </p>
         <div class="fb-btns">
@@ -400,32 +400,5 @@ onMounted(load)
 }
 .fb-main {
   flex: 1.4;
-}
-.btn-primary,
-.btn-ghost {
-  border-radius: 10px;
-  padding: 12px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-.btn-primary {
-  background: var(--primary);
-  color: #fff;
-  border: none;
-  box-shadow: 0 2px 0 var(--primary-deep);
-}
-.btn-primary:active {
-  transform: translateY(1px);
-  box-shadow: none;
-}
-.btn-ghost {
-  background: var(--card);
-  color: var(--fg);
-  border: 1px solid var(--border);
-}
-.btn-ghost:active {
-  background: var(--bg);
 }
 </style>

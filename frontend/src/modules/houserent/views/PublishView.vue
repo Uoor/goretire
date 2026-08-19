@@ -472,31 +472,11 @@ onMounted(() => {
   color: var(--fg3);
   margin-top: 8px;
 }
-.btn-primary {
-  background: var(--primary);
-  color: #fff;
-  border: none;
-  border-radius: 10px;
-  padding: 12px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  cursor: pointer;
-  width: 100%;
-  box-shadow: 0 2px 0 var(--primary-deep);
-  transition: all 0.15s;
-}
+/* PC 端主按钮限宽居中（公共样式见 styles/components.css） */
 @media (min-width: 768px) {
   .btn-primary {
     max-width: 320px;
     margin: 0 auto;
   }
-}
-.btn-primary:active {
-  transform: translateY(1px);
-  box-shadow: 0 0 0 var(--primary-deep);
-}
-.btn-primary:disabled {
-  opacity: 0.5;
-  box-shadow: none;
 }
 </style>

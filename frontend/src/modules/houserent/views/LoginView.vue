@@ -6,7 +6,7 @@
         <div class="logo">
           <i class="ph ph-house-line"></i>
         </div>
-        <h1>校友安居</h1>
+        <h1>校友直租</h1>
         <p class="subtitle">
           「<span class="community-name">阿里人·一起提前退休</span>」<br>
           社群专属 · 校友互信租房
@@ -40,7 +40,7 @@
 
       <!-- 登录卡（PC：右栏纯行动区） -->
       <div class="login-card">
-        <div class="lc-title">登录以使用校友安居</div>
+        <div class="lc-title">登录以使用校友直租</div>
         <p class="lc-sub">通过钉钉官方授权校验社群身份，约 3 秒完成</p>
         <button class="dingtalk-login-btn" @click="login">
           <svg class="dingtalk-icon" viewBox="0 0 1024 1024" width="20" height="20">
@@ -80,8 +80,13 @@ const route = useRoute()
 const router = useRouter()
 const store = useUserStore()
 
+// 登录后回跳目标（群卡片落地页 → 登录页 → 扫码 → 回原目标页）：
+// landing 页无 token 时会带 ?redirect=/house/123 跳到本页
+const rawRedirect = (route.query.redirect || '').toString()
+const redirectTarget = rawRedirect.startsWith('/') ? rawRedirect : ''
+
 function login() {
-  redirectToDingTalkOAuth()
+  redirectToDingTalkOAuth(redirectTarget || undefined)
 }
 
 // 非社群成员：跳 Join 页了解社群（hero 数据 / 价值 / 加入步骤）后再加入。
@@ -101,7 +106,7 @@ onMounted(() => {
   if (error === 'not_in_org') {
     showDialog({
       title: '校友专属服务',
-      message: '「校友安居」是「阿里人·一起提前退休」社群专属的租房服务，需要先加入社群组织才能使用。',
+      message: '「校友直租」是「阿里人·一起提前退休」社群专属的租房服务，需要先加入社群组织才能使用。',
       confirmButtonText: '查看如何加入',
       closeOnClickOverlay: false
     }).then(() => goJoin()).catch(() => {})
@@ -112,8 +117,8 @@ onMounted(() => {
       confirmButtonText: '知道了'
     }).catch(() => {})
   }
-  // 清除 error 参数，避免刷新后重复弹窗
-  router.replace({ query: {} })
+  // 清除 error 参数（保留 redirect，扫码后仍需回跳），避免刷新后重复弹窗
+  router.replace({ query: redirectTarget ? { redirect: redirectTarget } : {} })
 })
 </script>
 

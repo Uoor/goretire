@@ -47,6 +47,8 @@ public class QwenMatchClient implements MatchClient {
             ObjectNode body = objectMapper.createObjectNode();
             body.put("model", model);
             body.put("temperature", 0.2);
+            // 输出 token 上限：匹配任务只需简短 JSON，限制输出防被诱导生成超长内容（成本防护）
+            body.put("max_tokens", 512);
             ArrayNode messages = body.putArray("messages");
             ObjectNode system = messages.addObject();
             system.put("role", "system");

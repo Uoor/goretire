@@ -7,6 +7,7 @@ import com.aliren.houserent.match.dto.SubscriptionHit;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.Data;
 import org.springframework.web.bind.annotation.*;
 
@@ -43,6 +44,7 @@ public class MatchController {
     @Data
     public static class SearchRequest {
         @NotBlank(message = "找房描述不能为空")
+        @Size(max = 200, message = "找房描述最多 200 字")
         private String text;
     }
 

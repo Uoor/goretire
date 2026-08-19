@@ -89,6 +89,25 @@ frontend/src/
 - **前端环境变量**：`frontend/.env`（已 gitignore）放 `VITE_DING_CORP_ID`；模板见 `frontend/.env.example`。
 - **视觉规范**：新增/改 UI 前读 [frontend/DESIGN.md](frontend/DESIGN.md)（暖白 `#F5F5F4` + 活力橙 `#FF6A00`，数字用 `--num`/DM Sans，橙色只用于行动/价格/信任信号）。设计令牌在 `styles/tokens.css`。
 
+### 前端样式规范（CSS 架构）
+
+全局样式分三层，**禁止在页面 `<style scoped>` 里重复定义公共组件**：
+
+```
+frontend/src/styles/
+├── tokens.css      # 设计令牌：--primary/--bg/--card/--fg/--border/--radius-* 等（唯一色值来源）
+├── base.css        # 重置 + 通用布局 + 钉钉登录按钮等全局元素
+└── components.css  # 公共组件：btn-primary/btn-ghost/op-btn/del-btn/icon-btn/
+                    #   form-field/seg-item/qc-chip/tag/avatar/prompt-hero/prompt-input/
+                    #   match-card/guide-strip/cond-strip/qh-row
+```
+
+- **色值只写 `var(--token)`**，不写死 `#hex`（渐变占位图除外，见 DESIGN.md §2）。
+- **公共组件**（按钮/表单/标签/卡片/提示条）定义在 `components.css`，页面只保留**特有布局**与 **PC 端 `@media (min-width:768px)` 覆盖**（如主按钮限宽 320px 居中）。
+- **按钮统一**：主按钮 `.btn-primary`（padding `10px 16px`、圆角 `--radius-md`、立体边 `0 2px 0 --primary-deep`）；次按钮 `.btn-ghost`；行内操作 `.op-btn`；危险 `.del-btn`/`.op-btn.danger`。改尺寸只改 `components.css` 一处。
+- **按钮居中坑**：`<button>` 默认 `inline-block`，`margin:auto` 不生效；PC 限宽居中需 `display:block` + `margin:… auto`（或在 flex 容器用 `justify-content:center`）。
+- 新增组件样式时：先查 `components.css` 是否已有；跨页面复用就放全局，仅单页使用才放页面 scoped。
+
 ## 编码规范
 
 > **规范文件位于 `docs/harness/` 目录，开发前请查阅。**
