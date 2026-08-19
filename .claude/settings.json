@@ -9,7 +9,8 @@
       "Bash(npm uninstall *)",
       "Bash(npm install *)",
       "Bash(npm ls *)",
-      "Bash(mvn package *)"
+      "Bash(mvn package *)",
+      "Bash(ssh ecs-alr *)"
     ],
     "additionalDirectories": [
       "/Volumes/extend/code/aliren"

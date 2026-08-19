@@ -145,11 +145,20 @@ public class DingTalkClientImpl implements DingTalkClient {
         if (authCode == null || authCode.isBlank()) {
             throw new BusinessException(401, "扫码登录失败");
         }
-        // 1. OAuth2 code → 用户级 accessToken
+        // 优先尝试：OAuth code 直接调 /topapi/v2/user/getuserinfo（应用 token，无需 Contact.User.Read scope）
+        // 钉钉 OAuth2 的 code 与企业内部免登 code 格式相同，可复用 getUserInfo 接口。
+        try {
+            String appToken = getAccessToken();
+            String userId = fetchUserIdByCode(authCode, appToken);
+            if (userId != null && !userId.isBlank()) {
+                return userId;
+            }
+        } catch (Exception e) {
+            log.info("[auth] getUserInfo with OAuth code failed, fallback to unionId flow: {}", e.getMessage());
+        }
+        // 降级：OAuth2 code → 用户 token → unionId → userId（需要 Contact.User.Read scope）
         String userAccessToken = exchangeOAuthCode(authCode);
-        // 2. 用户 accessToken → /contact/users/me → unionId
         String unionId = getUnionIdByUserToken(userAccessToken);
-        // 3. unionId + 应用 accessToken → /topapi/user/getbyunionid → userId
         return getUserIdByUnionId(unionId);
     }
 
