@@ -58,19 +58,22 @@ public class AuthController {
      *           其他错误 → /#/login?error=auth_failed。
      */
     @GetMapping("/dingtalk/callback")
-    public void oauthCallback(@RequestParam String authCode,
+    public void oauthCallback(@RequestParam(required = false) String authCode,
+                              @RequestParam(required = false) String code,
                               @RequestParam(required = false) String state,
                               jakarta.servlet.http.HttpServletRequest request,
                               jakarta.servlet.http.HttpServletResponse response) throws IOException {
-        // 诊断：记录回调参数指纹（authCode 长度/头 + 完整 state + Referer），定位兑换失败根因
-        log.info("[auth] oauth callback: codeLen={} codeHead={} state={} referer={}",
-                authCode == null ? -1 : authCode.length(),
-                authCode != null && authCode.length() > 6 ? authCode.substring(0, 6) : (authCode == null ? "null" : authCode),
-                state, request.getHeader("Referer"));
+        // 诊断：记录所有回调参数（authCode/code/error 等）与完整 query，定位兑换失败根因
+        Map<String, String[]> params = request.getParameterMap();
+        StringBuilder sb = new StringBuilder();
+        params.forEach((k, v) -> sb.append(k).append("=[").append(String.join(",", v)).append("] "));
+        log.info("[auth] oauth callback params: {} referer={}", sb, request.getHeader("Referer"));
+        // 兼容两种参数名：优先 authCode（钉钉 OAuth2 标准），回退 code
+        String effectiveCode = authCode != null && !authCode.isBlank() ? authCode : code;
         FrontendTarget target = resolveFrontendTarget(state, request);
         AuthResponse authResult;
         try {
-            authResult = authService.authenticateOAuth(authCode);
+            authResult = authService.authenticateOAuth(effectiveCode);
         } catch (BusinessException e) {
             // 非组织成员：引导加入社群；其余失败：通用登录失败
             String error = e.getCode() == 403 ? "not_in_org" : "auth_failed";
