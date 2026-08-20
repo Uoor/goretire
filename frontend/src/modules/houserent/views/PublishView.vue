@@ -34,10 +34,6 @@
           {{ c.name }}
         </span>
       </div>
-      <div class="form-label"><span>房号（仅审核可见）</span><span class="hint">公开展示只到小区</span></div>
-      <div class="form-field">
-        <input v-model="form.roomNo" placeholder="如：8-1201" />
-      </div>
       <div class="form-label"><span>区域</span><span class="req">*</span></div>
       <div class="form-field">
         <input v-model="form.region" placeholder="如：杭州西溪" @blur="loadRegionPrice" @input="priceTip = null" />
@@ -337,8 +333,9 @@ onMounted(() => {
   padding-bottom: 120px;
 }
 @media (min-width: 768px) {
+  /* PC 端仍需给 fixed 提交栏让位，否则滚动到底时最后字段（一句话描述）被盖住 */
   .publish-page {
-    padding-bottom: 0;
+    padding-bottom: 100px;
   }
 }
 .form-sec {

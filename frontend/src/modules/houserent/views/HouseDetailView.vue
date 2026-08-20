@@ -184,8 +184,9 @@ onMounted(load)
   min-height: 100vh;
 }
 @media (min-width: 768px) {
+  /* PC 端仍需给 fixed 操作栏让位，否则底部内容被盖住 */
   .detail-page {
-    padding-bottom: 0;
+    padding-bottom: 76px;
   }
 }
 .detail-hero {
