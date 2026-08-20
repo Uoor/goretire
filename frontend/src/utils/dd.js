@@ -213,12 +213,13 @@ export async function redirectToDingTalkOAuth(redirect) {
     console.error('[dd] VITE_DING_APP_KEY 未配置，无法发起 OAuth2 登录')
     return
   }
-  // 回调地址：始终使用生产环境的回调 URL（钉钉只允许已配置的回调地址）
-  // 通过 state 参数传递实际的前端 origin，让后端知道最终重定向到哪里
-  const callbackUrl = encodeURIComponent('https://test.nekomiao.com/api/auth/dingtalk/callback')
-  // state 参数：origin + 可选 redirect（JSON 后 base64），后端解码出 origin 重定向，
-  // 并把 redirect 追加到回调 URL，实现扫码后回跳目标页（群卡片落地页免登）
-  const statePayload = { origin: location.origin }
+  // 回调地址：始终使用生产环境的回调 URL（钉钉只允许已配置的回调地址）。
+  // 部署子路径 /ali/house：API 在 {domain}/ali/house/api 下
+  const callbackUrl = encodeURIComponent('https://test.nekomiao.com/ali/house/api/auth/dingtalk/callback')
+  // state 参数：origin（含部署子路径 pathname）+ 可选 redirect（JSON 后 base64），
+  // 后端解码出 origin 重定向，并把 redirect 追加到回调 URL，实现扫码后回跳目标页。
+  // 注意：必须带 location.pathname（/ali/house），否则扫码回跳会丢子路径前缀。
+  const statePayload = { origin: location.origin + location.pathname }
   if (redirect) statePayload.redirect = redirect
   const state = encodeURIComponent(btoa(JSON.stringify(statePayload)))
   const params = [
@@ -238,7 +239,7 @@ export async function redirectToDingTalkOAuth(redirect) {
     request.post('/dingtalk/jsapi-debug', {
       event: 'oauth.redirect',
       oauthUrl,
-      origin: location.origin,
+      origin: location.origin + location.pathname,
       pageUrl: location.href
     }).catch(() => {})
   } catch (e) { /* 上报失败不影响主流程 */ }
