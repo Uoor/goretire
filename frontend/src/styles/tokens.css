@@ -38,8 +38,8 @@
   --fg3: rgba(0, 0, 0, 0.35);
   --border: rgba(0, 0, 0, 0.08);
 
-  /* 字体 */
-  --num: 'DM Sans', -apple-system, sans-serif;
+  /* 字体：数字专用（移除 DM Sans——Google Fonts 大陆网络被墙且阻塞渲染，用系统字体栈） */
+  --num: -apple-system, 'SF Pro', 'Segoe UI', 'Helvetica Neue', sans-serif;
 
   /* 布局（375 设计稿） */
   --tabbar-height: 56px;
