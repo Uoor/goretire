@@ -26,18 +26,28 @@ const store = useUserStore()
 onMounted(() => {
   const redirect = (route.query.redirect || '').toString()
   const target = redirect && redirect.startsWith('/') ? redirect : '/'
-  // 清理 URL 前的 ?redirect=（防止刷新后守卫重复截获）
-  if (window.location.search.includes('redirect=')) {
-    const cleanUrl = window.location.origin + window.location.pathname + window.location.hash
-    window.history.replaceState(null, '', cleanUrl)
-  }
+  // 先做登录判断与跳转，再清理 URL query（清理放最后，避免 history API 异常中断跳转）
   if (store.isLoggedIn) {
+    cleanUrlQuery()
     router.replace({ path: target })
     return
   }
   // 无登录态：跳登录页（保留 redirect，登录后回跳目标页）
+  cleanUrlQuery()
   router.replace({ path: '/login', query: target === '/' ? {} : { redirect: target } })
 })
+
+/** 清理 URL 前的 ?redirect=（防止刷新后守卫重复截获）；try/catch 兜底 history API 异常 */
+function cleanUrlQuery() {
+  try {
+    if (window.location.search.includes('redirect=')) {
+      const cleanUrl = window.location.origin + window.location.pathname + window.location.hash
+      window.history.replaceState(null, '', cleanUrl)
+    }
+  } catch (e) {
+    console.warn('[landing] 清理 URL query 失败，忽略:', e)
+  }
+}
 </script>
 
 <style scoped>
