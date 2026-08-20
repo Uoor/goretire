@@ -11,7 +11,7 @@
 
     <div class="seg-tabs">
       <div class="seg-tab" :class="{ on: tab === 'wall' }" @click="tab = 'wall'">求租墙</div>
-      <div class="seg-tab" :class="{ on: tab === 'mine' }" @click="tab = 'mine'">我的需求</div>
+      <div class="seg-tab" :class="{ on: tab === 'mine' }" @click="tab = 'mine'">我发布的需求</div>
     </div>
 
     <div class="wall" v-if="tab === 'wall'">
