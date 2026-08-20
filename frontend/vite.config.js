@@ -4,6 +4,8 @@ import { fileURLToPath, URL } from 'node:url'
 
 // 钉钉 H5 微应用：hash 路由由 Vue Router 处理；开发期代理 /api 到本地后端
 export default defineConfig({
+  // 部署子路径：test.nekomiao.com/ali/house/（构建产物资源路径前缀；dev 同样生效）
+  base: '/ali/house/',
   plugins: [vue()],
   resolve: {
     alias: {
@@ -17,14 +19,14 @@ export default defineConfig({
     // 允许任意 Host 访问（局域网 IP + cloudflared 隧道域名都可能是来源）
     allowedHosts: true,
     proxy: {
-      '/api': {
-        // 本地开发连接远程服务器
+      '/ali/house/api': {
+        // 本地开发连接远程服务器（路径带子路径前缀，与线上一致）
         target: 'https://test.nekomiao.com',
         changeOrigin: true,
         secure: true
       },
       // 上传图片静态访问
-      '/uploads': {
+      '/ali/house/uploads': {
         target: 'https://test.nekomiao.com',
         changeOrigin: true,
         secure: true
