@@ -72,6 +72,16 @@ async function ensureLogin() {
 
 router.beforeEach(async (to) => {
   document.title = to.meta.title ? `校友直租 · ${to.meta.title}` : '校友直租'
+  // 钉钉 page/link 无法可靠处理 #（实测请求根路径 404），改用 URL query 传 redirect：
+  // 链接形如 https://…/ali/house/?redirect=/house/1，nginx 返回 index.html。
+  // hash 路由只解析 hash 内的 query，URL 前的 ?redirect= 需从 location.search 读取。
+  if (to.name === 'home') {
+    const searchParams = new URLSearchParams(window.location.search)
+    const redirect = searchParams.get('redirect')
+    if (redirect && redirect.startsWith('/')) {
+      return { name: 'landing', query: { redirect } }
+    }
+  }
   // 加入组织页：已登录回首页；未登录直接放行（不再触发免登，避免死循环）
   if (to.name === 'join') {
     return useUserStore().isLoggedIn ? { name: 'home' } : true

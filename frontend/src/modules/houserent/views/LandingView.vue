@@ -19,10 +19,18 @@ const store = useUserStore()
  * 2. 无登录态 → 跳登录页并携带 redirect（登录页展示信任/授权说明后由用户发起扫码，
  *    扫码成功后端回跳 oauth-callback 携带 redirect，实现"从卡片进 → 登录 → 回原目标页"）。
  * 首次登录一次，之后 localStorage 有 token，点卡片直接免登。
+ *
+ * redirect 来源：钉钉链接 ?redirect=/house/1（URL query，无 hash）→ router 守卫
+ * 从 location.search 截获并转入本页（hash query 形式）。
  */
 onMounted(() => {
   const redirect = (route.query.redirect || '').toString()
   const target = redirect && redirect.startsWith('/') ? redirect : '/'
+  // 清理 URL 前的 ?redirect=（防止刷新后守卫重复截获）
+  if (window.location.search.includes('redirect=')) {
+    const cleanUrl = window.location.origin + window.location.pathname + window.location.hash
+    window.history.replaceState(null, '', cleanUrl)
+  }
   if (store.isLoggedIn) {
     router.replace({ path: target })
     return

@@ -71,7 +71,8 @@ public class PublishOrchestrator {
         List<SubscriptionHit> subHits = matchService.matchSubscriptions(houseId);
         List<DemandHit> demandHits = matchService.matchDemands(houseId);
         // 详情链接走落地页（蚂蚁钉限制域名无法容器内打开，只能跳系统浏览器）：
-        // 有 token 直接跳目标页，无 token 自动扫码并在登录后回跳，首次扫码后浏览器即免登
+        // 钉钉 page/link 无法可靠处理 #（实测请求根路径 404），故用 query 传 redirect、
+        // 不带 hash：h5BaseUrl/?redirect=/house/1，前端 router 守卫截获转入 landing。
         String detailUrl = h5BaseUrl.isBlank() ? "" : buildLandingUrl("/house/" + houseId);
         pushClient.sendGroupCardAction("🏠 新上架 · " + h.getCommunity(), buildHouseCard(h), detailUrl);
         for (SubscriptionHit hit : subHits) {
@@ -177,16 +178,17 @@ public class PublishOrchestrator {
     }
 
     /**
-     * 落地页链接：h5BaseUrl + "/#/landing?redirect={hashPath}"。
-     * redirect 只含前端 hash 路径（如 /house/123），不含任何凭据；
-     * 落地页负责免登（有 token 直接跳，无 token 自动扫码后回跳）。
+     * 落地页链接：h5BaseUrl + "/?redirect={path}"（query 参数，不带 hash）。
+     * 钉钉 page/link 对 #（hash）处理有缺陷（实测请求根路径 404），必须用 query 传目标；
+     * redirect 只含前端路径（如 /house/123），不含任何凭据。
+     * 前端 router 守卫截获 ?redirect= 转入 landing 免登流程。
      */
     private String buildLandingUrl(String hashPath) {
         try {
-            return h5BaseUrl + "/#/landing?redirect="
+            return h5BaseUrl + "/?redirect="
                     + java.net.URLEncoder.encode(hashPath, java.nio.charset.StandardCharsets.UTF_8);
         } catch (Exception e) {
-            return h5BaseUrl + "/#/landing";
+            return h5BaseUrl + "/";
         }
     }
 
