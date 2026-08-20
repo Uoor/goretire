@@ -19,35 +19,17 @@ const store = useUserStore()
  * 2. 无登录态 → 跳登录页并携带 redirect（登录页展示信任/授权说明后由用户发起扫码，
  *    扫码成功后端回跳 oauth-callback 携带 redirect，实现"从卡片进 → 登录 → 回原目标页"）。
  * 首次登录一次，之后 localStorage 有 token，点卡片直接免登。
- *
- * redirect 来源：钉钉链接 ?redirect=/house/1（URL query，无 hash）→ router 守卫
- * 从 location.search 截获并转入本页（hash query 形式）。
  */
 onMounted(() => {
   const redirect = (route.query.redirect || '').toString()
   const target = redirect && redirect.startsWith('/') ? redirect : '/'
-  // 先做登录判断与跳转，再清理 URL query（清理放最后，避免 history API 异常中断跳转）
   if (store.isLoggedIn) {
-    cleanUrlQuery()
     router.replace({ path: target })
     return
   }
   // 无登录态：跳登录页（保留 redirect，登录后回跳目标页）
-  cleanUrlQuery()
   router.replace({ path: '/login', query: target === '/' ? {} : { redirect: target } })
 })
-
-/** 清理 URL 前的 ?redirect=（防止刷新后守卫重复截获）；try/catch 兜底 history API 异常 */
-function cleanUrlQuery() {
-  try {
-    if (window.location.search.includes('redirect=')) {
-      const cleanUrl = window.location.origin + window.location.pathname + window.location.hash
-      window.history.replaceState(null, '', cleanUrl)
-    }
-  } catch (e) {
-    console.warn('[landing] 清理 URL query 失败，忽略:', e)
-  }
-}
 </script>
 
 <style scoped>

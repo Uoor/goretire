@@ -40,39 +40,23 @@ function fetchBackendCorpId() {
  * 多组织场景下，容器当前活跃企业可能与应用所属企业不一致，
  * dd.config 校验 corpId 不匹配会报 invalid corpid，因此优先跟随容器。
  * 容器不可用时返回 null，由调用方回退到后端配置的 corpId。
- * 注意：page/link 等非微应用容器打开时，dd.runtime.info 回调可能永不触发，
- * 必须加超时兜底（否则 Promise 永久 pending，免登流程卡死）。
  */
 function getContainerCorpId() {
   return new Promise((resolve) => {
-    let settled = false
-    const finish = (val) => {
-      if (!settled) {
-        settled = true
-        resolve(val)
-      }
-    }
-    const timer = setTimeout(() => finish(null), 2000)
     try {
       if (typeof dd !== 'undefined' && dd.runtime && typeof dd.runtime.info === 'function') {
         dd.runtime.info({
           onSuccess: (info) => {
-            clearTimeout(timer)
             const corpId = (info && (info.corpId || info.corpId2)) || ''
-            finish(corpId || null)
+            resolve(corpId || null)
           },
-          onFail: () => {
-            clearTimeout(timer)
-            finish(null)
-          }
+          onFail: () => resolve(null)
         })
       } else {
-        clearTimeout(timer)
-        finish(null)
+        resolve(null)
       }
     } catch (e) {
-      clearTimeout(timer)
-      finish(null)
+      resolve(null)
     }
   })
 }
@@ -92,63 +76,55 @@ export function configDingtalk() {
   if (configPromise) return configPromise
   // 签名 url 与钉钉内实际页面 url 必须一致；hash 路由去掉 # 及之后部分
   const url = location.href.split('#')[0]
-  // 整体超时兜底：getContainerCorpId / jsapi-sign / dd.config 任一阶段卡住
-  // （page/link 等非微应用容器打开时 JSAPI 可能无响应），10s 内必须失败，
-  // 否则免登流程永久卡死、页面"卡住"。
-  configPromise = Promise.race([
-    getContainerCorpId().then((containerCorpId) =>
-      request
-        .post('/dingtalk/jsapi-sign', { url })
-        .then((cfg) => new Promise((resolve, reject) => {
-          backendCorpId = cfg.corpId || ''
-          // 兜底：dd.config 后 8s 内既无 ready 也无 error（部分钉钉版本静默失败），
-          // 超时按失败处理，避免免登流程永久卡死。
-          const timer = setTimeout(() => {
-            configPromise = null
-            reject(new Error('钉钉授权超时（dd.config 无回调）'))
-          }, 8000)
-          // 容器当前企业优先（多组织场景跟随用户当前活跃企业），否则用应用所属企业
-          const corpId = containerCorpId || cfg.corpId
-          dd.config({
-            agentId: String(cfg.agentId),
-            corpId,
-            timeStamp: String(cfg.timeStamp),
-            nonceStr: cfg.nonceStr,
-            signature: cfg.signature,
-            jsApiList: ['runtime.permission.requestAuthCode']
-          })
-          dd.ready(() => {
-            clearTimeout(timer)
-            resolve(true)
-          })
-          dd.error((err) => {
-            clearTimeout(timer)
-            configPromise = null // 授权失败允许下次重试
-            // 钉钉 dd.error 的 err 结构: {errorCode, errorMessage, errorMessageCN?}
-            const errorCode = err?.errorCode
-            const errorMessage = err?.errorMessageCN || err?.errorMessage || err?.message || JSON.stringify(err)
-            // 常见错误码提示
-            let friendlyMessage = '钉钉授权失败'
-            if (errorCode === 2 || errorCode === 3) {
-              friendlyMessage = '钉钉授权签名验证失败，请检查应用配置或联系管理员'
-            } else if (errorCode === 4) {
-              friendlyMessage = '钉钉应用未授权，请联系管理员开通权限'
-            } else if (errorCode === 7) {
-              friendlyMessage = '钉钉授权已过期，请刷新页面重试'
-            }
-            console.error('[dd.config] 授权失败:', { errorCode, errorMessage, corpId, url })
-            reject(new Error(`${friendlyMessage}（${errorCode}: ${errorMessage}）`))
-          })
-        }))
-        .catch((err) => {
+  configPromise = getContainerCorpId().then((containerCorpId) =>
+    request
+      .post('/dingtalk/jsapi-sign', { url })
+      .then((cfg) => new Promise((resolve, reject) => {
+        backendCorpId = cfg.corpId || ''
+        // 兜底：dd.config 后 8s 内既无 ready 也无 error（部分钉钉版本静默失败），
+        // 超时按失败处理，避免免登流程永久卡死。
+        const timer = setTimeout(() => {
           configPromise = null
-          console.error('[dd.config] 签名请求失败:', err)
-          throw err
-        }))
-  ], new Promise((_, reject) => setTimeout(() => {
-    configPromise = null
-    reject(new Error('钉钉授权超时（整体 10s）'))
-  }, 10000)))
+          reject(new Error('钉钉授权超时（dd.config 无回调）'))
+        }, 8000)
+        // 容器当前企业优先（多组织场景跟随用户当前活跃企业），否则用应用所属企业
+        const corpId = containerCorpId || cfg.corpId
+        dd.config({
+          agentId: String(cfg.agentId),
+          corpId,
+          timeStamp: String(cfg.timeStamp),
+          nonceStr: cfg.nonceStr,
+          signature: cfg.signature,
+          jsApiList: ['runtime.permission.requestAuthCode']
+        })
+        dd.ready(() => {
+          clearTimeout(timer)
+          resolve(true)
+        })
+        dd.error((err) => {
+          clearTimeout(timer)
+          configPromise = null // 授权失败允许下次重试
+          // 钉钉 dd.error 的 err 结构: {errorCode, errorMessage, errorMessageCN?}
+          const errorCode = err?.errorCode
+          const errorMessage = err?.errorMessageCN || err?.errorMessage || err?.message || JSON.stringify(err)
+          // 常见错误码提示
+          let friendlyMessage = '钉钉授权失败'
+          if (errorCode === 2 || errorCode === 3) {
+            friendlyMessage = '钉钉授权签名验证失败，请检查应用配置或联系管理员'
+          } else if (errorCode === 4) {
+            friendlyMessage = '钉钉应用未授权，请联系管理员开通权限'
+          } else if (errorCode === 7) {
+            friendlyMessage = '钉钉授权已过期，请刷新页面重试'
+          }
+          console.error('[dd.config] 授权失败:', { errorCode, errorMessage, corpId, url })
+          reject(new Error(`${friendlyMessage}（${errorCode}: ${errorMessage}）`))
+        })
+      }))
+      .catch((err) => {
+        configPromise = null
+        console.error('[dd.config] 签名请求失败:', err)
+        throw err
+      }))
   return configPromise
 }
 
@@ -237,13 +213,12 @@ export async function redirectToDingTalkOAuth(redirect) {
     console.error('[dd] VITE_DING_APP_KEY 未配置，无法发起 OAuth2 登录')
     return
   }
-  // 回调地址：始终使用生产环境的回调 URL（钉钉只允许已配置的回调地址）。
-  // 部署子路径 /ali/house：API 在 {domain}/ali/house/api 下
-  const callbackUrl = encodeURIComponent('https://test.nekomiao.com/ali/house/api/auth/dingtalk/callback')
-  // state 参数：origin（含部署子路径 pathname）+ 可选 redirect（JSON 后 base64），
-  // 后端解码出 origin 重定向，并把 redirect 追加到回调 URL，实现扫码后回跳目标页。
-  // 注意：必须带 location.pathname（/ali/house），否则扫码回跳会丢子路径前缀。
-  const statePayload = { origin: location.origin + location.pathname }
+  // 回调地址：始终使用生产环境的回调 URL（钉钉只允许已配置的回调地址）
+  // 通过 state 参数传递实际的前端 origin，让后端知道最终重定向到哪里
+  const callbackUrl = encodeURIComponent('https://test.nekomiao.com/api/auth/dingtalk/callback')
+  // state 参数：origin + 可选 redirect（JSON 后 base64），后端解码出 origin 重定向，
+  // 并把 redirect 追加到回调 URL，实现扫码后回跳目标页（群卡片落地页免登）
+  const statePayload = { origin: location.origin }
   if (redirect) statePayload.redirect = redirect
   const state = encodeURIComponent(btoa(JSON.stringify(statePayload)))
   const params = [
@@ -263,7 +238,7 @@ export async function redirectToDingTalkOAuth(redirect) {
     request.post('/dingtalk/jsapi-debug', {
       event: 'oauth.redirect',
       oauthUrl,
-      origin: location.origin + location.pathname,
+      origin: location.origin,
       pageUrl: location.href
     }).catch(() => {})
   } catch (e) { /* 上报失败不影响主流程 */ }

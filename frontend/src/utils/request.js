@@ -3,31 +3,10 @@ import { useUserStore } from '@/store/user'
 import { showDialog, showToast } from 'vant'
 
 // axios 封装：统一 baseURL / token 注入 / 响应解包 {code,msg,data}
-// BASE_URL = Vite base（部署子路径 /ali/house/），API 挂在子路径下
 const request = axios.create({
-  baseURL: `${import.meta.env.BASE_URL}api`,
+  baseURL: '/api',
   timeout: 10000
 })
-
-// 子路径前缀：后端返回的上传图片相对路径 /uploads/xxx → {BASE_URL}uploads/xxx
-// （部署在 /ali/house 下时，img src 用相对 /uploads 会丢子路径前缀导致 404）
-const uploadsPrefix = `${import.meta.env.BASE_URL}uploads`
-
-/** 递归给响应数据里以 /uploads/ 开头的字符串加子路径前缀（图片 URL 适配） */
-function prefixUploads(value) {
-  if (typeof value === 'string') {
-    return value.startsWith('/uploads/') ? uploadsPrefix + value.slice('/uploads'.length) : value
-  }
-  if (Array.isArray(value)) {
-    return value.map(prefixUploads)
-  }
-  if (value && typeof value === 'object') {
-    for (const k of Object.keys(value)) {
-      value[k] = prefixUploads(value[k])
-    }
-  }
-  return value
-}
 
 request.interceptors.request.use((config) => {
   const store = useUserStore()
@@ -47,7 +26,7 @@ request.interceptors.response.use(
   (resp) => {
     const body = resp.data
     if (body && body.code === 0) {
-      return prefixUploads(body.data)
+      return body.data
     }
     return Promise.reject(new Error(body?.msg || '请求失败'))
   },
