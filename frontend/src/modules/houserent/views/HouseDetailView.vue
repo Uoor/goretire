@@ -80,9 +80,12 @@
     <EmptyState v-else icon="ph ph-warning-circle" text="房源不存在或已下架" />
 
     <!-- 举报弹层 -->
-    <van-popup v-model:show="showReport" position="bottom" round>
+    <van-popup v-model:show="showReport" position="bottom" round :safe-area-inset-bottom="true">
       <div class="report-panel">
-        <h4>举报房源</h4>
+        <div class="dp-head">
+          <h4>举报房源</h4>
+          <i class="ph ph-x" @click="showReport = false"></i>
+        </div>
         <van-field
           v-model="reportReason"
           rows="2"
@@ -398,11 +401,6 @@ onMounted(load)
 }
 .report-panel {
   padding: 20px 16px 24px;
-}
-.report-panel h4 {
-  font-size: 0.95rem;
-  font-weight: 600;
-  margin-bottom: 14px;
 }
 .report-btn {
   margin-top: 14px;

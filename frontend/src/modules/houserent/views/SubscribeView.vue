@@ -32,7 +32,7 @@
     </div>
 
     <!-- 订阅详情：编辑 / 免打扰 / 推送历史 -->
-    <van-popup v-model:show="showDetail" position="bottom" round>
+    <van-popup v-model:show="showDetail" position="bottom" round :safe-area-inset-bottom="true">
       <div class="detail-panel" v-if="current">
         <div class="dp-head">
           <h4>订阅管理</h4>
@@ -55,7 +55,10 @@
           <button v-if="current.quietHours" class="qh-clear" @click="clearQuiet">清除</button>
         </div>
 
-        <button class="btn-primary" @click="saveDetail">保存设置</button>
+        <div class="panel-actions">
+          <button class="del-btn" @click="remove">删除订阅</button>
+          <button class="btn-primary" @click="saveDetail">保存设置</button>
+        </div>
 
         <div class="form-label pushes-label">推送历史（{{ pushes.length }}）</div>
         <div v-if="pushes.length === 0" class="push-none">暂无推送记录，新房源匹配时会提醒你</div>
@@ -63,8 +66,6 @@
           <div class="pi-content">{{ p.content }}</div>
           <div class="pi-time">{{ p.createdAt }}</div>
         </div>
-
-        <button class="del-btn" @click="remove">删除订阅</button>
       </div>
     </van-popup>
   </div>
@@ -73,7 +74,7 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { showToast, showSuccessToast } from 'vant'
+import { showToast, showSuccessToast, showConfirmDialog } from 'vant'
 import EmptyState from '@/modules/houserent/components/EmptyState.vue'
 import { subscribeApi } from '@/modules/houserent/api'
 
@@ -169,6 +170,16 @@ function clearQuiet() {
 }
 
 async function remove() {
+  try {
+    await showConfirmDialog({
+      title: '删除订阅',
+      message: '删除后将不再收到该订阅的房源提醒，确定删除？',
+      confirmButtonText: '删除',
+      confirmButtonColor: '#DC2626',
+    })
+  } catch {
+    return // 取消
+  }
   try {
     await subscribeApi.remove(current.value.id)
     showSuccessToast('已删除订阅')
@@ -301,6 +312,10 @@ onMounted(load)
   align-items: center;
   gap: 10px;
   cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+.sub-item:active {
+  opacity: 0.7;
 }
 .sub-item .txt {
   flex: 1;
@@ -359,6 +374,21 @@ onMounted(load)
 .pushes-label {
   margin-top: 18px;
 }
+/* 保存 + 删除 并排一行 */
+.panel-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 16px;
+}
+.panel-actions .del-btn {
+  flex: 1;
+  width: auto;
+  margin-top: 0;
+}
+.panel-actions .btn-primary {
+  flex: 1.4;
+  width: auto;
+}
 .push-none {
   font-size: 0.74rem;
   color: var(--fg3);
@@ -379,15 +409,5 @@ onMounted(load)
   font-size: 0.62rem;
   color: var(--fg3);
   margin-top: 4px;
-}
-/* PC 端主按钮/删除按钮限宽居中（公共样式见 styles/components.css） */
-@media (min-width: 768px) {
-  .btn-primary,
-  .del-btn {
-    display: block;
-    width: auto;
-    max-width: 320px;
-    margin: 14px auto 0;
-  }
 }
 </style>

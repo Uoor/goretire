@@ -54,9 +54,12 @@
     </div>
 
     <!-- 发布/编辑需求弹层 -->
-    <van-popup v-model:show="showCreate" position="bottom" round>
+    <van-popup v-model:show="showCreate" position="bottom" round :safe-area-inset-bottom="true">
       <div class="create-panel">
-        <h4>{{ editingId ? '编辑求租需求' : '发布求租需求' }}</h4>
+        <div class="dp-head">
+          <h4>{{ editingId ? '编辑求租需求' : '发布求租需求' }}</h4>
+          <i class="ph ph-x" @click="showCreate = false"></i>
+        </div>
         <div class="form-field"><input v-model="createForm.region" placeholder="目标区域 *（如：杭州西溪）" /></div>
         <div class="form-field"><input v-model="createForm.houseType" placeholder="期望户型（如：2室1厅）" /></div>
         <div class="form-field"><input v-model="createForm.budget" placeholder="预算区间（如：4000-6000）" /></div>
@@ -81,7 +84,7 @@
     </van-popup>
 
     <!-- 需求详情弹层：求租墙打开=联系租客；我的需求打开=管理（编辑/成交/重匹配/撤回） -->
-    <van-popup v-model:show="showDetail" position="bottom" round>
+    <van-popup v-model:show="showDetail" position="bottom" round :safe-area-inset-bottom="true">
       <div class="create-panel" v-if="detailData">
         <div class="dp-head">
           <h4>求租需求</h4>

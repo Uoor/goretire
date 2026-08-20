@@ -55,7 +55,7 @@
     </div>
 
     <!-- 轻问句弹层 -->
-    <van-popup v-model:show="showFeedback" position="bottom" round>
+    <van-popup v-model:show="showFeedback" position="bottom" round :safe-area-inset-bottom="true">
       <div class="feedback-panel">
         <h4>房子租出去了？</h4>
         <p class="fb-sub">
@@ -241,6 +241,10 @@ onMounted(load)
   padding: 8px 0;
   border-radius: 10px;
   cursor: pointer;
+  transition: background 0.15s ease;
+}
+.me-cell:active {
+  background: var(--bg);
 }
 .me-cell .v {
   font-size: 1.05rem;
@@ -266,6 +270,10 @@ onMounted(load)
   border-bottom: 1px solid var(--border);
   font-size: 0.84rem;
   cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+.me-row:active {
+  opacity: 0.6;
 }
 .me-row:last-child {
   border-bottom: none;
@@ -309,6 +317,10 @@ onMounted(load)
   padding: 12px 0;
   border-bottom: 1px solid var(--border);
   cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+.my-house:active {
+  opacity: 0.6;
 }
 .my-house:last-child {
   border-bottom: none;

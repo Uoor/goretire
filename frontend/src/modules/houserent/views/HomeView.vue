@@ -50,6 +50,16 @@
 
     <FilterChips :chips="chips" v-model="filters" />
 
+    <!-- 租房群入口：新上架房源自动推送（链接在 env VITE_GROUP_INVITE_URL，待配置） -->
+    <div class="group-entry" @click="goGroup">
+      <div class="ge-icon">💬</div>
+      <div class="ge-tx">
+        <b>租房群 · 新上架房源自动推送</b>
+        <span>租房消息实时直发 · 避坑互助 · 求租求助</span>
+      </div>
+      <div class="ge-go">入群<i class="ph ph-caret-right"></i></div>
+    </div>
+
     <!-- 避坑指南引导条 -->
     <div class="home-guide" @click="router.push({ name: 'guide' })">
       <i class="ph ph-book-open-text"></i>
@@ -97,6 +107,17 @@ import { formatMoney } from '@/utils/format'
 
 const router = useRouter()
 const PAGE_SIZE = 10
+
+// 租房群邀请链接（env 配置，待补充真实入群链接）
+const groupInviteUrl = (import.meta.env.VITE_GROUP_INVITE_URL || '').trim()
+function goGroup() {
+  if (!groupInviteUrl) {
+    showToast('租房群即将开放，敬请期待')
+    return
+  }
+  window.location.href = groupInviteUrl
+}
+
 const houses = ref([])
 const loading = ref(true)
 const loadingMore = ref(false)
@@ -271,6 +292,62 @@ onUnmounted(() => {
   display: flex;
   gap: 8px;
   align-items: center;
+}
+
+/* 租房群入口横条（新上架房源自动推送） */
+.group-entry {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 10px 16px 0;
+  padding: 10px 12px;
+  background: linear-gradient(90deg, var(--primary-soft), #fff7e6);
+  border: 1px solid rgba(255, 106, 0, 0.25);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.group-entry:active {
+  opacity: 0.85;
+}
+.ge-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: var(--card);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+.ge-tx {
+  flex: 1;
+  min-width: 0;
+}
+.ge-tx b {
+  display: block;
+  font-size: 0.82rem;
+  color: var(--fg);
+}
+.ge-tx span {
+  display: block;
+  font-size: 0.66rem;
+  color: var(--fg3);
+  margin-top: 2px;
+  line-height: 1.4;
+}
+.ge-go {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--primary);
+}
+.ge-go i {
+  font-size: 0.85rem;
 }
 .search-input {
   background: var(--input-fill);
