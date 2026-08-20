@@ -38,6 +38,16 @@ const router = createRouter({
  *   关键：钉钉内若残留 dev-code 桩身份（浏览器联调遗留的 localStorage），
  *   必须清除后重新真实免登，否则 staffId 是 dev-code、单聊无法唤起。
  */
+/**
+ * 免登：
+ * - 浏览器联调：取 dev-code 桩（后端放行），token 持久化后复用；
+ * - 钉钉容器内：先 dd.config 授权 JSAPI，再 requestAuthCode 真实免登。
+ *   关键：钉钉内若残留 dev-code 桩身份（浏览器联调遗留的 localStorage），
+ *   必须清除后重新真实免登，否则 staffId 是 dev-code、单聊无法唤起。
+ * - 钉钉容器内 JSAPI 不可用时（page/link 等非微应用容器打开，dd.runtime 无响应、
+ *   dd.config 超时）：降级到 OAuth2 网页扫码登录（带 redirect 回跳），
+ *   而非误报"非成员加入社群"。
+ */
 async function ensureLogin() {
   const store = useUserStore()
   const inDingTalk = isDingTalk()
@@ -59,11 +69,16 @@ async function ensureLogin() {
       return { name: 'login' }
     }
   } catch (e) {
-    // 钉钉容器内免登失败（含换 userid 失败、requestAuthCode/JSAPI 被拦）：
-    // 用户无法完成身份验证，统一标记引导「加入组织」页
     if (inDingTalk) {
+      // JSAPI 免登失败（requestAuthCode/JSAPI 被拦、dd.config 超时等）：
+      // 降级 OAuth2 扫码登录（钉钉授权页扫码，走浏览器 OAuth 流程），
+      // 携带当前路径作为 redirect 回跳；不误报"非成员"。
       const err = e instanceof Error ? e : new Error(String(e))
-      if (!err.__loginFailed) err.__loginFailed = true
+      // 记录免登失败原因，供降级链路判断（非"未配置"类错误才降级扫码）
+      console.warn('[auth] JSAPI 免登失败，降级 OAuth2 扫码:', err.message)
+      const redirect = window.location.hash.replace(/^#/, '') || '/'
+      redirectToDingTalkOAuth(redirect === '/' ? undefined : redirect)
+      // 抛标记，阻止后续渲染（页面即将跳走）
       throw err
     }
     throw e
