@@ -50,7 +50,7 @@
 
     <FilterChips :chips="chips" v-model="filters" />
 
-    <!-- 租房群入口：新上架房源自动推送（链接在 env VITE_GROUP_INVITE_URL，待配置） -->
+    <!-- 租房群入口：新上架房源自动推送（链接/群号在 env VITE_GROUP_INVITE_*，待配置） -->
     <div class="group-entry" @click="goGroup">
       <div class="ge-icon">💬</div>
       <div class="ge-tx">
@@ -59,6 +59,20 @@
       </div>
       <div class="ge-go">入群<i class="ph ph-caret-right"></i></div>
     </div>
+
+    <!-- 群号弹窗：无邀请链接时展示群号 + 复制 + 钉钉搜索指引 -->
+    <van-popup v-model:show="groupQrShow" round position="bottom" class="group-pop">
+      <div class="gp-title">加入「租房互助 · 一起提前退休」群</div>
+      <div class="gp-tip">新上架房源、避坑互助、求租求助都在群里</div>
+      <div class="gp-number" @click="copyGroupNumber">{{ groupInviteNumber }}</div>
+      <button class="btn-primary gp-copy" @click="copyGroupNumber">复制群号</button>
+      <div class="gp-steps">
+        <div class="step"><span class="step-num">1</span>复制上方群号</div>
+        <div class="step"><span class="step-num">2</span>打开钉钉</div>
+        <div class="step"><span class="step-num">3</span>搜索群号加入</div>
+      </div>
+      <button class="gp-done" @click="groupQrShow = false">完成</button>
+    </van-popup>
 
     <!-- 避坑指南引导条 -->
     <div class="home-guide" @click="router.push({ name: 'guide' })">
@@ -108,14 +122,30 @@ import { formatMoney } from '@/utils/format'
 const router = useRouter()
 const PAGE_SIZE = 10
 
-// 租房群邀请链接（env 配置，待补充真实入群链接）
+// 租房群：优先用邀请链接（VITE_GROUP_INVITE_URL，如群二维码/协议链接）；
+// 否则用群号（VITE_GROUP_INVITE_NUMBER，弹窗展示 + 复制 + 指引钉钉搜索加入）
 const groupInviteUrl = (import.meta.env.VITE_GROUP_INVITE_URL || '').trim()
+const groupInviteNumber = (import.meta.env.VITE_GROUP_INVITE_NUMBER || '').trim()
+const groupQrShow = ref(false)
 function goGroup() {
-  if (!groupInviteUrl) {
-    showToast('租房群即将开放，敬请期待')
+  if (groupInviteUrl) {
+    window.location.href = groupInviteUrl
     return
   }
-  window.location.href = groupInviteUrl
+  if (groupInviteNumber) {
+    groupQrShow.value = true
+    return
+  }
+  showToast('租房群即将开放，敬请期待')
+}
+function copyGroupNumber() {
+  if (!groupInviteNumber) return
+  const done = () => showToast('群号已复制，去钉钉搜索加入吧')
+  try {
+    navigator.clipboard.writeText(groupInviteNumber).then(done).catch(() => done())
+  } catch (e) {
+    done()
+  }
 }
 
 const houses = ref([])
@@ -336,6 +366,78 @@ onUnmounted(() => {
   color: var(--fg3);
   margin-top: 2px;
   line-height: 1.4;
+}
+
+/* ===== 群号弹窗（无邀请链接时兜底） ===== */
+.group-pop {
+  padding: 24px 20px 28px;
+  text-align: center;
+}
+.gp-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--fg);
+}
+.gp-tip {
+  margin-top: 6px;
+  font-size: 0.78rem;
+  color: var(--fg2);
+}
+.gp-number {
+  margin: 16px auto 12px;
+  padding: 12px 16px;
+  max-width: 280px;
+  background: var(--primary-soft);
+  border: 1px dashed var(--primary);
+  border-radius: 10px;
+  font-family: var(--num);
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--primary-deep);
+  letter-spacing: 1px;
+  cursor: pointer;
+  user-select: all;
+}
+.gp-copy {
+  display: block;
+  margin: 0 auto;
+  max-width: 280px;
+}
+.gp-steps {
+  display: flex;
+  justify-content: center;
+  gap: 18px;
+  margin-top: 18px;
+}
+.gp-steps .step {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.74rem;
+  color: var(--fg2);
+}
+.gp-steps .step-num {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--primary-soft);
+  color: var(--primary-deep);
+  font-weight: 700;
+  font-size: 0.68rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.gp-done {
+  margin-top: 18px;
+  width: 100%;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--card);
+  color: var(--fg2);
+  font-size: 0.85rem;
+  cursor: pointer;
 }
 .ge-go {
   display: flex;
