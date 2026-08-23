@@ -60,8 +60,9 @@ class WeeklyPickTaskTest {
         verify(pushClient).sendGroupCard(title.capture(), md.capture());
         assertThat(title.getValue()).isEqualTo("本周精选");
         assertThat(md.getValue()).contains("西溪八方城").contains("5800").contains("房东直租");
-        // 每条房源带落地页详情链接（免登：有 token 直跳，无 token 扫码回跳）
-        assertThat(md.getValue()).contains("👉 [查看房源详情](https://h5.example.com/#/landing?redirect=%2Fhouse%2F1)");
+        // 每条房源带 dingtalk page/link 详情链接（无 pc_slide，与群卡片一致）
+        assertThat(md.getValue()).contains(
+                "👉 [查看房源详情](dingtalk://dingtalkclient/page/link?url=https%3A%2F%2Fh5.example.com%2F%23%2Flanding%3Fredirect%3D%252Fhouse%252F1)");
     }
 
     @Test

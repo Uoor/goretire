@@ -76,7 +76,7 @@ public class PublishOrchestrator {
         // 封面图 ![alt](url) + 内联"查看详情"链接（dingtalk page/link 协议，无 pc_slide）：
         // 移动端钉钉内置浏览器打开，PC 端唤起钉钉，域名不暴露在浏览器地址栏
         String md = buildHouseCard(h)
-                + (detailUrl.isBlank() ? "" : "<br/>👉 [查看房源详情](" + dingtalkLink(detailUrl) + ")");
+                + (detailUrl.isBlank() ? "" : "<br/>👉 [查看房源详情](" + H5Links.dingtalkLink(detailUrl) + ")");
         pushClient.sendGroupCard("🏠 新上架 · " + h.getCommunity(), md);
         for (SubscriptionHit hit : subHits) {
             Subscribe s = subscribeMapper.selectById(hit.getSubscribeId());
@@ -189,25 +189,6 @@ public class PublishOrchestrator {
      */
     private String buildLandingUrl(String hashPath) {
         return H5Links.landingUrl(h5BaseUrl, hashPath);
-    }
-
-    /**
-     * 钉钉 page/link 协议链接（无 pc_slide）：
-     *   dingtalk://dingtalkclient/page/link?url={urlEncode}
-     * - 移动端：钉钉内置浏览器打开（不跳出 App）
-     * - PC 端：唤起钉钉客户端打开（域名不暴露在浏览器地址栏）
-     * 不带 pc_slide=true：PC 端不走侧边栏，行为与移动端一致。
-     */
-    private String dingtalkLink(String url) {
-        if (url == null || url.isBlank()) {
-            return "";
-        }
-        try {
-            return "dingtalk://dingtalkclient/page/link?url="
-                    + java.net.URLEncoder.encode(url, java.nio.charset.StandardCharsets.UTF_8);
-        } catch (Exception e) {
-            return url;
-        }
     }
 
     /**

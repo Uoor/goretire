@@ -62,10 +62,11 @@ public class WeeklyPickTask {
                     .append("月租 **").append(h.getRentText()).append(" 元** · ").append(h.getRegion())
                     .append(" · `").append(labelText(h.getLabel())).append("`<br/>")
                     .append("通勤：").append(h.getCommute() == null ? "" : h.getCommute());
-            // 落地页链接：有 token 直接跳详情，无 token 扫码后回跳（与 PublishOrchestrator 一致）
+            // 详情链接：落地页 + dingtalk page/link 协议（无 pc_slide，与群卡片一致）——
+            // 移动端钉钉内置浏览器打开，PC 唤起钉钉，域名不暴露在浏览器地址栏
             String link = H5Links.landingUrl(h5BaseUrl, "/house/" + h.getId());
             if (!link.isBlank()) {
-                md.append("<br/>👉 [查看房源详情](").append(link).append(")");
+                md.append("<br/>👉 [查看房源详情](").append(H5Links.dingtalkLink(link)).append(")");
             }
             md.append("\n\n");
         }
