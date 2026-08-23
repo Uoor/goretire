@@ -68,5 +68,5 @@ aliren:
   schedule:
     # 定时任务：周五精选周推 / 周一安居故事（缺省开启；真实推送依赖 robot）
     enabled: ${SCHEDULE_ENABLED:true}
-    weekly-pick-cron: ${WEEKLY_PICK_CRON:0 0 19 * * FRI}
+    weekly-pick-cron: "0 0 19 * * FRI"
     weekly-story-cron: "0 0 10 * * MON"
