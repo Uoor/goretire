@@ -16,11 +16,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.math.BigDecimal;
 import java.util.List;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import org.mockito.ArgumentCaptor;
 
 @ExtendWith(MockitoExtension.class)
 class PublishOrchestratorTest {
@@ -61,6 +63,7 @@ class PublishOrchestratorTest {
         h.setLabel(House.LABEL_DIRECT);
         h.setPetOk(1);
         h.setAuditStatus(House.AUDIT_ONLINE);
+        h.setImages("[\"/uploads/cover.jpg\"]");
         return h;
     }
 
@@ -90,9 +93,12 @@ class PublishOrchestratorTest {
 
         orchestrator.onHouseAudited(1L);
 
-        // 群卡片按钮 → 钉钉 page/link 协议（无 pc_slide）：移动端内置浏览器 / PC 唤起钉钉，域名不暴露
-        verify(pushClient).sendGroupCardAction(anyString(), anyString(),
-                eq("dingtalk://dingtalkclient/page/link?url=https%3A%2F%2Fh5.example.com%2F%23%2Flanding%3Fredirect%3D%252Fhouse%252F1"));
+        // 群卡片为 markdown 消息（方案 B：蚂蚁钉阻断外部域名图片，卡片不放图）：
+        // 纯文字信息 + 内联"查看详情"链接（dingtalk page/link 协议无 pc_slide）
+        ArgumentCaptor<String> md = ArgumentCaptor.forClass(String.class);
+        verify(pushClient).sendGroupCard(anyString(), md.capture());
+        assertThat(md.getValue()).doesNotContain("![");
+        assertThat(md.getValue()).contains("dingtalk://dingtalkclient/page/link?url=https%3A%2F%2Fh5.example.com%2F%23%2Flanding%3Fredirect%3D%252Fhouse%252F1");
         // 工作通知升级为结构化卡片：标题 + 命中理由 + 房源信息 + 跳转链接
         verify(pushClient).sendWorkNotice(eq("ding-user-7"), org.mockito.ArgumentMatchers.contains("🎯 订阅新匹配"));
         verify(pushClient).sendWorkNotice(eq("ding-user-8"), org.mockito.ArgumentMatchers.contains("🎯 求租新匹配"));

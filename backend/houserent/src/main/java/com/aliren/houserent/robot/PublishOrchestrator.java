@@ -72,10 +72,12 @@ public class PublishOrchestrator {
         List<DemandHit> demandHits = matchService.matchDemands(houseId);
         // 详情链接走落地页：有 token 直接跳目标页，无 token 自动扫码并在登录后回跳
         String detailUrl = h5BaseUrl.isBlank() ? "" : buildLandingUrl("/house/" + houseId);
-        // 群卡片按钮用 dingtalk page/link 协议（无 pc_slide）：移动端钉钉内置浏览器打开，
-        // PC 端唤起钉钉客户端打开（域名不暴露在浏览器地址栏）；配合 PC 引导页策略
-        pushClient.sendGroupCardAction("🏠 新上架 · " + h.getCommunity(), buildHouseCard(h),
-                dingtalkLink(detailUrl));
+        // 群卡片用 markdown 消息（不用 actionCard——其 text 不渲染图片）：
+        // 封面图 ![alt](url) + 内联"查看详情"链接（dingtalk page/link 协议，无 pc_slide）：
+        // 移动端钉钉内置浏览器打开，PC 端唤起钉钉，域名不暴露在浏览器地址栏
+        String md = buildHouseCard(h)
+                + (detailUrl.isBlank() ? "" : "<br/>👉 [查看房源详情](" + dingtalkLink(detailUrl) + ")");
+        pushClient.sendGroupCard("🏠 新上架 · " + h.getCommunity(), md);
         for (SubscriptionHit hit : subHits) {
             Subscribe s = subscribeMapper.selectById(hit.getSubscribeId());
             if (s != null) {
@@ -208,13 +210,13 @@ public class PublishOrchestrator {
         }
     }
 
-    /** 公共卡片体：封面 + 小区/户型/月租/区域/标签/通勤 */
+    /**
+     * 公共卡片体：小区/户型/月租/区域/标签/通勤。
+     * 注意：不放封面图——蚂蚁钉（阿里/蚂蚁内部版）阻断外部域名图片加载，
+     * 卡片图片会白屏；图片在应用详情页内查看（方案 B）。
+     */
     private String buildCardBody(House h) {
         StringBuilder sb = new StringBuilder();
-        String cover = coverUrl(h);
-        if (!cover.isBlank()) {
-            sb.append("![🏠 房源封面](").append(cover).append(")\n\n");
-        }
         sb.append("**小区**：").append(h.getCommunity()).append("<br/>");
         sb.append("**户型**：").append(h.getHouseType()).append(" · ").append(h.getArea()).append("㎡<br/>");
         sb.append("**月租**：**").append(h.getRentText()).append(" 元/月**（").append(h.getDepositPay())
@@ -230,49 +232,6 @@ public class PublishOrchestrator {
         }
         sb.append("<br/>");
         return sb.toString();
-    }
-
-    /** 卡片封面图：images 首图；相对路径拼 H5 地址 */
-    private String coverUrl(House h) {
-        if (h.getImages() == null || h.getImages().isBlank()) {
-            return "";
-        }
-        try {
-            JsonNode arr = objectMapper.readTree(h.getImages());
-            if (arr.isArray() && !arr.isEmpty()) {
-                String url = arr.get(0).asText("").trim();
-                if (url.isBlank()) {
-                    return "";
-                }
-                if (url.startsWith("http://") || url.startsWith("https://")) {
-                    return url;
-                }
-                // 相对路径：兼容两种存储格式
-                // 1) 旧格式 "/uploads/xxx.jpg" → h5BaseUrl + url
-                // 2) 新格式 "/ali/house/uploads/xxx.jpg"（已含子路径前缀）→ 域名 + url
-                if (url.startsWith("/ali/house/")) {
-                    return originOf(h5BaseUrl) + url;
-                }
-                if (url.startsWith("/")) {
-                    return h5BaseUrl + url;
-                }
-                return url;
-            }
-        } catch (Exception ignored) {
-            // 非法 JSON 忽略
-        }
-        return "";
-    }
-
-    /** 取 h5BaseUrl 的协议+主机（如 https://test.nekomiao.com/ali/house → https://test.nekomiao.com） */
-    private String originOf(String base) {
-        try {
-            java.net.URI uri = new java.net.URI(base);
-            return uri.getScheme() + "://" + uri.getHost()
-                    + (uri.getPort() > 0 ? ":" + uri.getPort() : "");
-        } catch (Exception e) {
-            return base;
-        }
     }
 
     private String labelText(Integer label) {
