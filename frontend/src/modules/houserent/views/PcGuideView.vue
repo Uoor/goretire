@@ -44,24 +44,29 @@
 
 <script setup>
 import { onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import QRCode from 'qrcode'
+import { isDingTalk } from '@/utils/dd'
 
+const router = useRouter()
 const qrDataUrl = ref('')
 
-// 二维码内容 = 应用首页（origin + pathname + #/）。
-// 注意不能用 location.href：PC 浏览器已被守卫跳转到 /#/pc-guide，
-// 用当前 URL 会把用户扫码引回引导页；首页进入后手机端正常免登。
-onMounted(async () => {
-  try {
-    const homeUrl = location.origin + location.pathname + '#/'
-    qrDataUrl.value = await QRCode.toDataURL(homeUrl, {
-      width: 220,
-      margin: 1,
-      errorCorrectionLevel: 'M'
-    })
-  } catch (e) {
-    console.error('[pc-guide] 二维码生成失败:', e)
+// 引导页只服务 PC 浏览器：移动端视口或钉钉容器直接进首页
+// （场景：PC 地址栏被复制发到手机、扫码误入 pc-guide 等）
+onMounted(() => {
+  if (window.innerWidth < 768 || isDingTalk()) {
+    router.replace({ path: '/' })
+    return
   }
+  // 二维码内容 = 应用首页（origin + pathname + #/）。
+  // 注意不能用 location.href：PC 浏览器已被守卫跳转到 /#/pc-guide，
+  // 用当前 URL 会把用户扫码引回引导页；首页进入后手机端正常免登。
+  QRCode.toDataURL(location.origin + location.pathname + '#/', {
+    width: 220,
+    margin: 1,
+    errorCorrectionLevel: 'M'
+  }).then((url) => { qrDataUrl.value = url })
+    .catch((e) => console.error('[pc-guide] 二维码生成失败:', e))
 })
 </script>
 
