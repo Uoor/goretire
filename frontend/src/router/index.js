@@ -19,6 +19,8 @@ const routes = [
   { path: '/join', name: 'join', component: () => import('@/modules/houserent/views/JoinView.vue'), meta: { title: '加入组织' } },
   // 登录引导页：说明应用 + 钉钉扫码登录按钮
   { path: '/login', name: 'login', component: () => import('@/modules/houserent/views/LoginView.vue'), meta: { title: '登录' } },
+  // PC 浏览器引导页：测试期仅开放移动端，PC 浏览器统一引导手机扫码（plain = 不进 App 壳）
+  { path: '/pc-guide', name: 'pc-guide', component: () => import('@/modules/houserent/views/PcGuideView.vue'), meta: { title: '请使用钉钉打开', plain: true } },
   // 群卡片/推送落地页：无 token 自动扫码，有 token 直接跳目标页（redirect 参数）
   { path: '/landing', name: 'landing', component: () => import('@/modules/houserent/views/LandingView.vue'), meta: { title: '跳转中' } },
   // OAuth2 扫码登录回调页：从 URL 参数读取 token 和用户信息，存入 store 后跳目标页
@@ -72,6 +74,15 @@ async function ensureLogin() {
 
 router.beforeEach(async (to) => {
   document.title = to.meta.title ? `校友直租 · ${to.meta.title}` : '校友直租'
+  // PC 浏览器（非钉钉容器）统一引导到扫码页：测试期仅开放移动端。
+  // 钉钉容器内（含 PC 端钉钉）放行；VITE_PC_GUIDE_ENABLED=false 可关闭。
+  if (import.meta.env.VITE_PC_GUIDE_ENABLED !== 'false' && to.name !== 'pc-guide') {
+    const inDingTalk = isDingTalk()
+    const pcViewport = typeof window !== 'undefined' && window.innerWidth >= 768
+    if (!inDingTalk && pcViewport) {
+      return { name: 'pc-guide' }
+    }
+  }
   // 加入组织页：已登录回首页；未登录直接放行（不再触发免登，避免死循环）
   if (to.name === 'join') {
     return useUserStore().isLoggedIn ? { name: 'home' } : true
