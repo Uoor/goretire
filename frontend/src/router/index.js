@@ -81,7 +81,9 @@ router.beforeEach(async (to) => {
   document.title = to.meta.title ? `校友直租 · ${to.meta.title}` : '校友直租'
   // PC 浏览器（非钉钉容器）统一引导到扫码页：测试期仅开放移动端。
   // 钉钉容器内（含 PC 端钉钉）放行；VITE_PC_GUIDE_ENABLED=false 可关闭。
-  if (import.meta.env.VITE_PC_GUIDE_ENABLED !== 'false' && to.name !== 'pc-guide') {
+  // 豁免：pc-guide 自身（防死循环）；join 加入组织页 PC 可见（品牌/加入说明无需拦截）
+  if (import.meta.env.VITE_PC_GUIDE_ENABLED !== 'false'
+      && to.name !== 'pc-guide' && to.name !== 'join') {
     const inDingTalk = isDingTalk()
     const pcViewport = typeof window !== 'undefined' && window.innerWidth >= 768
     if (!inDingTalk && pcViewport) {
