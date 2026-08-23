@@ -109,7 +109,13 @@ public class DingTalkClientImpl implements DingTalkClient {
         }
     }
 
-    /** 临时授权码 code + access_token -> userid（企业内部应用免登） */
+    /**
+     * 临时授权码 code + access_token -> 应用所属企业内 userid（企业内部应用免登）。
+     *
+     * 组织校验：getuserinfo 返回的 userid 属于「容器当前企业」（可能是蚂蚁钉等其他组织），
+     * 必须再用 unionid 反查「应用所属企业」——用户不在「阿里人·一起提前退休」组织时
+     * getbyunionid 报错/返回空，抛 403 供上层引导加入社群（与 OAuth2 路径一致）。
+     */
     private String fetchUserIdByCode(String authCode, String accessToken) {
         try {
             ObjectNode body = objectMapper.createObjectNode();
@@ -125,13 +131,13 @@ public class DingTalkClientImpl implements DingTalkClient {
                 log.warn("dingtalk getuserinfo failed: status={} body={}", response.statusCode(), response.body());
                 throw new BusinessException(401, "免登失败");
             }
-            JsonNode result = json.path("result");
-            String userId = result.path("userid").asText("");
-            if (userId.isBlank()) {
-                log.warn("dingtalk getuserinfo empty userid: body={}", response.body());
+            String unionId = json.path("result").path("unionid").asText("");
+            if (unionId.isBlank()) {
+                log.warn("dingtalk getuserinfo empty unionid: body={}", response.body());
                 throw new BusinessException(401, "免登失败");
             }
-            return userId;
+            // unionid → 应用所属企业 userid；非组织成员抛 403（引导加入社群）
+            return getUserIdByUnionId(unionId);
         } catch (BusinessException e) {
             throw e;
         } catch (Exception e) {

@@ -33,6 +33,11 @@ const router = createRouter({
   routes
 })
 
+// 冷启动标记：钉钉容器内每次冷启动（扫码/刷新进入）强制重新免登，
+// 实时校验组织成员身份（非组织成员 → 后端 403 → join 引导页）。
+// SPA 内部导航复用会话，避免每次切页都调登录接口。
+let coldStart = true
+
 /**
  * 免登：
  * - 浏览器联调：取 dev-code 桩（后端放行），token 持久化后复用；
@@ -43,11 +48,11 @@ const router = createRouter({
 async function ensureLogin() {
   const store = useUserStore()
   const inDingTalk = isDingTalk()
-  // 钉钉内：dev-code 桩身份（或旧 token 缺 dingtalkUserId 字段）一律重登
-  if (inDingTalk && store.isLoggedIn) {
-    const uid = store.userInfo?.dingtalkUserId
-    if (!uid || uid === 'dev-code') store.clear()
+  // 钉钉容器内：冷启动强制重登（校验组织身份），旧 token 一律不用
+  if (inDingTalk && store.isLoggedIn && coldStart) {
+    store.clear()
   }
+  coldStart = false
   if (store.isLoggedIn) return
   try {
     if (inDingTalk) {
