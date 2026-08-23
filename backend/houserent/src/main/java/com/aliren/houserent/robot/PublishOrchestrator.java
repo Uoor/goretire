@@ -238,6 +238,15 @@ public class PublishOrchestrator {
                 if (url.isBlank()) {
                     return "";
                 }
+                if (url.startsWith("http://") || url.startsWith("https://")) {
+                    return url;
+                }
+                // 相对路径：兼容两种存储格式
+                // 1) 旧格式 "/uploads/xxx.jpg" → h5BaseUrl + url
+                // 2) 新格式 "/ali/house/uploads/xxx.jpg"（已含子路径前缀）→ 域名 + url
+                if (url.startsWith("/ali/house/")) {
+                    return originOf(h5BaseUrl) + url;
+                }
                 if (url.startsWith("/")) {
                     return h5BaseUrl + url;
                 }
@@ -247,6 +256,17 @@ public class PublishOrchestrator {
             // 非法 JSON 忽略
         }
         return "";
+    }
+
+    /** 取 h5BaseUrl 的协议+主机（如 https://test.nekomiao.com/ali/house → https://test.nekomiao.com） */
+    private String originOf(String base) {
+        try {
+            java.net.URI uri = new java.net.URI(base);
+            return uri.getScheme() + "://" + uri.getHost()
+                    + (uri.getPort() > 0 ? ":" + uri.getPort() : "");
+        } catch (Exception e) {
+            return base;
+        }
     }
 
     private String labelText(Integer label) {
