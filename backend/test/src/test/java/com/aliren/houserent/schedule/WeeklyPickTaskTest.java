@@ -32,7 +32,7 @@ class WeeklyPickTaskTest {
 
     @BeforeEach
     void setUp() {
-        task = new WeeklyPickTask(houseMapper, pushClient);
+        task = new WeeklyPickTask(houseMapper, pushClient, "https://h5.example.com");
     }
 
     private House house(Long id, String community, String rent) {
@@ -60,6 +60,22 @@ class WeeklyPickTaskTest {
         verify(pushClient).sendGroupCard(title.capture(), md.capture());
         assertThat(title.getValue()).isEqualTo("本周精选");
         assertThat(md.getValue()).contains("西溪八方城").contains("5800").contains("房东直租");
+        // 每条房源带落地页详情链接（免登：有 token 直跳，无 token 扫码回跳）
+        assertThat(md.getValue()).contains("👉 [查看房源详情](https://h5.example.com/#/landing?redirect=%2Fhouse%2F1)");
+    }
+
+    @Test
+    void weeklyPick_h5NotConfigured_noLinks() {
+        task = new WeeklyPickTask(houseMapper, pushClient, "");
+        when(houseMapper.selectList(any())).thenReturn(List.of(house(1L, "西溪八方城", "5800")));
+        when(houseMapper.selectCount(any())).thenReturn(1L);
+
+        task.weeklyPick();
+
+        ArgumentCaptor<String> md = ArgumentCaptor.forClass(String.class);
+        verify(pushClient).sendGroupCard(anyString(), md.capture());
+        // 未配置 H5 地址时不带跳转链接（纯文本信息也能看）
+        assertThat(md.getValue()).doesNotContain("查看房源详情");
     }
 
     @Test

@@ -90,7 +90,7 @@ class PublishOrchestratorTest {
 
         orchestrator.onHouseAudited(1L);
 
-        verify(pushClient).sendGroupCardAction(anyString(), anyString(), eq("https://h5.example.com/#/house/1"));
+        verify(pushClient).sendGroupCardAction(anyString(), anyString(), eq("https://h5.example.com/#/landing?redirect=%2Fhouse%2F1"));
         // 工作通知升级为结构化卡片：标题 + 命中理由 + 房源信息 + 跳转链接
         verify(pushClient).sendWorkNotice(eq("ding-user-7"), org.mockito.ArgumentMatchers.contains("🎯 订阅新匹配"));
         verify(pushClient).sendWorkNotice(eq("ding-user-8"), org.mockito.ArgumentMatchers.contains("🎯 求租新匹配"));

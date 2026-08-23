@@ -182,12 +182,7 @@ public class PublishOrchestrator {
      * 落地页负责免登（有 token 直接跳，无 token 自动扫码后回跳）。
      */
     private String buildLandingUrl(String hashPath) {
-        try {
-            return h5BaseUrl + "/#/landing?redirect="
-                    + java.net.URLEncoder.encode(hashPath, java.nio.charset.StandardCharsets.UTF_8);
-        } catch (Exception e) {
-            return h5BaseUrl + "/#/landing";
-        }
+        return H5Links.landingUrl(h5BaseUrl, hashPath);
     }
 
     /**

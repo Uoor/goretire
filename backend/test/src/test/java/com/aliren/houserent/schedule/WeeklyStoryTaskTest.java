@@ -38,7 +38,7 @@ class WeeklyStoryTaskTest {
         ArgumentCaptor<String> title = ArgumentCaptor.forClass(String.class);
         ArgumentCaptor<String> md = ArgumentCaptor.forClass(String.class);
         verify(pushClient).sendGroupCard(title.capture(), md.capture());
-        assertThat(title.getValue()).isEqualTo("安居故事");
+        assertThat(title.getValue()).isEqualTo("直租故事");
         assertThat(md.getValue()).contains("3");
     }
 }

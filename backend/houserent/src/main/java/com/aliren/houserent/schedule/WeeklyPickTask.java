@@ -2,9 +2,11 @@ package com.aliren.houserent.schedule;
 
 import com.aliren.houserent.house.House;
 import com.aliren.houserent.house.HouseMapper;
+import com.aliren.houserent.robot.H5Links;
 import com.aliren.houserent.robot.PushClient;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -23,10 +25,14 @@ public class WeeklyPickTask {
 
     private final HouseMapper houseMapper;
     private final PushClient pushClient;
+    /** H5 访问地址（配置 aliren.h5.base-url），用于卡片跳转；未配置时卡片不带跳转链接 */
+    private final String h5BaseUrl;
 
-    public WeeklyPickTask(HouseMapper houseMapper, PushClient pushClient) {
+    public WeeklyPickTask(HouseMapper houseMapper, PushClient pushClient,
+            @Value("${aliren.h5.base-url:}") String h5BaseUrl) {
         this.houseMapper = houseMapper;
         this.pushClient = pushClient;
+        this.h5BaseUrl = h5BaseUrl == null ? "" : h5BaseUrl.trim();
     }
 
     @Scheduled(cron = "${aliren.schedule.weekly-pick-cron:0 0 19 * * FRI}")
@@ -49,7 +55,13 @@ public class WeeklyPickTask {
                     .append(h.getHouseType()).append(" ").append(h.getArea()).append("㎡<br/>")
                     .append("月租 **").append(h.getRentText()).append(" 元** · ").append(h.getRegion())
                     .append(" · `").append(labelText(h.getLabel())).append("`<br/>")
-                    .append("通勤：").append(h.getCommute() == null ? "" : h.getCommute()).append("\n\n");
+                    .append("通勤：").append(h.getCommute() == null ? "" : h.getCommute());
+            // 落地页链接：有 token 直接跳详情，无 token 扫码后回跳（与 PublishOrchestrator 一致）
+            String link = H5Links.landingUrl(h5BaseUrl, "/house/" + h.getId());
+            if (!link.isBlank()) {
+                md.append("<br/>👉 [查看房源详情](").append(link).append(")");
+            }
+            md.append("\n\n");
         }
         pushClient.sendGroupCard("本周精选", md.toString());
     }
