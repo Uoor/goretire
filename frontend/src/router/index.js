@@ -87,8 +87,10 @@ router.beforeEach(async (to) => {
   if (to.name === 'join') {
     return useUserStore().isLoggedIn ? { name: 'home' } : true
   }
-  // OAuth 回调页 / 落地页不检查登录（LandingView 自己处理扫码与跳转）
-  if (to.name === 'oauth-callback' || to.name === 'landing') {
+  // OAuth 回调页 / 落地页 / PC 引导页不检查登录
+  // （LandingView 自己处理扫码与跳转；pc-guide 是纯拦截页，绝不能触发 ensureLogin——
+  //   否则无登录态的干净浏览器会被弹到登录页，绕过 PC 拦截）
+  if (to.name === 'oauth-callback' || to.name === 'landing' || to.name === 'pc-guide') {
     return true
   }
   if (to.name === 'login') {
