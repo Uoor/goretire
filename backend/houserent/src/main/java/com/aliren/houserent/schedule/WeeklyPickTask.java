@@ -11,6 +11,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -37,13 +38,18 @@ public class WeeklyPickTask {
 
     @Scheduled(cron = "${aliren.schedule.weekly-pick-cron:0 0 19 * * FRI}")
     public void weeklyPick() {
+        LocalDateTime weekStart = LocalDate.now().minusDays(7).atStartOfDay();
+        // 本周精选：本周新上架（7 天内创建）且仍在租的房源，最多 3 套
         List<House> picks = houseMapper.selectList(new QueryWrapper<House>()
                 .eq("audit_status", House.AUDIT_ONLINE)
                 .eq("rack_status", House.RACK_RENTING)
+                .ge("created_at", weekStart)
                 .orderByDesc("created_at")
                 .last("LIMIT " + PICK_SIZE));
+        // 本周新上架数概览：7 天内创建且审核通过的房源数
         long newThisWeek = houseMapper.selectCount(new QueryWrapper<House>()
-                .ge("created_at", LocalDate.now().minusDays(7).atStartOfDay()));
+                .eq("audit_status", House.AUDIT_ONLINE)
+                .ge("created_at", weekStart));
         if (picks.isEmpty()) {
             log.info("weekly pick skipped: no online houses");
             return;

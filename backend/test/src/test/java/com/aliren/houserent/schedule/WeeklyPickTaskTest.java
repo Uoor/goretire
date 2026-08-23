@@ -65,6 +65,24 @@ class WeeklyPickTaskTest {
     }
 
     @Test
+    void weeklyPick_filtersThisWeekOnlineRenting() {
+        when(houseMapper.selectList(any())).thenReturn(List.of());
+        task.weeklyPick();
+
+        // 精选列表限定：审核通过 + 在租中 + 本周（7 天内创建）
+        ArgumentCaptor<com.baomidou.mybatisplus.core.conditions.query.QueryWrapper> qw =
+                ArgumentCaptor.forClass(com.baomidou.mybatisplus.core.conditions.query.QueryWrapper.class);
+        verify(houseMapper).selectList(qw.capture());
+        String sql = qw.getValue().getSqlSegment();
+        assertThat(sql).contains("audit_status").contains("rack_status").contains("created_at");
+        // 概览数同样限定本周 + 审核通过
+        ArgumentCaptor<com.baomidou.mybatisplus.core.conditions.query.QueryWrapper> qw2 =
+                ArgumentCaptor.forClass(com.baomidou.mybatisplus.core.conditions.query.QueryWrapper.class);
+        verify(houseMapper).selectCount(qw2.capture());
+        assertThat(qw2.getValue().getSqlSegment()).contains("audit_status").contains("created_at");
+    }
+
+    @Test
     void weeklyPick_h5NotConfigured_noLinks() {
         task = new WeeklyPickTask(houseMapper, pushClient, "");
         when(houseMapper.selectList(any())).thenReturn(List.of(house(1L, "西溪八方城", "5800")));
