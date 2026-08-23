@@ -95,10 +95,9 @@ class PublishOrchestratorTest {
         verify(pushClient).sendWorkNotice(eq("ding-user-7"), org.mockito.ArgumentMatchers.contains("🎯 订阅新匹配"));
         verify(pushClient).sendWorkNotice(eq("ding-user-8"), org.mockito.ArgumentMatchers.contains("🎯 求租新匹配"));
         verify(pushClient).sendWorkNotice(eq("ding-user-7"), org.mockito.ArgumentMatchers.contains("区域预算都符合"));
-        // 工作通知详情链接 → 钉钉 page/link 协议，pc_slide=true（PC 侧边栏 / 移动端内置浏览器）
-        verify(pushClient).sendWorkNotice(eq("ding-user-7"), org.mockito.ArgumentMatchers.contains("dingtalk://dingtalkclient/page/link"));
-        verify(pushClient).sendWorkNotice(eq("ding-user-7"), org.mockito.ArgumentMatchers.contains("pc_slide=true"));
-        verify(pushClient).sendWorkNotice(eq("ding-user-7"), org.mockito.ArgumentMatchers.contains("https%3A%2F%2Fh5.example.com"));
+        // 工作通知详情链接 → 普通 https 落地页（PC 浏览器打开被引导页拦截，钉钉内正常免登回跳）
+        verify(pushClient).sendWorkNotice(eq("ding-user-7"), org.mockito.ArgumentMatchers.contains("https://h5.example.com/#/landing"));
+        verify(pushClient).sendWorkNotice(eq("ding-user-7"), org.mockito.ArgumentMatchers.contains("redirect=%2Fhouse%2F1"));
     }
 
     @Test
