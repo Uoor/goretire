@@ -33,7 +33,7 @@ class HouseServiceTest {
 
     @BeforeEach
     void setUp() {
-        houseService = new HouseService(houseMapper, userMapper);
+        houseService = new HouseService(houseMapper, userMapper, false);
     }
 
     @Test
@@ -58,7 +58,7 @@ class HouseServiceTest {
         verify(houseMapper).insert(captor.capture());
         House saved = captor.getValue();
         assertThat(saved.getPublisherId()).isEqualTo(7L);
-        assertThat(saved.getAuditStatus()).isZero(); // 待审核
+        assertThat(saved.getAuditStatus()).isEqualTo(House.AUDIT_ONLINE); // 审核关闭，直接上架
         assertThat(saved.getRackStatus()).isZero();  // 在租中
     }
 
