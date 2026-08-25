@@ -19,6 +19,12 @@ public class AitableClientStub implements AitableClient {
         log.info("[recruit-aitable-stub] 模拟查询多维表: keyword={}", keyword);
         return List.of();
     }
+
+    @Override
+    public List<RecruitRecord> queryRecent(int days) {
+        log.info("[recruit-aitable-stub] 模拟查询最近 {} 天岗位", days);
+        return List.of();
+    }
 }
 
 @Configuration

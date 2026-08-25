@@ -21,6 +21,7 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 
@@ -85,27 +86,11 @@ public class AitableDingTalkClient implements AitableClient {
 
     @Override
     public List<RecruitRecord> query(String keyword) {
-        if (baseId == null || baseId.isBlank() || tableId == null || tableId.isBlank()) {
-            log.warn("[recruit-aitable] base-id/table-id 未配置，跳过查询");
-            return List.of();
-        }
-        if (operatorId == null || operatorId.isBlank()) {
-            log.warn("[recruit-aitable] operator-id(unionId) 未配置，跳过查询");
-            return List.of();
-        }
         String kw = keyword == null ? "" : keyword.trim().toLowerCase(Locale.ROOT);
         try {
-            JsonNode root = fetchRecords();
-            List<RecruitRecord> all = new ArrayList<>();
-            for (JsonNode rec : root.path("records")) {
-                RecruitRecord r = parseRecord(rec.path("fields"));
-                if (r != null) {
-                    all.add(r);
-                }
-            }
-            return all.stream()
-                    .filter(RecruitRecord::published)
+            return fetchPublished().stream()
                     .filter(r -> kw.isEmpty() || match(r, kw))
+                    .sorted(DEFAULT_SORT)
                     .toList();
         } catch (BusinessException e) {
             throw e;
@@ -115,11 +100,54 @@ public class AitableDingTalkClient implements AitableClient {
         }
     }
 
+    @Override
+    public List<RecruitRecord> queryRecent(int days) {
+        OffsetDateTime since = OffsetDateTime.now().minusDays(Math.max(1, days));
+        try {
+            return fetchPublished().stream()
+                    .filter(r -> r.createdAt() != null && !r.createdAt().isBefore(since))
+                    .sorted(DEFAULT_SORT)
+                    .toList();
+        } catch (BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            log.warn("[recruit-aitable] 查询最近岗位异常", e);
+            throw new BusinessException(500, "查询招聘岗位失败: " + e.getMessage());
+        }
+    }
+
+    /** 拉取并过滤"发布中"的全部岗位（v1.0 单次最多 100 条） */
+    private List<RecruitRecord> fetchPublished() {
+        if (baseId == null || baseId.isBlank() || tableId == null || tableId.isBlank()) {
+            log.warn("[recruit-aitable] base-id/table-id 未配置，跳过查询");
+            return List.of();
+        }
+        if (operatorId == null || operatorId.isBlank()) {
+            log.warn("[recruit-aitable] operator-id(unionId) 未配置，跳过查询");
+            return List.of();
+        }
+        JsonNode root = fetchRecords();
+        List<RecruitRecord> all = new ArrayList<>();
+        for (JsonNode rec : root.path("records")) {
+            RecruitRecord r = parseRecord(rec.path("fields"));
+            if (r != null) {
+                all.add(r);
+            }
+        }
+        return all.stream().filter(RecruitRecord::published).toList();
+    }
+
+    /** 急聘优先，其次最新在前（创建时间为空的排最后） */
+    private static final Comparator<RecruitRecord> DEFAULT_SORT = Comparator
+            .comparingInt((RecruitRecord r) -> "急聘".equals(r.priority()) ? 0 : 1)
+            .thenComparing(RecruitRecord::createdAt, Comparator.nullsLast(Comparator.reverseOrder()));
+
     private boolean match(RecruitRecord r, String kw) {
         return contains(r.title(), kw) || contains(r.company(), kw)
+                || contains(r.description(), kw) || contains(r.requirements(), kw)
+                || contains(r.salary(), kw)
                 || r.locations().stream().anyMatch(l -> l.toLowerCase(Locale.ROOT).contains(kw))
-                || r.categories().stream().anyMatch(c -> c.toLowerCase(Locale.ROOT).contains(kw))
-                || contains(r.salary(), kw);
+                || r.categories().stream().anyMatch(c -> c.toLowerCase(Locale.ROOT).contains(kw));
     }
 
     private boolean contains(String s, String kw) {

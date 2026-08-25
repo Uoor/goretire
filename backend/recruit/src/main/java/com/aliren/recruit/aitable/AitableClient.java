@@ -16,4 +16,13 @@ public interface AitableClient {
      * @return 匹配到的岗位；无匹配返回空列表
      */
     List<RecruitRecord> query(String keyword);
+
+    /**
+     * 查询最近 N 天内新增的岗位（仅"发布中"，按创建时间最新在前）。
+     * 用于空 @ 时的"过去一周总结"。
+     *
+     * @param days 天数，如 7 表示最近 7 天
+     * @return 最近新增岗位；无则返回空列表
+     */
+    List<RecruitRecord> queryRecent(int days);
 }

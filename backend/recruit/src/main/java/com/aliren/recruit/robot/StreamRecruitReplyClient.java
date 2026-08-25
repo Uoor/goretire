@@ -22,7 +22,6 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * 招聘模块 · Stream 接收 + 回复（真实实现）。
@@ -44,6 +43,7 @@ public class StreamRecruitReplyClient implements RecruitReplyClient, SmartLifecy
     private final String robotCode;
     private final int maxResults;
     private final String noResultTip;
+    private final String allJobsUrl;
     private final AitableClient aitableClient;
     private final DingTalkTokenClient tokenClient;
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -56,6 +56,8 @@ public class StreamRecruitReplyClient implements RecruitReplyClient, SmartLifecy
                                     @Value("${aliren.recruit.robot.robot-code:}") String robotCode,
                                     @Value("${aliren.recruit.reply.max-results:5}") int maxResults,
                                     @Value("${aliren.recruit.reply.no-result-tip:}") String noResultTip,
+                                    @Value("${aliren.recruit.aitable.base-id:}") String baseId,
+                                    @Value("${aliren.recruit.aitable.table-id:}") String tableId,
                                     AitableClient aitableClient,
                                     DingTalkTokenClient tokenClient) {
         this.appKey = appKey;
@@ -63,6 +65,10 @@ public class StreamRecruitReplyClient implements RecruitReplyClient, SmartLifecy
         this.robotCode = robotCode;
         this.maxResults = maxResults <= 0 ? 5 : maxResults;
         this.noResultTip = noResultTip;
+        // "查看全部岗位" 按钮与每条岗位链接 → 多维表视图
+        this.allJobsUrl = baseId == null || baseId.isBlank() || tableId == null || tableId.isBlank()
+                ? "https://alidocs.dingtalk.com"
+                : "https://alidocs.dingtalk.com/i/nodes/" + baseId + "?entrance=data&sheetId=" + tableId;
         this.aitableClient = aitableClient;
         this.tokenClient = tokenClient;
     }
@@ -110,19 +116,60 @@ public class StreamRecruitReplyClient implements RecruitReplyClient, SmartLifecy
         return streamClient != null;
     }
 
+    /** 空 @（无文字）时总结的天数 */
+    private static final int WEEK_DAYS = 7;
+
+    /** 消息去重：msgId → 到达时间，短窗口内不重复回复 */
+    private static final long DEDUP_WINDOW_MS = 60_000L;
+    private final java.util.Map<String, Long> recentMsgIds = new java.util.concurrent.ConcurrentHashMap<>();
+
     @Override
     public void handleGroupMention(GroupMentionMessage message) {
         if (message == null || !message.replyable()) {
             return;
         }
+        if (isDuplicate(message.msgId())) {
+            log.info("[recruit-stream] 忽略重复消息 msgId={}", message.msgId());
+            return;
+        }
         try {
-            List<RecruitRecord> found = searchRecruit(message.text());
-            String reply = formatReply(found, message.senderNick());
-            sendGroupReply(message.openConversationId(), reply);
-            log.info("[recruit-stream] 已回复 @{}: 命中 {} 条", message.senderNick(), found.size());
+            String text = message.text() == null ? "" : message.text().trim();
+            String title;
+            String body;
+            int count;
+            if (text.isEmpty()) {
+                // 空 @ → 过去一周新增岗位总结
+                List<RecruitRecord> recent = aitableClient.queryRecent(WEEK_DAYS);
+                count = recent.size();
+                title = formatWeeklyTitle(recent);
+                body = formatWeeklyBody(recent, message.senderNick());
+            } else {
+                List<RecruitRecord> found = searchRecruit(text);
+                count = found.size();
+                title = formatSearchTitle(found, text);
+                body = formatSearchBody(found, message.senderNick());
+            }
+            sendGroupReply(message.openConversationId(), title, body);
+            log.info("[recruit-stream] 已回复 @{}: {} 条", message.senderNick(), count);
         } catch (Exception e) {
             log.warn("[recruit-stream] 处理 @ 消息异常", e);
         }
+    }
+
+    /** 短窗口 msgId 去重 */
+    private boolean isDuplicate(String msgId) {
+        if (msgId == null || msgId.isBlank()) {
+            return false;
+        }
+        long now = System.currentTimeMillis();
+        Long prev = recentMsgIds.putIfAbsent(msgId, now);
+        if (prev == null) {
+            if (recentMsgIds.size() > 500) {
+                recentMsgIds.entrySet().removeIf(e -> now - e.getValue() > DEDUP_WINDOW_MS);
+            }
+            return false;
+        }
+        return now - prev < DEDUP_WINDOW_MS;
     }
 
     @Override
@@ -170,10 +217,19 @@ public class StreamRecruitReplyClient implements RecruitReplyClient, SmartLifecy
         );
     }
 
-    private String formatReply(List<RecruitRecord> found, String senderNick) {
+    /** 关键词查询：卡片标题 */
+    private String formatSearchTitle(List<RecruitRecord> found, String keyword) {
+        if (found.isEmpty()) {
+            return "🔍 招聘查询";
+        }
+        return "🔍 找到 " + found.size() + " 个岗位（" + keyword + "）";
+    }
+
+    /** 关键词查询：卡片正文（markdown，岗位带链接） */
+    private String formatSearchBody(List<RecruitRecord> found, String senderNick) {
         StringBuilder sb = new StringBuilder();
         if (senderNick != null && !senderNick.isBlank()) {
-            sb.append("@" + senderNick).append("\n");
+            sb.append("**@").append(senderNick).append("**\n\n");
         }
         if (found.isEmpty()) {
             sb.append(noResultTip == null || noResultTip.isBlank()
@@ -181,35 +237,76 @@ public class StreamRecruitReplyClient implements RecruitReplyClient, SmartLifecy
                     : noResultTip);
             return sb.toString();
         }
-        sb.append("找到 ").append(found.size()).append(" 个岗位：\n\n");
-        found.stream().limit(maxResults).forEach(r -> {
-            sb.append("▶ ").append(r.title()).append("\n");
-            if (r.company() != null && !r.company().isBlank()) sb.append("· ").append(r.company());
-            if (!r.locations().isEmpty()) sb.append("  [").append(String.join("/", r.locations())).append("]");
-            if (r.salary() != null && !r.salary().isBlank()) sb.append("\n· 薪资：").append(r.salary());
-            if (r.priority() != null && !r.priority().isBlank()) sb.append("\n· 标签：").append(r.priority());
-            sb.append("\n\n");
-        });
+        found.stream().limit(maxResults).forEach(r -> appendJobMd(sb, r));
         if (found.size() > maxResults) {
-            sb.append("（仅展示前 ").append(maxResults).append(" 条，私聊招聘同学了解更多）");
+            sb.append("\n> 仅展示前 ").append(maxResults).append(" 条，共 ").append(found.size()).append(" 条");
         }
         return sb.toString();
     }
 
-    private void sendGroupReply(String openConversationId, String content) {
+    /** 空 @ 周报：卡片标题 */
+    private String formatWeeklyTitle(List<RecruitRecord> recent) {
+        if (recent.isEmpty()) {
+            return "📋 过去一周招聘岗位";
+        }
+        java.time.LocalDate today = java.time.LocalDate.now();
+        java.time.LocalDate weekAgo = today.minusDays(WEEK_DAYS - 1);
+        return "📋 过去一周（" + weekAgo.getMonthValue() + "." + weekAgo.getDayOfMonth()
+                + " - " + today.getMonthValue() + "." + today.getDayOfMonth()
+                + "）新增 " + recent.size() + " 个岗位";
+    }
+
+    /** 空 @ 周报：卡片正文（markdown，岗位带链接，最新在前急聘优先） */
+    private String formatWeeklyBody(List<RecruitRecord> recent, String senderNick) {
+        StringBuilder sb = new StringBuilder();
+        if (senderNick != null && !senderNick.isBlank()) {
+            sb.append("**@").append(senderNick).append("**\n\n");
+        }
+        if (recent.isEmpty()) {
+            sb.append("过去一周暂无新增岗位。");
+            return sb.toString();
+        }
+        recent.stream().limit(maxResults).forEach(r -> appendJobMd(sb, r));
+        if (recent.size() > maxResults) {
+            sb.append("\n> 仅展示前 ").append(maxResults).append(" 条，共 ").append(recent.size()).append(" 条");
+        }
+        return sb.toString();
+    }
+
+    /** 单条岗位 markdown：标题带链接 + 公司/地点/薪资/标签 */
+    private void appendJobMd(StringBuilder sb, RecruitRecord r) {
+        String title = r.title() == null || r.title().isBlank() ? "（未命名岗位）" : r.title();
+        sb.append("### [").append(title).append("](").append(allJobsUrl).append(")\n");
+        sb.append("> ");
+        if (r.company() != null && !r.company().isBlank()) sb.append(r.company());
+        if (!r.locations().isEmpty()) sb.append(" · ").append(String.join("/", r.locations()));
+        sb.append("\n");
+        if (r.salary() != null && !r.salary().isBlank()) sb.append("> 薪资：").append(r.salary()).append("\n");
+        if (r.priority() != null && !r.priority().isBlank()) sb.append("> ").append(r.priority()).append("\n");
+        sb.append("\n");
+    }
+
+    /** 发送 ActionCard 卡片：markdown 正文 + 底部"查看全部岗位"按钮 */
+    private void sendGroupReply(String openConversationId, String title, String body) {
         try {
             String token = tokenClient.getAccessToken(appKey, appSecret);
-            ObjectNode body = objectMapper.createObjectNode();
-            body.put("robotCode", robotCode);
-            body.put("openConversationId", openConversationId);
-            body.put("msgKey", "sampleText");
-            body.put("msgParam", objectMapper.createObjectNode().put("content", content).toString());
+            ObjectNode card = objectMapper.createObjectNode();
+            card.put("title", title);
+            card.put("text", body);
+            card.put("singleTitle", "查看全部岗位");
+            card.put("singleURL", allJobsUrl);
+
+            ObjectNode msg = objectMapper.createObjectNode();
+            msg.put("robotCode", robotCode);
+            msg.put("openConversationId", openConversationId);
+            msg.put("msgKey", "sampleActionCard");
+            msg.put("msgParam", card.toString());
 
             HttpRequest request = HttpRequest.newBuilder(URI.create(SEND_URL))
                     .timeout(TIMEOUT)
                     .header("Content-Type", "application/json")
                     .header("x-acs-dingtalk-access-token", token)
-                    .POST(HttpRequest.BodyPublishers.ofString(objectMapper.writeValueAsString(body)))
+                    .POST(HttpRequest.BodyPublishers.ofString(objectMapper.writeValueAsString(msg)))
                     .build();
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
             String respBody = response.body();
