@@ -7,7 +7,6 @@ import com.aliren.recruit.dingtalk.DingTalkTokenClient;
 import com.dingtalk.open.app.api.OpenDingTalkClient;
 import com.dingtalk.open.app.api.OpenDingTalkStreamClientBuilder;
 import com.dingtalk.open.app.api.callback.DingTalkStreamTopics;
-import com.dingtalk.open.app.api.message.GenericOpenDingTalkEvent;
 import com.dingtalk.open.app.api.security.AuthClientCredential;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -77,18 +76,11 @@ public class StreamRecruitReplyClient implements RecruitReplyClient, SmartLifecy
         try {
             streamClient = OpenDingTalkStreamClientBuilder.custom()
                     .credential(new AuthClientCredential(appKey, appSecret))
-                    // 诊断：接收全部事件并打日志，确认 @ 消息是否到达（上线稳定后可移除）
-                    .registerAllEventListener(event -> {
-                        Object data = event.getData();
-                        String dataStr = data == null ? "null" : String.valueOf(data);
-                        if (dataStr.length() > 300) dataStr = dataStr.substring(0, 300);
-                        log.info("[recruit-stream] 收到事件: type={} id={} corpId={} data={}",
-                                event.getEventType(), event.getEventId(), event.getEventCorpId(), dataStr);
-                        return com.dingtalk.open.app.stream.protocol.event.EventAckStatus.SUCCESS;
-                    })
+                    // 官方示例：机器人回调请求体直接是消息 JSON（OpenDingTalkCallbackListener<JSONObject, JSONObject>），
+                    // 不能用 GenericOpenDingTalkEvent（会反序列化错类型导致 getData() 为 null）
                     .registerCallbackListener(DingTalkStreamTopics.BOT_MESSAGE_TOPIC,
-                            (GenericOpenDingTalkEvent req) -> {
-                                onStreamEvent(req);
+                            (shade.com.alibaba.fastjson2.JSONObject req) -> {
+                                handleBotMessage(req);
                                 return null;
                             })
                     .build();
@@ -140,13 +132,11 @@ public class StreamRecruitReplyClient implements RecruitReplyClient, SmartLifecy
 
     // ---- 内部 ----
 
-    private void onStreamEvent(GenericOpenDingTalkEvent event) {
+    /** 机器人回调：请求体即消息 JSON（官方 RobotMsgCallbackConsumer 模式） */
+    private void handleBotMessage(shade.com.alibaba.fastjson2.JSONObject req) {
         try {
-            Object data = event.getData();
-            if (data == null) {
-                return;
-            }
-            GroupMentionMessage message = parseMention(event);
+            log.info("[recruit-stream] 收到机器人消息: {}", req);
+            GroupMentionMessage message = parseMention(req);
             if (message != null) {
                 handleGroupMention(message);
             }
@@ -155,16 +145,19 @@ public class StreamRecruitReplyClient implements RecruitReplyClient, SmartLifecy
         }
     }
 
-    @SuppressWarnings("unchecked")
-    private GroupMentionMessage parseMention(GenericOpenDingTalkEvent event) {
-        shade.com.alibaba.fastjson2.JSONObject data = (shade.com.alibaba.fastjson2.JSONObject) event.getData();
-        String openConversationId = firstNonBlank(data.getString("openConversationId"), data.getString("conversationId"));
+    private GroupMentionMessage parseMention(shade.com.alibaba.fastjson2.JSONObject data) {
+        // conversationType: 1=单聊 2=群聊（官方文档）
+        String conversationType = data.getString("conversationType");
+        if (!"2".equals(conversationType)) {
+            log.info("[recruit-stream] 忽略非群聊消息 conversationType={}", conversationType);
+            return null;
+        }
+        // 群会话 ID（官方示例直接用 conversationId 作为回复目标 openConversationId）
+        String openConversationId = data.getString("conversationId");
         String text = null;
-        Object textObj = data.get("text");
-        if (textObj instanceof String s) {
-            text = s;
-        } else if (textObj instanceof shade.com.alibaba.fastjson2.JSONObject o) {
-            text = o.getString("content");
+        shade.com.alibaba.fastjson2.JSONObject textObj = data.getJSONObject("text");
+        if (textObj != null) {
+            text = textObj.getString("content");
         }
         return new GroupMentionMessage(
                 openConversationId,
