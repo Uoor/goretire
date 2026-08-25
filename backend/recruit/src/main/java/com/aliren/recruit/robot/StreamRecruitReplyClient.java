@@ -43,6 +43,9 @@ public class StreamRecruitReplyClient implements RecruitReplyClient, SmartLifecy
     private final String robotCode;
     private final int maxResults;
     private final String noResultTip;
+    private final String baseId;
+    private final String tableId;
+    private final String viewId;
     private final String allJobsUrl;
     private final AitableClient aitableClient;
     private final DingTalkTokenClient tokenClient;
@@ -58,6 +61,7 @@ public class StreamRecruitReplyClient implements RecruitReplyClient, SmartLifecy
                                     @Value("${aliren.recruit.reply.no-result-tip:}") String noResultTip,
                                     @Value("${aliren.recruit.aitable.base-id:}") String baseId,
                                     @Value("${aliren.recruit.aitable.table-id:}") String tableId,
+                                    @Value("${aliren.recruit.aitable.view-id:YDu1ejs}") String viewId,
                                     AitableClient aitableClient,
                                     DingTalkTokenClient tokenClient) {
         this.appKey = appKey;
@@ -65,13 +69,27 @@ public class StreamRecruitReplyClient implements RecruitReplyClient, SmartLifecy
         this.robotCode = robotCode;
         this.maxResults = maxResults <= 0 ? 5 : maxResults;
         this.noResultTip = noResultTip;
-        // "查看全部岗位" 按钮与每条岗位链接 → 多维表视图（用 dingtalk scheme 在钉钉内置浏览器打开，
-        // 避免普通 https 链接跳到外部浏览器）
+        this.baseId = baseId;
+        this.tableId = tableId;
+        this.viewId = viewId;
+        // "查看全部岗位" 按钮 → 多维表视图（dingtalk scheme 在钉钉内置浏览器打开，避免跳外部浏览器）
         this.allJobsUrl = baseId == null || baseId.isBlank() || tableId == null || tableId.isBlank()
                 ? "https://alidocs.dingtalk.com"
                 : dingtalkLink("https://alidocs.dingtalk.com/i/nodes/" + baseId + "?entrance=data&sheetId=" + tableId);
         this.aitableClient = aitableClient;
         this.tokenClient = tokenClient;
+    }
+
+    /** 岗位详情链接：https://alidocs.dingtalk.com/notable/record?sheetId=&viewId=&rowId=&dentryUuid= */
+    private String recordUrl(RecruitRecord r) {
+        if (baseId == null || baseId.isBlank() || tableId == null || tableId.isBlank()
+                || r.recordId() == null || r.recordId().isBlank()) {
+            return allJobsUrl;
+        }
+        return dingtalkLink("https://alidocs.dingtalk.com/notable/record?sheetId=" + tableId
+                + "&viewId=" + viewId
+                + "&rowId=" + r.recordId()
+                + "&dentryUuid=" + baseId);
     }
 
     @Override
@@ -147,7 +165,7 @@ public class StreamRecruitReplyClient implements RecruitReplyClient, SmartLifecy
                 }
                 count = recent.size();
                 title = formatWeeklyTitle(recent, fallback);
-                body = formatWeeklyBody(recent, message.senderNick());
+                body = formatWeeklyBody(recent, fallback, message.senderNick());
             } else {
                 List<RecruitRecord> found = searchRecruit(text);
                 count = found.size();
@@ -222,19 +240,16 @@ public class StreamRecruitReplyClient implements RecruitReplyClient, SmartLifecy
         );
     }
 
-    /** 关键词查询：卡片标题 */
+    /** 关键词查询：卡片标题（钉钉卡片标题不展示，仅作占位，实际内容在正文） */
     private String formatSearchTitle(List<RecruitRecord> found, String keyword) {
-        if (found.isEmpty()) {
-            return "🔍 招聘查询";
-        }
-        return "🔍 找到 " + found.size() + " 个岗位（" + keyword + "）";
+        return "🔍 招聘查询";
     }
 
-    /** 关键词查询：卡片正文（markdown，岗位带链接） */
+    /** 关键词查询：卡片正文（markdown，<br/> 换行，岗位标题带具体记录链接） */
     private String formatSearchBody(List<RecruitRecord> found, String senderNick) {
         StringBuilder sb = new StringBuilder();
         if (senderNick != null && !senderNick.isBlank()) {
-            sb.append("**@").append(senderNick).append("**\n\n");
+            sb.append("**@").append(senderNick).append("**<br/><br/>");
         }
         if (found.isEmpty()) {
             sb.append(noResultTip == null || noResultTip.isBlank()
@@ -242,56 +257,69 @@ public class StreamRecruitReplyClient implements RecruitReplyClient, SmartLifecy
                     : noResultTip);
             return sb.toString();
         }
+        sb.append("🔍 **找到 ").append(found.size()).append(" 个岗位**<br/><br/>");
         found.stream().limit(maxResults).forEach(r -> appendJobMd(sb, r));
         if (found.size() > maxResults) {
-            sb.append("\n> 仅展示前 ").append(maxResults).append(" 条，共 ").append(found.size()).append(" 条");
+            sb.append("> 仅展示前 ").append(maxResults).append(" 条，共 ").append(found.size()).append(" 条");
         }
         return sb.toString();
     }
 
-    /** 空 @ 周报：卡片标题（fallback=过去一周无新增，展示最近岗位） */
+    /** 空 @ 周报：卡片标题（占位，正文含周报头） */
     private String formatWeeklyTitle(List<RecruitRecord> recent, boolean fallback) {
-        if (recent.isEmpty()) {
-            return "📋 招聘岗位";
-        }
-        if (fallback) {
-            return "📋 过去一周暂无新增，以下为最近岗位";
-        }
-        java.time.LocalDate today = java.time.LocalDate.now();
-        java.time.LocalDate weekAgo = today.minusDays(WEEK_DAYS - 1);
-        return "📋 过去一周（" + weekAgo.getMonthValue() + "." + weekAgo.getDayOfMonth()
-                + " - " + today.getMonthValue() + "." + today.getDayOfMonth()
-                + "）新增 " + recent.size() + " 个岗位";
+        return "📋 招聘岗位";
     }
 
-    /** 空 @ 周报：卡片正文（markdown，岗位带链接，最新在前急聘优先） */
-    private String formatWeeklyBody(List<RecruitRecord> recent, String senderNick) {
+    /** 空 @ 周报：卡片正文（markdown，周报头放正文，fallback=无新增展示最近岗位） */
+    private String formatWeeklyBody(List<RecruitRecord> recent, boolean fallback, String senderNick) {
         StringBuilder sb = new StringBuilder();
         if (senderNick != null && !senderNick.isBlank()) {
-            sb.append("**@").append(senderNick).append("**\n\n");
+            sb.append("**@").append(senderNick).append("**<br/><br/>");
         }
         if (recent.isEmpty()) {
             sb.append("过去一周暂无新增岗位。");
             return sb.toString();
         }
+        if (fallback) {
+            sb.append("📋 **过去一周暂无新增，以下为最近岗位**<br/><br/>");
+        } else {
+            java.time.LocalDate today = java.time.LocalDate.now();
+            java.time.LocalDate weekAgo = today.minusDays(WEEK_DAYS - 1);
+            sb.append("📋 **过去一周（").append(weekAgo.getMonthValue()).append(".").append(weekAgo.getDayOfMonth())
+                    .append(" - ").append(today.getMonthValue()).append(".").append(today.getDayOfMonth())
+                    .append("）新增 ").append(recent.size()).append(" 个岗位**<br/><br/>");
+        }
         recent.stream().limit(maxResults).forEach(r -> appendJobMd(sb, r));
         if (recent.size() > maxResults) {
-            sb.append("\n> 仅展示前 ").append(maxResults).append(" 条，共 ").append(recent.size()).append(" 条");
+            sb.append("> 仅展示前 ").append(maxResults).append(" 条，共 ").append(recent.size()).append(" 条");
         }
         return sb.toString();
     }
 
-    /** 单条岗位 markdown：标题带链接 + 公司/地点/薪资/标签 */
+    /** 单条岗位 markdown（DESIGN.md 规范：元信息灰 #888、薪资橙 #FF6A00、急聘橙深 #E85D00） */
     private void appendJobMd(StringBuilder sb, RecruitRecord r) {
         String title = r.title() == null || r.title().isBlank() ? "（未命名岗位）" : r.title();
-        sb.append("### [").append(title).append("](").append(allJobsUrl).append(")\n");
-        sb.append("> ");
-        if (r.company() != null && !r.company().isBlank()) sb.append(r.company());
-        if (!r.locations().isEmpty()) sb.append(" · ").append(String.join("/", r.locations()));
-        sb.append("\n");
-        if (r.salary() != null && !r.salary().isBlank()) sb.append("> 薪资：").append(r.salary()).append("\n");
-        if (r.priority() != null && !r.priority().isBlank()) sb.append("> ").append(r.priority()).append("\n");
-        sb.append("\n");
+        sb.append("### [").append(title).append("](").append(recordUrl(r)).append(")<br/>");
+        // 元信息：公司 · 地点（fg2 灰）
+        StringBuilder info = new StringBuilder();
+        if (r.company() != null && !r.company().isBlank()) info.append(r.company());
+        if (!r.locations().isEmpty()) info.append(" · ").append(String.join("/", r.locations()));
+        if (info.length() > 0) {
+            sb.append("<font color=\"#888888\">").append(info).append("</font><br/>");
+        }
+        // 薪资（橙=价格强调）+ 急聘（橙深=信任标签）
+        StringBuilder meta = new StringBuilder();
+        if (r.salary() != null && !r.salary().isBlank()) {
+            meta.append("<font color=\"#FF6A00\">薪资：").append(r.salary()).append("</font>");
+        }
+        if (r.priority() != null && !r.priority().isBlank()) {
+            if (meta.length() > 0) meta.append(" · ");
+            meta.append("<font color=\"#E85D00\">").append(r.priority()).append("</font>");
+        }
+        if (meta.length() > 0) {
+            sb.append(meta).append("<br/>");
+        }
+        sb.append("<br/>");
     }
 
     /** 发送 ActionCard 卡片：markdown 正文 + 底部"查看全部岗位"按钮 */

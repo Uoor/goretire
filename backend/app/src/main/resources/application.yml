@@ -90,6 +90,8 @@ aliren:
       app-secret: ${RECRUIT_AITABLE_APP_SECRET:}
       base-id: ${RECRUIT_AITABLE_BASE_ID:}
       table-id: ${RECRUIT_AITABLE_TABLE_ID:}
+      # 岗位详情链接所用视图 ID（多维表视图，默认"岗位信息填写"YDu1ejs）
+      view-id: ${RECRUIT_AITABLE_VIEW_ID:YDu1ejs}
       # v1.0 接口必填操作者：有表权限用户的 unionId（传 userId 会报 paramError-operatorId）
       operator-id: ${RECRUIT_AITABLE_OPERATOR_ID:}
     reply:

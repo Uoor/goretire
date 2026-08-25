@@ -6,6 +6,7 @@ import java.util.List;
 /**
  * 招聘记录（对齐钉钉多维表「岗位信息」主表 8tveFG3 的关键列）。
  *
+ * @param recordId     记录 ID（多维表 record id，用于拼岗位详情链接）
  * @param title        职位名称
  * @param company      公司
  * @param locations    工作地点（多选，取 name 列表）
@@ -20,6 +21,7 @@ import java.util.List;
  * @param createdAt    创建日期
  */
 public record RecruitRecord(
+        String recordId,
         String title,
         String company,
         List<String> locations,

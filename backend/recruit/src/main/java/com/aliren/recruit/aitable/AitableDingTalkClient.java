@@ -145,7 +145,7 @@ public class AitableDingTalkClient implements AitableClient {
         JsonNode root = fetchRecords();
         List<RecruitRecord> all = new ArrayList<>();
         for (JsonNode rec : root.path("records")) {
-            RecruitRecord r = parseRecord(rec.path("fields"));
+            RecruitRecord r = parseRecord(rec);
             if (r != null) {
                 all.add(r);
             }
@@ -200,9 +200,11 @@ public class AitableDingTalkClient implements AitableClient {
         return URLEncoder.encode(s, StandardCharsets.UTF_8);
     }
 
-    private RecruitRecord parseRecord(JsonNode fields) {
+    private RecruitRecord parseRecord(JsonNode rec) {
         try {
+            JsonNode fields = rec.path("fields");
             return new RecruitRecord(
+                    rec.path("id").asText(null),
                     text(fields, F_TITLE),
                     text(fields, F_COMPANY),
                     names(fields, F_LOCATIONS),
