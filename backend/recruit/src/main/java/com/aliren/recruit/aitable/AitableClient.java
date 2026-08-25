@@ -25,4 +25,13 @@ public interface AitableClient {
      * @return 最近新增岗位；无则返回空列表
      */
     List<RecruitRecord> queryRecent(int days);
+
+    /**
+     * 查询按创建时间最新在前的 N 条岗位（仅"发布中"）。
+     * 用于"过去一周无新增"时的回退展示。
+     *
+     * @param limit 条数上限
+     * @return 最新岗位；无则返回空列表
+     */
+    List<RecruitRecord> queryLatest(int limit);
 }

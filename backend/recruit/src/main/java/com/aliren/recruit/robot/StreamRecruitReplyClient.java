@@ -139,10 +139,14 @@ public class StreamRecruitReplyClient implements RecruitReplyClient, SmartLifecy
             String body;
             int count;
             if (text.isEmpty()) {
-                // 空 @ → 过去一周新增岗位总结
+                // 空 @ → 过去一周新增岗位总结；无新增时回退展示按时间最近的 maxResults 条
                 List<RecruitRecord> recent = aitableClient.queryRecent(WEEK_DAYS);
+                boolean fallback = recent.isEmpty();
+                if (fallback) {
+                    recent = aitableClient.queryLatest(maxResults);
+                }
                 count = recent.size();
-                title = formatWeeklyTitle(recent);
+                title = formatWeeklyTitle(recent, fallback);
                 body = formatWeeklyBody(recent, message.senderNick());
             } else {
                 List<RecruitRecord> found = searchRecruit(text);
@@ -245,10 +249,13 @@ public class StreamRecruitReplyClient implements RecruitReplyClient, SmartLifecy
         return sb.toString();
     }
 
-    /** 空 @ 周报：卡片标题 */
-    private String formatWeeklyTitle(List<RecruitRecord> recent) {
+    /** 空 @ 周报：卡片标题（fallback=过去一周无新增，展示最近岗位） */
+    private String formatWeeklyTitle(List<RecruitRecord> recent, boolean fallback) {
         if (recent.isEmpty()) {
-            return "📋 过去一周招聘岗位";
+            return "📋 招聘岗位";
+        }
+        if (fallback) {
+            return "📋 过去一周暂无新增，以下为最近岗位";
         }
         java.time.LocalDate today = java.time.LocalDate.now();
         java.time.LocalDate weekAgo = today.minusDays(WEEK_DAYS - 1);

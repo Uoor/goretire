@@ -116,6 +116,22 @@ public class AitableDingTalkClient implements AitableClient {
         }
     }
 
+    @Override
+    public List<RecruitRecord> queryLatest(int limit) {
+        try {
+            return fetchPublished().stream()
+                    .sorted(Comparator.comparing(RecruitRecord::createdAt,
+                            Comparator.nullsLast(Comparator.reverseOrder())))
+                    .limit(Math.max(1, limit))
+                    .toList();
+        } catch (BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            log.warn("[recruit-aitable] 查询最新岗位异常", e);
+            throw new BusinessException(500, "查询招聘岗位失败: " + e.getMessage());
+        }
+    }
+
     /** 拉取并过滤"发布中"的全部岗位（v1.0 单次最多 100 条） */
     private List<RecruitRecord> fetchPublished() {
         if (baseId == null || baseId.isBlank() || tableId == null || tableId.isBlank()) {

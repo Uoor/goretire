@@ -25,6 +25,12 @@ public class AitableClientStub implements AitableClient {
         log.info("[recruit-aitable-stub] 模拟查询最近 {} 天岗位", days);
         return List.of();
     }
+
+    @Override
+    public List<RecruitRecord> queryLatest(int limit) {
+        log.info("[recruit-aitable-stub] 模拟查询最新 {} 条岗位", limit);
+        return List.of();
+    }
 }
 
 @Configuration
