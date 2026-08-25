@@ -219,7 +219,7 @@ public class AitableDingTalkClient implements AitableClient {
                     date(fields, F_CREATED)
             );
         } catch (Exception e) {
-            log.warn("[recruit-aitable] 解析记录失败: {}", fields, e);
+            log.warn("[recruit-aitable] 解析记录失败: {}", rec, e);
             return null;
         }
     }
