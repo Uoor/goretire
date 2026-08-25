@@ -50,6 +50,9 @@ aliren:
     # 图片上传（MVP 本地静态目录，后续可切 OSS）：目录相对 backend 启动位置
     dir: ${UPLOAD_DIR:./uploads}
     max-size-mb: 5
+  house:
+    # 房源审核开关：false=关闭审核，发布即上架；true=开启审核，需管理员通过后上架
+    audit-enabled: ${HOUSE_AUDIT_ENABLED:false}
   robot:
     # 钉钉推送：enabled=true 且提供凭证后启用真实发送（群卡片/工作通知）；
     # 未启用时 PushClientStub 仅记录日志，编排与定时任务照常跑通

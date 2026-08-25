@@ -28,26 +28,29 @@ public class HouseService {
 
     private final HouseMapper houseMapper;
     private final UserMapper userMapper;
+    private final boolean auditEnabled;
 
-    public HouseService(HouseMapper houseMapper, UserMapper userMapper) {
+    public HouseService(HouseMapper houseMapper, UserMapper userMapper,
+                        @org.springframework.beans.factory.annotation.Value("${aliren.house.audit-enabled:false}") boolean auditEnabled) {
         this.houseMapper = houseMapper;
         this.userMapper = userMapper;
+        this.auditEnabled = auditEnabled;
     }
 
-    /** 发布房源：初始状态待审核(0) + 在租中(0) */
+    /** 发布房源：审核开启时待审核，关闭时直接上架 */
     public Long publish(Long publisherId, HouseCreateRequest req) {
-        log.info("publishing house: publisherId={}, community={}", publisherId, req.getCommunity());
+        log.info("publishing house: publisherId={}, community={}, auditEnabled={}", publisherId, req.getCommunity(), auditEnabled);
         if (req.getRent() == null || req.getRent().signum() <= 0) {
             throw new BusinessException("租金不合法");
         }
         House h = new House();
         h.setPublisherId(publisherId);
         applyFields(h, req);
-        h.setAuditStatus(House.AUDIT_PENDING);
+        h.setAuditStatus(auditEnabled ? House.AUDIT_PENDING : House.AUDIT_ONLINE);
         h.setRackStatus(House.RACK_RENTING);
         h.setFeedbackAnswer(0);
         houseMapper.insert(h);
-        log.info("house published: id={}, publisherId={}", h.getId(), publisherId);
+        log.info("house published: id={}, publisherId={}, status={}", h.getId(), publisherId, auditEnabled ? "PENDING" : "ONLINE");
         return h.getId();
     }
 
@@ -68,7 +71,7 @@ public class HouseService {
             throw new BusinessException(403, "无权限：仅发布人可修改");
         }
         applyFields(h, req);
-        h.setAuditStatus(House.AUDIT_PENDING); // 修改后重新送审
+        h.setAuditStatus(auditEnabled ? House.AUDIT_PENDING : House.AUDIT_ONLINE);
         houseMapper.updateById(h);
         log.info("house updated: id={}, userId={}", id, userId);
     }
