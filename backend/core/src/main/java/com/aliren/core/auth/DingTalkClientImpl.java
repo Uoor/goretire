@@ -154,15 +154,30 @@ public class DingTalkClientImpl implements DingTalkClient {
         // 1. OAuth2 code → 用户级 accessToken
         // 注意：不要先用 getuserinfo 尝试——OAuth2 授权码是一次性的，
         // 被任何接口消费后即失效，必须直接用于 userAccessToken 兑换。
-        String userAccessToken = exchangeOAuthCode(authCode);
+        JsonNode tokenJson = exchangeOAuthCode(authCode);
+        String userAccessToken = tokenJson.path("accessToken").asText("");
         // 2. 用户 accessToken → /contact/users/me → unionId
         String unionId = getUnionIdByUserToken(userAccessToken);
         // 3. unionId + 应用 accessToken → /topapi/user/getbyunionid → userId
         return getUserIdByUnionId(unionId);
     }
 
-    /** OAuth2 授权码换用户 accessToken */
-    private String exchangeOAuthCode(String authCode) {
+    @Override
+    public String getRefreshTokenByOAuthCode(String authCode) {
+        if (authCode == null || authCode.isBlank()) {
+            throw new BusinessException(401, "授权失败");
+        }
+        JsonNode tokenJson = exchangeOAuthCode(authCode);
+        String refreshToken = tokenJson.path("refreshToken").asText("");
+        if (refreshToken.isEmpty()) {
+            log.warn("dingtalk oauth2 exchange empty refreshToken: body={}", tokenJson.toString());
+            throw new BusinessException(401, "未获取到 refresh token");
+        }
+        return refreshToken;
+    }
+
+    /** OAuth2 授权码换用户 token（accessToken + refreshToken），返回完整响应 JSON */
+    private JsonNode exchangeOAuthCode(String authCode) {
         try {
             ObjectNode body = objectMapper.createObjectNode();
             body.put("clientId", appKey);
@@ -186,7 +201,7 @@ public class DingTalkClientImpl implements DingTalkClient {
                         appKey, response.body());
                 throw new BusinessException(401, "扫码登录失败");
             }
-            return accessToken;
+            return json;
         } catch (BusinessException e) {
             throw e;
         } catch (Exception e) {

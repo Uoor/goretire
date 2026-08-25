@@ -72,6 +72,19 @@ public class AuthController {
         log.info("[auth] oauth callback params: {} referer={}", sb, request.getHeader("Referer"));
         // 兼容两种参数名：优先 authCode（钉钉 OAuth2 标准），回退 code
         String effectiveCode = authCode != null && !authCode.isBlank() ? authCode : code;
+        // 招聘模块一次性授权模式：state 中 mode=recruit-aitable 时，只换 refresh token 返回，不走登录
+        if ("recruit-aitable".equals(decodeStateMode(state))) {
+            try {
+                String refreshToken = authService.getRefreshTokenByOAuthCode(effectiveCode);
+                renderRefreshToken(response, refreshToken);
+            } catch (BusinessException e) {
+                log.warn("[auth] recruit oauth callback failed: {}", e.getMessage());
+                response.setContentType("text/html;charset=UTF-8");
+                response.getWriter().write("<html><body><h3>授权失败：" + e.getMessage()
+                        + "</h3><p>请重新打开授权链接。</p></body></html>");
+            }
+            return;
+        }
         FrontendTarget target = resolveFrontendTarget(state, request);
         AuthResponse authResult;
         try {
@@ -104,6 +117,37 @@ public class AuthController {
 
     /** 前端目标：baseUrl（origin）+ 登录后回跳的 hash 路径 */
     private record FrontendTarget(String baseUrl, String redirect) {}
+
+    /** 解析 state 中的 mode（招聘模块一次性授权用）：state 为 base64 JSON {mode, ...}，取 mode 字段 */
+    private String decodeStateMode(String state) {
+        if (state == null || state.isBlank()) {
+            return null;
+        }
+        try {
+            String decoded = new String(Base64.getUrlDecoder().decode(state), StandardCharsets.UTF_8);
+            if (decoded.trim().startsWith("{")) {
+                JsonNode node = objectMapper.readTree(decoded);
+                return node.path("mode").asText("");
+            }
+        } catch (Exception e) {
+            // 解码失败按无 mode 处理
+        }
+        return null;
+    }
+
+    /** 一次性授权成功页：展示 refresh token（仅初始化时用一次） */
+    private void renderRefreshToken(jakarta.servlet.http.HttpServletResponse response, String refreshToken) throws IOException {
+        response.setContentType("text/html;charset=UTF-8");
+        response.getWriter().write("""
+                <html><head><meta charset="utf-8"><title>授权成功</title></head>
+                <body style="font-family: sans-serif; padding: 24px; max-width: 640px;">
+                <h3>✅ 授权成功，请复制下面的 refresh token 配置到 .env：</h3>
+                <textarea readonly rows="3" style="width:100%%; box-sizing:border-box;"
+                  onclick="this.select()">%s</textarea>
+                <p style="color:#888;">（该 token 敏感，请勿外泄；配置 RECRUIT_AITABLE_USER_REFRESH_TOKEN 后即可删除本页）</p>
+                </body></html>
+                """.formatted(refreshToken.replace("%", "%%")));
+    }
 
     /**
      * 解析前端目标：

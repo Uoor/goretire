@@ -25,6 +25,10 @@
             <groupId>com.aliren</groupId>
             <artifactId>aliren-houserent</artifactId>
         </dependency>
+        <dependency>
+            <groupId>com.aliren</groupId>
+            <artifactId>aliren-recruit</artifactId>
+        </dependency>
 
         <!-- H2：本地无 MySQL 时联调用（schema-h2.sql），生产走 MySQL，此依赖冗余无害 -->
         <dependency>

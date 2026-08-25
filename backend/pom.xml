@@ -21,6 +21,7 @@
     <modules>
         <module>core</module>
         <module>houserent</module>
+        <module>recruit</module>
         <module>app</module>
         <module>test</module>
     </modules>
@@ -30,6 +31,7 @@
         <mybatis-plus.version>3.5.7</mybatis-plus.version>
         <jjwt.version>0.12.6</jjwt.version>
         <dingtalk.version>2.1.30</dingtalk.version>
+        <dingtalk-stream.version>1.3.12</dingtalk-stream.version>
         <tea-openapi.version>0.2.4</tea-openapi.version>
     </properties>
 
@@ -44,6 +46,11 @@
             <dependency>
                 <groupId>com.aliren</groupId>
                 <artifactId>aliren-houserent</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.aliren</groupId>
+                <artifactId>aliren-recruit</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -82,6 +89,12 @@
                 <groupId>com.aliyun</groupId>
                 <artifactId>tea-openapi</artifactId>
                 <version>${tea-openapi.version}</version>
+            </dependency>
+            <!-- DingStream：钉钉开放平台长连接（机器人 @ 消息实时接收） -->
+            <dependency>
+                <groupId>com.dingtalk.open</groupId>
+                <artifactId>dingtalk-stream</artifactId>
+                <version>${dingtalk-stream.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

@@ -73,3 +73,31 @@ aliren:
     enabled: ${SCHEDULE_ENABLED:true}
     weekly-pick-cron: "0 0 19 * * FRI"
     weekly-story-cron: "0 0 10 * * MON"
+  recruit:
+    # 招聘模块 · 群里 @ 招聘机器人 → 查多维表 → 回复。
+    # enabled=true 且提供凭证后启用真实接收；未启用时 RecruitReplyClientStub / AitableClientStub 仅记日志
+    enabled: ${RECRUIT_ENABLED:false}
+    robot:
+      # 招聘机器人（收 @ + 回复），独立于推送应用
+      app-key: ${RECRUIT_DING_APP_KEY:}
+      app-secret: ${RECRUIT_DING_APP_SECRET:}
+      robot-code: ${RECRUIT_ROBOT_CODE:}
+      agent-id: ${RECRUIT_AGENT_ID:}
+    aitable:
+      # 多维表访问：用「用户授权 token」（有表权限的用户一次性授权），绕开应用 scope 同步问题。
+      # app-key/secret 用于刷新用户 token（建议用 aliren 应用 dingx0a…，其 OAuth 授权已配置）
+      app-key: ${RECRUIT_AITABLE_APP_KEY:}
+      app-secret: ${RECRUIT_AITABLE_APP_SECRET:}
+      base-id: ${RECRUIT_AITABLE_BASE_ID:}
+      table-id: ${RECRUIT_AITABLE_TABLE_ID:}
+      # 一次性授权后得到的用户 refresh token（敏感，仅 env 注入）
+      user-refresh-token: ${RECRUIT_AITABLE_USER_REFRESH_TOKEN:}
+      # 可选：刷新后把轮换的新 refresh token 持久化到该文件（如 /root/aliren-data/recruit-refresh-token）
+      user-token-file: ${RECRUIT_AITABLE_USER_TOKEN_FILE:}
+    reply:
+      # 接收模式：stream（WebSocket 长连接，推荐，无需公网回调）/ callback
+      mode: ${RECRUIT_REPLY_MODE:stream}
+      # 被 @ 后最多回复的岗位条数
+      max-results: ${RECRUIT_REPLY_MAX:5}
+      # 无匹配时的引导话术
+      no-result-tip: ${RECRUIT_NO_RESULT_TIP:暂时没找到匹配岗位，换个关键词试试，或联系招聘同学。}

@@ -34,6 +34,14 @@ public class AuthService {
         return doAuthenticate(dingTalkClient.getUserIdByOAuthCode(authCode));
     }
 
+    /**
+     * 一次性授权工具：OAuth2 授权码 → 用户 refresh token
+     * （招聘模块多维表查询的用户授权初始化，不建登录态）。
+     */
+    public String getRefreshTokenByOAuthCode(String authCode) {
+        return dingTalkClient.getRefreshTokenByOAuthCode(authCode);
+    }
+
     /** 公共登录逻辑：userId → 查找/创建用户 → 签发 JWT */
     private AuthResponse doAuthenticate(String dingtalkUserId) {
         if (dingtalkUserId == null || dingtalkUserId.isBlank()) {
