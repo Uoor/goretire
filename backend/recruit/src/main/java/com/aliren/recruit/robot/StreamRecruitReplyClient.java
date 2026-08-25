@@ -65,10 +65,11 @@ public class StreamRecruitReplyClient implements RecruitReplyClient, SmartLifecy
         this.robotCode = robotCode;
         this.maxResults = maxResults <= 0 ? 5 : maxResults;
         this.noResultTip = noResultTip;
-        // "查看全部岗位" 按钮与每条岗位链接 → 多维表视图
+        // "查看全部岗位" 按钮与每条岗位链接 → 多维表视图（用 dingtalk scheme 在钉钉内置浏览器打开，
+        // 避免普通 https 链接跳到外部浏览器）
         this.allJobsUrl = baseId == null || baseId.isBlank() || tableId == null || tableId.isBlank()
                 ? "https://alidocs.dingtalk.com"
-                : "https://alidocs.dingtalk.com/i/nodes/" + baseId + "?entrance=data&sheetId=" + tableId;
+                : dingtalkLink("https://alidocs.dingtalk.com/i/nodes/" + baseId + "?entrance=data&sheetId=" + tableId);
         this.aitableClient = aitableClient;
         this.tokenClient = tokenClient;
     }
@@ -319,6 +320,16 @@ public class StreamRecruitReplyClient implements RecruitReplyClient, SmartLifecy
             log.warn("[recruit-stream] 群回复失败: {}", e.getMessage());
         } catch (Exception e) {
             log.warn("[recruit-stream] 群回复异常", e);
+        }
+    }
+
+    /** 包装为钉钉内置浏览器打开链接（避免跳到外部浏览器） */
+    private String dingtalkLink(String url) {
+        try {
+            return "dingtalk://dingtalkclient/page/link?url="
+                    + java.net.URLEncoder.encode(url, java.nio.charset.StandardCharsets.UTF_8);
+        } catch (Exception e) {
+            return url;
         }
     }
 
