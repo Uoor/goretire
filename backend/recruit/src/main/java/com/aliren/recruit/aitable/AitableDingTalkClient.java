@@ -42,7 +42,8 @@ import java.util.Locale;
 public class AitableDingTalkClient implements AitableClient {
 
     private static final String BASE_URL = "https://api.dingtalk.com/v1.0/notable/bases/";
-    private static final int FETCH_MAX = 200;
+    /** v1.0 接口 maxResults 上限 100 */
+    private static final int FETCH_MAX = 100;
     private static final Duration TIMEOUT = Duration.ofSeconds(8);
 
     // 字段名（多维表「岗位信息」主表 8tveFG3 实测，v1.0 按字段名键控）
