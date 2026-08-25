@@ -77,6 +77,15 @@ public class StreamRecruitReplyClient implements RecruitReplyClient, SmartLifecy
         try {
             streamClient = OpenDingTalkStreamClientBuilder.custom()
                     .credential(new AuthClientCredential(appKey, appSecret))
+                    // 诊断：接收全部事件并打日志，确认 @ 消息是否到达（上线稳定后可移除）
+                    .registerAllEventListener(event -> {
+                        Object data = event.getData();
+                        String dataStr = data == null ? "null" : String.valueOf(data);
+                        if (dataStr.length() > 300) dataStr = dataStr.substring(0, 300);
+                        log.info("[recruit-stream] 收到事件: type={} id={} corpId={} data={}",
+                                event.getEventType(), event.getEventId(), event.getEventCorpId(), dataStr);
+                        return com.dingtalk.open.app.stream.protocol.event.EventAckStatus.SUCCESS;
+                    })
                     .registerCallbackListener(DingTalkStreamTopics.BOT_MESSAGE_TOPIC,
                             (GenericOpenDingTalkEvent req) -> {
                                 onStreamEvent(req);
