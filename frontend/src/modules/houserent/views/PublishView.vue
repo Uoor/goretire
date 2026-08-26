@@ -125,9 +125,9 @@
 
     <div class="submit-wrap fixed-shell">
       <button class="btn-primary" :disabled="submitting" @click="submit">
-        {{ submitting ? '提交中…' : (editId ? '修改并重新提交' : '提交审核') }}
+        {{ submitting ? '提交中…' : (editId ? '保存修改' : '发布') }}
       </button>
-      <p class="submit-tip">提交后预计 2 小时内完成审核</p>
+      <p class="submit-tip">发布后新上架房源自动推送到租房群</p>
     </div>
   </div>
 </template>
@@ -141,6 +141,7 @@ import { houseApi } from '@/modules/houserent/api'
 import { uploadApi } from '@/api'
 import { formatMoney } from '@/utils/format'
 import { compressImage } from '@/utils/image'
+import { AUDIT_STATUS } from '@/constants/status'
 
 const route = useRoute()
 const router = useRouter()
@@ -275,14 +276,15 @@ async function submit() {
   submitting.value = true
   try {
     const payload = { ...form, images: JSON.stringify(images) }
+    let result
     if (editId.value) {
-      await houseApi.update(editId.value, payload)
-      showSuccessToast('已修改并重新提交审核')
+      result = await houseApi.update(editId.value, payload)
+      showSuccessToast(result?.auditStatus === AUDIT_STATUS.ONLINE ? '已保存，修改已生效' : '已修改并重新提交审核')
     } else {
-      await houseApi.publish(payload)
-      showSuccessToast('已提交审核，预计 2 小时内上架')
+      result = await houseApi.publish(payload)
+      showSuccessToast(result?.auditStatus === AUDIT_STATUS.ONLINE ? '发布成功，已上架并推送到租房群' : '已提交审核，通过后自动推送')
     }
-    // 新房源/修改后为待审核状态，详情页对其 404；跳「我的发布」查看审核状态
+    // 待审核房源详情页对其 404；跳「我的发布」查看状态
     router.push({ name: 'me' })
   } catch (e) {
     showToast(e.message || '发布失败')

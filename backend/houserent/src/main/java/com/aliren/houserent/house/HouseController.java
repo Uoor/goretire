@@ -7,6 +7,7 @@ import com.aliren.houserent.house.dto.HouseCreateRequest;
 import com.aliren.houserent.house.dto.HouseListQuery;
 import com.aliren.houserent.house.dto.HouseResponse;
 import com.aliren.houserent.house.dto.PageDto;
+import com.aliren.houserent.house.dto.PublishResult;
 import com.aliren.houserent.report.ReportService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -50,18 +51,18 @@ public class HouseController {
         return ApiResponse.ok(houseService.mine(UserContext.requireUserId()));
     }
 
-    /** 发布房源 */
+    /** 发布房源：返回发布结果（含实际审核状态：已上架/待审核），前端按结果提示 */
     @PostMapping
-    public ApiResponse<Long> publish(@Valid @RequestBody HouseCreateRequest req) {
-        Long id = houseService.publish(UserContext.requireUserId(), req);
-        return ApiResponse.ok(id);
+    public ApiResponse<PublishResult> publish(@Valid @RequestBody HouseCreateRequest req) {
+        PublishResult r = houseService.publish(UserContext.requireUserId(), req);
+        return ApiResponse.ok(r);
     }
 
-    /** 编辑房源（仅发布人）：修改后重新送审 */
+    /** 编辑房源（仅发布人）：返回编辑后的实际审核状态 */
     @PutMapping("/{id}")
-    public ApiResponse<Void> update(@PathVariable Long id, @Valid @RequestBody HouseCreateRequest req) {
-        houseService.update(UserContext.requireUserId(), id, req);
-        return ApiResponse.ok(null);
+    public ApiResponse<PublishResult> update(@PathVariable Long id, @Valid @RequestBody HouseCreateRequest req) {
+        PublishResult r = houseService.update(UserContext.requireUserId(), id, req);
+        return ApiResponse.ok(r);
     }
 
     /** 轻问句回答（下架时选填，仅发布人）：0=跳过 1=找到新家 2=暂无 */

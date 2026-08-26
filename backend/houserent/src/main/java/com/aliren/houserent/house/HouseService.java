@@ -4,10 +4,11 @@ import com.aliren.core.common.BusinessException;
 import com.aliren.core.user.User;
 import com.aliren.core.user.UserMapper;
 import com.aliren.houserent.house.dto.HouseCreateRequest;
-import com.aliren.houserent.robot.PublishOrchestrator;
 import com.aliren.houserent.house.dto.HouseListQuery;
 import com.aliren.houserent.house.dto.HouseResponse;
 import com.aliren.houserent.house.dto.PageDto;
+import com.aliren.houserent.house.dto.PublishResult;
+import com.aliren.houserent.robot.PublishOrchestrator;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.extern.slf4j.Slf4j;
@@ -40,8 +41,8 @@ public class HouseService {
         this.auditEnabled = auditEnabled;
     }
 
-    /** 发布房源：审核开启时待审核，关闭时直接上架 */
-    public Long publish(Long publisherId, HouseCreateRequest req) {
+    /** 发布房源：审核开启时待审核，关闭时直接上架；返回实际审核状态供前端准确提示 */
+    public PublishResult publish(Long publisherId, HouseCreateRequest req) {
         log.info("publishing house: publisherId={}, community={}, auditEnabled={}", publisherId, req.getCommunity(), auditEnabled);
         if (req.getRent() == null || req.getRent().signum() <= 0) {
             throw new BusinessException("租金不合法");
@@ -59,7 +60,7 @@ public class HouseService {
             // 与管理员审核通过路径一致，避免"发布即上架"静默漏推；失败不影响发布结果。
             runPublishOrchestrator(h.getId());
         }
-        return h.getId();
+        return new PublishResult(h.getId(), h.getAuditStatus());
     }
 
     /** 免审发布后的推送编排：失败仅记日志，不影响发布结果 */
@@ -74,8 +75,9 @@ public class HouseService {
     /**
      * 编辑房源（仅发布人本人）：更新字段并重新置为待审核（驳回后修改重提 / 上架后改内容）。
      * 保留发布人、房号；审核状态回待审核，需管理员重新审核。
+     * 返回编辑后的实际审核状态（免审模式下直接回到已上架）。
      */
-    public void update(Long userId, Long id, HouseCreateRequest req) {
+    public PublishResult update(Long userId, Long id, HouseCreateRequest req) {
         log.info("updating house: userId={}, houseId={}", userId, id);
         if (req.getRent() == null || req.getRent().signum() <= 0) {
             throw new BusinessException("租金不合法");
@@ -90,7 +92,8 @@ public class HouseService {
         applyFields(h, req);
         h.setAuditStatus(auditEnabled ? House.AUDIT_PENDING : House.AUDIT_ONLINE);
         houseMapper.updateById(h);
-        log.info("house updated: id={}, userId={}", id, userId);
+        log.info("house updated: id={}, userId={}, status={}", id, userId, auditEnabled ? "PENDING" : "ONLINE");
+        return new PublishResult(h.getId(), h.getAuditStatus());
     }
 
     private void applyFields(House h, HouseCreateRequest req) {

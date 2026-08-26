@@ -10,7 +10,7 @@
 
     <div class="me-grid">
       <div class="me-cell"><div class="v num">{{ myHouses.length }}</div><div class="k">我的发布</div></div>
-      <div class="me-cell"><div class="v num">{{ activeCount }}</div><div class="k">在租/审核中</div></div>
+      <div class="me-cell"><div class="v num">{{ activeCount }}</div><div class="k">在租中</div></div>
       <div class="me-cell"><div class="v num">{{ store.isAdmin ? '管理员' : '校友' }}</div><div class="k">角色</div></div>
     </div>
 

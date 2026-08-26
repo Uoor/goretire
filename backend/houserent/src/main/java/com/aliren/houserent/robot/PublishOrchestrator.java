@@ -44,13 +44,16 @@ public class PublishOrchestrator {
     private final String h5BaseUrl;
     /** 订阅每日推送上限（aliren.push.daily-sub-limit，默认 3）：防骚扰，超限当日不再私聊 */
     private final int dailySubLimit;
+    /** 审核开关：false=发布即上架（卡片文案不写"已通过管理员审核"，避免误导） */
+    private final boolean auditEnabled;
     private final com.fasterxml.jackson.databind.ObjectMapper objectMapper = new com.fasterxml.jackson.databind.ObjectMapper();
 
     public PublishOrchestrator(HouseMapper houseMapper, MatchService matchService, PushClient pushClient,
             PushLogService pushLogService, SubscribeMapper subscribeMapper,
             DemandMapper demandMapper, UserMapper userMapper,
             @Value("${aliren.h5.base-url:}") String h5BaseUrl,
-            @Value("${aliren.push.daily-sub-limit:3}") int dailySubLimit) {
+            @Value("${aliren.push.daily-sub-limit:3}") int dailySubLimit,
+            @Value("${aliren.house.audit-enabled:false}") boolean auditEnabled) {
         this.houseMapper = houseMapper;
         this.matchService = matchService;
         this.pushClient = pushClient;
@@ -60,6 +63,7 @@ public class PublishOrchestrator {
         this.userMapper = userMapper;
         this.h5BaseUrl = h5BaseUrl == null ? "" : h5BaseUrl.trim();
         this.dailySubLimit = dailySubLimit <= 0 ? 3 : dailySubLimit;
+        this.auditEnabled = auditEnabled;
     }
 
     /** 房源审核通过后编排（幂等：仅对已上架房源生效） */
@@ -157,9 +161,11 @@ public class PublishOrchestrator {
      * 注意：钉钉 Webhook markdown 的单个 \n 不换行，必须用 <br/>
      * 做行内换行，空行用 \n\n。
      * 封面图用 ![alt](url)，相对路径（/uploads/）按 h5BaseUrl 拼绝对地址。
+     * 尾句按审核模式区分：免审核（发布即上架）不写"已通过管理员审核"，避免误导。
      */
     private String buildHouseCard(House h) {
-        return buildCardBody(h) + "✅ 已通过管理员审核，欢迎看房";
+        String tail = auditEnabled ? "✅ 已通过管理员审核，欢迎看房" : "✅ 已上架，欢迎看房";
+        return buildCardBody(h) + tail;
     }
 
     /**

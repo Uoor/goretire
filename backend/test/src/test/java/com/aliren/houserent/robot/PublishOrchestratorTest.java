@@ -48,7 +48,7 @@ class PublishOrchestratorTest {
     void setUp() {
         orchestrator = new PublishOrchestrator(houseMapper, matchService, pushClient,
                 pushLogService, subscribeMapper, demandMapper, userMapper,
-                "https://h5.example.com", 3);
+                "https://h5.example.com", 3, true);
     }
 
     private House onlineHouse(Long id) {
@@ -116,5 +116,21 @@ class PublishOrchestratorTest {
 
         orchestrator.onHouseAudited(1L);
         verify(pushClient, never()).sendGroupCardAction(anyString(), anyString(), anyString());
+    }
+
+    @Test
+    void groupCard_tail_dependsOnAuditMode() {
+        // 免审核（发布即上架）：卡片不写"已通过管理员审核"，避免误导
+        PublishOrchestrator noAudit = new PublishOrchestrator(houseMapper, matchService, pushClient,
+                pushLogService, subscribeMapper, demandMapper, userMapper, "https://h5.example.com", 3, false);
+        when(houseMapper.selectById(1L)).thenReturn(onlineHouse(1L));
+        when(matchService.matchSubscriptions(1L)).thenReturn(List.of());
+        when(matchService.matchDemands(1L)).thenReturn(List.of());
+
+        noAudit.onHouseAudited(1L);
+
+        ArgumentCaptor<String> md = ArgumentCaptor.forClass(String.class);
+        verify(pushClient).sendGroupCard(anyString(), md.capture());
+        assertThat(md.getValue()).contains("✅ 已上架，欢迎看房").doesNotContain("已通过管理员审核");
     }
 }

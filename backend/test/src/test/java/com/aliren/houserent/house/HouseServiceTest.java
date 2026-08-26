@@ -4,6 +4,7 @@ import com.aliren.core.common.BusinessException;
 import com.aliren.houserent.house.dto.HouseCreateRequest;
 import com.aliren.houserent.house.dto.HouseResponse;
 import com.aliren.houserent.house.dto.PageDto;
+import com.aliren.houserent.house.dto.PublishResult;
 import com.aliren.houserent.robot.PublishOrchestrator;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.junit.jupiter.api.BeforeEach;
@@ -55,8 +56,9 @@ class HouseServiceTest {
             return 1;
         });
 
-        Long id = houseService.publish(7L, req);
-        assertThat(id).isEqualTo(10L);
+        PublishResult result = houseService.publish(7L, req);
+        assertThat(result.id()).isEqualTo(10L);
+        assertThat(result.auditStatus()).isEqualTo(House.AUDIT_ONLINE); // 审核关闭，直接上架
 
         ArgumentCaptor<House> captor = ArgumentCaptor.forClass(House.class);
         verify(houseMapper).insert(captor.capture());
@@ -84,8 +86,9 @@ class HouseServiceTest {
             return 1;
         });
 
-        Long id = auditService.publish(7L, req);
-        assertThat(id).isEqualTo(10L);
+        PublishResult result = auditService.publish(7L, req);
+        assertThat(result.id()).isEqualTo(10L);
+        assertThat(result.auditStatus()).isEqualTo(House.AUDIT_PENDING); // 审核开启，待审核
 
         ArgumentCaptor<House> captor = ArgumentCaptor.forClass(House.class);
         verify(houseMapper).insert(captor.capture());
