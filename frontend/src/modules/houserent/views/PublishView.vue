@@ -133,7 +133,7 @@
 </template>
 
 <script setup>
-import { onMounted, reactive, ref } from 'vue'
+import { onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { showToast, showSuccessToast } from 'vant'
 import TopBar from '@/modules/houserent/components/TopBar.vue'
@@ -230,6 +230,10 @@ async function loadRegionPrice() {
 
 /** 选图后压缩并上传到后端，成功替换为服务端 URL */
 async function afterRead(item) {
+  // 幂等保护：已有 URL / 已在上传 / 已完成，避免 uploader 回调与 fileList 兜底监听重复上传
+  if (item.url || item.status === 'uploading' || item.status === 'done') {
+    return
+  }
   item.status = 'uploading'
   item.message = '压缩中…'
   try {
@@ -257,6 +261,24 @@ async function afterRead(item) {
           : e?.response?.data?.msg || msg || '上传失败'
   }
 }
+
+/**
+ * 兜底：部分 WebView（如华为 UWS 内核）van-uploader 的 after-read 可能不触发，
+ * 导致选图后只有本地缩略图、从未发起上传（保存时图片被静默丢弃）。
+ * 监听 fileList：存在"有文件但从未处理过"的项时主动补触发上传。
+ * （afterRead 内会同步置 status='uploading'，不会重复触发。）
+ */
+watch(
+  fileList,
+  (list) => {
+    list.forEach((item) => {
+      if (item.file && !item.url && !item.status) {
+        afterRead(item)
+      }
+    })
+  },
+  { deep: true }
+)
 
 async function submit() {
   if (!form.community || !form.region || !form.houseType || !form.area || !form.rent || !form.depositPay || !form.label) {

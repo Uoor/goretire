@@ -13,6 +13,8 @@
  * @param {string} options.type - 输出类型，默认 'image/jpeg'
  * @returns {Promise<File|Blob>} 压缩后的图片（带文件名的 File；无法压缩时返回原文件）
  */
+import { isHuaweiUws } from '@/utils/ua'
+
 export async function compressImage(file, options = {}) {
   const {
     maxWidth = 1200,
@@ -23,6 +25,12 @@ export async function compressImage(file, options = {}) {
 
   // 非图片文件直接返回
   if (!file.type.startsWith('image/')) {
+    return file
+  }
+
+  // 华为 UWS 内核（鸿蒙 WebView）：canvas.toBlob/图片解码兼容性差，
+  // 压缩链路易静默失败，直接跳过压缩上传原图（华为相机照片默认 JPG，原图可直传）
+  if (isHuaweiUws) {
     return file
   }
 
