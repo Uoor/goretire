@@ -173,7 +173,7 @@ public class StreamRecruitReplyClient implements RecruitReplyClient, SmartLifecy
                 body = formatSearchBody(found, message.senderNick());
             }
             sendGroupReply(message.openConversationId(), title, body);
-            log.info("[recruit-stream] 已回复 @{}: {} 条", message.senderNick(), count);
+            log.info("[recruit-stream] 已回复 @{}: {} 条\n回复正文:\n{}", message.senderNick(), count, body);
         } catch (Exception e) {
             log.warn("[recruit-stream] 处理 @ 消息异常", e);
         }
@@ -299,7 +299,8 @@ public class StreamRecruitReplyClient implements RecruitReplyClient, SmartLifecy
     /** 单条岗位 markdown（DESIGN.md 规范：元信息灰 #888、薪资橙 #FF6A00、急聘橙深 #E85D00） */
     private void appendJobMd(StringBuilder sb, RecruitRecord r) {
         String title = r.title() == null || r.title().isBlank() ? "（未命名岗位）" : r.title();
-        sb.append("### [").append(title).append("](").append(recordUrl(r)).append(")<br/>");
+        // actionCard 的 text 不支持 markdown 标题语法（### 会显示字面量），职位名用链接文本
+        sb.append("[").append(title).append("](").append(recordUrl(r)).append(")<br/>");
         // 元信息：公司 · 地点（fg2 灰）
         StringBuilder info = new StringBuilder();
         if (r.company() != null && !r.company().isBlank()) info.append(r.company());
