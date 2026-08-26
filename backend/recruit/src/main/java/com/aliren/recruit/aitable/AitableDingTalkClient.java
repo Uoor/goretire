@@ -159,8 +159,9 @@ public class AitableDingTalkClient implements AitableClient {
             .thenComparing(RecruitRecord::createdAt, Comparator.nullsLast(Comparator.reverseOrder()));
 
     private boolean match(RecruitRecord r, String kw) {
+        // 只匹配结构化字段（职位名/公司/地点/职类/薪资），不匹配描述/要求——
+        // 描述里几乎都含通用词（如"技术"），会命中全部记录导致搜索失去意义
         return contains(r.title(), kw) || contains(r.company(), kw)
-                || contains(r.description(), kw) || contains(r.requirements(), kw)
                 || contains(r.salary(), kw)
                 || r.locations().stream().anyMatch(l -> l.toLowerCase(Locale.ROOT).contains(kw))
                 || r.categories().stream().anyMatch(c -> c.toLowerCase(Locale.ROOT).contains(kw));
