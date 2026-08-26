@@ -87,10 +87,11 @@ public class StreamRecruitReplyClient implements RecruitReplyClient, SmartLifecy
                 || r.recordId() == null || r.recordId().isBlank()) {
             return allJobsUrl;
         }
+        // 卡片 markdown 渲染会把 & 当作实体分隔符截断 URL，转义为 &amp; 防止 rowId 等参数丢失
         return "https://alidocs.dingtalk.com/notable/record?sheetId=" + tableId
-                + "&viewId=" + viewId
-                + "&rowId=" + r.recordId()
-                + "&dentryUuid=" + baseId;
+                + "&amp;viewId=" + viewId
+                + "&amp;rowId=" + r.recordId()
+                + "&amp;dentryUuid=" + baseId;
     }
 
     @Override
