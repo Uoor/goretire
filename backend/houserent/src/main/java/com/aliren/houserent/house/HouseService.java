@@ -4,6 +4,7 @@ import com.aliren.core.common.BusinessException;
 import com.aliren.core.user.User;
 import com.aliren.core.user.UserMapper;
 import com.aliren.houserent.house.dto.HouseCreateRequest;
+import com.aliren.houserent.robot.PublishOrchestrator;
 import com.aliren.houserent.house.dto.HouseListQuery;
 import com.aliren.houserent.house.dto.HouseResponse;
 import com.aliren.houserent.house.dto.PageDto;
@@ -28,12 +29,14 @@ public class HouseService {
 
     private final HouseMapper houseMapper;
     private final UserMapper userMapper;
+    private final PublishOrchestrator publishOrchestrator;
     private final boolean auditEnabled;
 
-    public HouseService(HouseMapper houseMapper, UserMapper userMapper,
+    public HouseService(HouseMapper houseMapper, UserMapper userMapper, PublishOrchestrator publishOrchestrator,
                         @org.springframework.beans.factory.annotation.Value("${aliren.house.audit-enabled:false}") boolean auditEnabled) {
         this.houseMapper = houseMapper;
         this.userMapper = userMapper;
+        this.publishOrchestrator = publishOrchestrator;
         this.auditEnabled = auditEnabled;
     }
 
@@ -51,7 +54,21 @@ public class HouseService {
         h.setFeedbackAnswer(0);
         houseMapper.insert(h);
         log.info("house published: id={}, publisherId={}, status={}", h.getId(), publisherId, auditEnabled ? "PENDING" : "ONLINE");
+        if (!auditEnabled) {
+            // 免审核直接上架：同样触发发布编排（群卡片 + 订阅/求租匹配 + push_log），
+            // 与管理员审核通过路径一致，避免"发布即上架"静默漏推；失败不影响发布结果。
+            runPublishOrchestrator(h.getId());
+        }
         return h.getId();
+    }
+
+    /** 免审发布后的推送编排：失败仅记日志，不影响发布结果 */
+    private void runPublishOrchestrator(Long houseId) {
+        try {
+            publishOrchestrator.onHouseAudited(houseId);
+        } catch (Exception e) {
+            log.warn("免审发布后编排推送失败: houseId={}", houseId, e);
+        }
     }
 
     /**
