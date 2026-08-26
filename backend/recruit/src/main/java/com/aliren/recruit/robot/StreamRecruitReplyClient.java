@@ -76,22 +76,31 @@ public class StreamRecruitReplyClient implements RecruitReplyClient, SmartLifecy
         // dingtalk:// 包装会让网页版打开而丢失记录深链）
         this.allJobsUrl = baseId == null || baseId.isBlank() || tableId == null || tableId.isBlank()
                 ? "https://alidocs.dingtalk.com"
-                : "https://alidocs.dingtalk.com/i/nodes/" + baseId + "?entrance=data&sheetId=" + tableId;
+                : dingtalkLink("https://alidocs.dingtalk.com/i/nodes/" + baseId + "?entrance=data&sheetId=" + tableId);
         this.aitableClient = aitableClient;
         this.tokenClient = tokenClient;
     }
 
-    /** 岗位详情链接：https://alidocs.dingtalk.com/notable/record?sheetId=&viewId=&rowId=&dentryUuid= */
+    /** 岗位详情链接：https://alidocs.dingtalk.com/notable/record?sheetId=&viewId=&rowId=&dentryUuid=，经 dingtalk 协议打开 */
     private String recordUrl(RecruitRecord r) {
         if (baseId == null || baseId.isBlank() || tableId == null || tableId.isBlank()
                 || r.recordId() == null || r.recordId().isBlank()) {
             return allJobsUrl;
         }
-        // 卡片 markdown 渲染会把 & 当作实体分隔符截断 URL，转义为 &amp; 防止 rowId 等参数丢失
-        return "https://alidocs.dingtalk.com/notable/record?sheetId=" + tableId
-                + "&amp;viewId=" + viewId
-                + "&amp;rowId=" + r.recordId()
-                + "&amp;dentryUuid=" + baseId;
+        return dingtalkLink("https://alidocs.dingtalk.com/notable/record?sheetId=" + tableId
+                + "&viewId=" + viewId
+                + "&rowId=" + r.recordId()
+                + "&dentryUuid=" + baseId);
+    }
+
+    /** 用 dingtalk 协议打开链接（钉钉客户端识别并处理打开方式） */
+    private String dingtalkLink(String url) {
+        try {
+            return "dingtalk://dingtalkclient/page/link?url="
+                    + java.net.URLEncoder.encode(url, java.nio.charset.StandardCharsets.UTF_8);
+        } catch (Exception e) {
+            return url;
+        }
     }
 
     @Override
