@@ -3,10 +3,10 @@
     <div class="prompt-hero">
       <div class="big">🔍 求租需求墙</div>
       <div class="small">暂时没找到合适的？挂上需求，新房源自动匹配提醒你</div>
-      <div class="prompt-input" @click="openCreate">
-        <i class="ph ph-plus-circle"></i>
-        <span>{{ createForm.region ? '已填写需求，点击修改' : '发布我的求租需求…' }}</span>
-      </div>
+      <button class="btn-primary prompt-cta" @click="openCreate">
+        <i class="ph ph-megaphone"></i>
+        {{ createForm.region ? '修改我的求租需求' : '发布求租需求' }}
+      </button>
     </div>
 
     <div class="seg-tabs">
@@ -428,9 +428,16 @@ onMounted(() => {
     padding-bottom: 0;
   }
 }
-/* prompt-input 可点击（公共样式见 styles/components.css） */
-.prompt-input {
-  cursor: pointer;
+/* 发布求租按钮：居中 + 小 margin 拉开与描述间距 */
+.prompt-cta {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.prompt-cta i {
+  font-size: 1.05em;
 }
 .seg-tabs {
   display: flex;
