@@ -101,3 +101,7 @@ aliren:
       max-results: ${RECRUIT_REPLY_MAX:5}
       # 无匹配时的引导话术
       no-result-tip: ${RECRUIT_NO_RESULT_TIP:暂时没找到匹配岗位，换个关键词试试，或联系招聘同学。}
+      # 钉钉互动卡片模板 ID（后台注册的模板卡片）
+      card-template-id: ${RECRUIT_CARD_TEMPLATE_ID:}
+      # "查看全部岗位" 列表链接（岗位列表分享视图）
+      jobs-list-url: ${RECRUIT_JOBS_LIST_URL:}

@@ -35,18 +35,22 @@ import java.util.List;
 @ConditionalOnProperty(prefix = "aliren.recruit", name = "enabled", havingValue = "true")
 public class StreamRecruitReplyClient implements RecruitReplyClient, SmartLifecycle {
 
-    private static final String SEND_URL = "https://api.dingtalk.com/v1.0/robot/groupMessages/send";
+    /** 钉钉互动卡片（模板卡片）发送接口 */
+    private static final String SEND_URL = "https://api.dingtalk.com/v1.0/im/interactiveCards/send";
     private static final Duration TIMEOUT = Duration.ofSeconds(8);
+    /** 岗位描述摘要截断长度（对齐 sample DIGEST_PER_JOB） */
+    private static final int DIGEST_PER_JOB = 120;
 
     private final String appKey;
     private final String appSecret;
     private final String robotCode;
+    private final String cardTemplateId;
     private final int maxResults;
     private final String noResultTip;
     private final String baseId;
     private final String tableId;
     private final String viewId;
-    private final String allJobsUrl;
+    private final String jobsListUrl;
     private final AitableClient aitableClient;
     private final DingTalkTokenClient tokenClient;
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -59,38 +63,44 @@ public class StreamRecruitReplyClient implements RecruitReplyClient, SmartLifecy
                                     @Value("${aliren.recruit.robot.robot-code:}") String robotCode,
                                     @Value("${aliren.recruit.reply.max-results:5}") int maxResults,
                                     @Value("${aliren.recruit.reply.no-result-tip:}") String noResultTip,
+                                    @Value("${aliren.recruit.reply.card-template-id:}") String cardTemplateId,
+                                    @Value("${aliren.recruit.reply.jobs-list-url:}") String jobsListUrl,
                                     @Value("${aliren.recruit.aitable.base-id:}") String baseId,
                                     @Value("${aliren.recruit.aitable.table-id:}") String tableId,
-                                    @Value("${aliren.recruit.aitable.view-id:YDu1ejs}") String viewId,
+                                    @Value("${aliren.recruit.aitable.view-id:UuvnFan}") String viewId,
                                     AitableClient aitableClient,
                                     DingTalkTokenClient tokenClient) {
         this.appKey = appKey;
         this.appSecret = appSecret;
         this.robotCode = robotCode;
+        this.cardTemplateId = cardTemplateId;
         this.maxResults = maxResults <= 0 ? 5 : maxResults;
         this.noResultTip = noResultTip;
         this.baseId = baseId;
         this.tableId = tableId;
         this.viewId = viewId;
-        // "查看全部岗位" 按钮 → 多维表视图（纯 https，钉钉原生拦截 alidocs 链接在应用内打开并深链；
-        // dingtalk:// 包装会让网页版打开而丢失记录深链）
-        this.allJobsUrl = baseId == null || baseId.isBlank() || tableId == null || tableId.isBlank()
-                ? "https://alidocs.dingtalk.com"
-                : "https://alidocs.dingtalk.com/i/nodes/" + baseId + "?entrance=data&sheetId=" + tableId;
+        // "查看全部岗位"（detailUrl）：优先用配置的岗位列表分享链接，否则回退多维表视图
+        this.jobsListUrl = jobsListUrl == null || jobsListUrl.isBlank()
+                ? (baseId == null || baseId.isBlank() || tableId == null || tableId.isBlank()
+                    ? "https://alidocs.dingtalk.com"
+                    : "https://alidocs.dingtalk.com/i/nodes/" + baseId + "?entrance=data&sheetId=" + tableId)
+                : jobsListUrl;
         this.aitableClient = aitableClient;
         this.tokenClient = tokenClient;
     }
 
-    /** 岗位详情链接：https://alidocs.dingtalk.com/notable/record?sheetId=&viewId=&rowId=&dentryUuid= */
+    /**
+     * 岗位详情链接（sample 验证可用格式）：
+     * https://alidocs.dingtalk.com/i/nodes/{baseId}?iframeQuery=record%3D{sheetId}_{viewId}_{rowId}&notable_standalone_record_redirect=true
+     */
     private String recordUrl(RecruitRecord r) {
         if (baseId == null || baseId.isBlank() || tableId == null || tableId.isBlank()
                 || r.recordId() == null || r.recordId().isBlank()) {
-            return allJobsUrl;
+            return jobsListUrl;
         }
-        return "https://alidocs.dingtalk.com/notable/record?sheetId=" + tableId
-                + "&viewId=" + viewId
-                + "&rowId=" + r.recordId()
-                + "&dentryUuid=" + baseId;
+        return "https://alidocs.dingtalk.com/i/nodes/" + baseId
+                + "?iframeQuery=record%3D" + tableId + "_" + viewId + "_" + r.recordId()
+                + "&notable_standalone_record_redirect=true";
     }
 
     @Override
@@ -154,8 +164,7 @@ public class StreamRecruitReplyClient implements RecruitReplyClient, SmartLifecy
         }
         try {
             String text = message.text() == null ? "" : message.text().trim();
-            String title;
-            String body;
+            java.util.Map<String, String> paramMap;
             int count;
             if (text.isEmpty()) {
                 // 空 @ → 过去一周新增岗位总结；无新增时回退展示按时间最近的 maxResults 条
@@ -165,16 +174,14 @@ public class StreamRecruitReplyClient implements RecruitReplyClient, SmartLifecy
                     recent = aitableClient.queryLatest(maxResults);
                 }
                 count = recent.size();
-                title = formatWeeklyTitle(recent, fallback);
-                body = formatWeeklyBody(recent, fallback, message.senderNick());
+                paramMap = buildWeeklyCard(recent, fallback);
             } else {
                 List<RecruitRecord> found = searchRecruit(text);
                 count = found.size();
-                title = formatSearchTitle(found, text);
-                body = formatSearchBody(found, message.senderNick());
+                paramMap = buildSearchCard(found, text);
             }
-            sendGroupReply(message.openConversationId(), title, body);
-            log.info("[recruit-stream] 已回复 @{}: {} 条\n回复正文:\n{}", message.senderNick(), count, body);
+            sendInteractiveCard(message.openConversationId(), paramMap);
+            log.info("[recruit-stream] 已回复 @{}: {} 条", message.senderNick(), count);
         } catch (Exception e) {
             log.warn("[recruit-stream] 处理 @ 消息异常", e);
         }
@@ -241,122 +248,129 @@ public class StreamRecruitReplyClient implements RecruitReplyClient, SmartLifecy
         );
     }
 
-    /** 关键词查询：卡片标题（钉钉卡片标题不展示，仅作占位，实际内容在正文） */
-    private String formatSearchTitle(List<RecruitRecord> found, String keyword) {
-        return "🔍 招聘查询";
+    // ---- 互动卡片（模板卡片，对齐 sample）----
+
+    /** 关键词搜索卡片 */
+    private java.util.Map<String, String> buildSearchCard(List<RecruitRecord> found, String keyword) {
+        java.util.Map<String, String> m = new java.util.LinkedHashMap<>();
+        m.put("title", found.isEmpty() ? "🔍 招聘查询" : "🔍 找到 " + found.size() + " 个岗位（" + keyword + "）");
+        m.put("tag", "招聘");
+        m.put("tagColor", "blue");
+        m.put("jobTitle", "点击查看详情");
+        m.put("company", "");
+        m.put("location", "");
+        m.put("contact", "");
+        m.put("salary", "");
+        m.put("tag1", "");
+        m.put("tag2", "");
+        m.put("tag3", "");
+        m.put("descriptionMd", buildDescriptionMd(found));
+        m.put("requirementMd", "");
+        m.put("detailUrl", jobsListUrl);
+        m.put("contactUrl", "");
+        return m;
     }
 
-    /** 关键词查询：卡片正文（markdown，<br/> 换行，岗位标题带具体记录链接） */
-    private String formatSearchBody(List<RecruitRecord> found, String senderNick) {
-        StringBuilder sb = new StringBuilder();
-        if (senderNick != null && !senderNick.isBlank()) {
-            sb.append("**@").append(senderNick).append("**<br/><br/>");
-        }
-        if (found.isEmpty()) {
-            sb.append(noResultTip == null || noResultTip.isBlank()
+    /** 空 @ 周报卡片（fallback=无新增展示最近岗位） */
+    private java.util.Map<String, String> buildWeeklyCard(List<RecruitRecord> recent, boolean fallback) {
+        java.util.Map<String, String> m = new java.util.LinkedHashMap<>();
+        m.put("title", recent.isEmpty() ? "📢 本周热招" : "📢 本周热招 · " + recent.size() + "个岗位");
+        m.put("tag", "招聘");
+        m.put("tagColor", "blue");
+        m.put("jobTitle", fallback ? "过去一周暂无新增，以下为最近岗位" : "点击详情按钮查看全部岗位");
+        m.put("company", "");
+        m.put("location", "");
+        m.put("contact", "");
+        m.put("salary", "");
+        m.put("tag1", "");
+        m.put("tag2", "");
+        m.put("tag3", "");
+        m.put("descriptionMd", buildDescriptionMd(recent));
+        m.put("requirementMd", "");
+        m.put("detailUrl", jobsListUrl);
+        m.put("contactUrl", "");
+        return m;
+    }
+
+    /** 岗位列表 markdown：📌 **职位名** · 公司 \n 摘要 \n 👉 [查看详情](记录链接) */
+    private String buildDescriptionMd(List<RecruitRecord> records) {
+        if (records.isEmpty()) {
+            return noResultTip == null || noResultTip.isBlank()
                     ? "暂时没找到匹配岗位，换个关键词试试。"
-                    : noResultTip);
-            return sb.toString();
+                    : noResultTip;
         }
-        sb.append("🔍 **找到 ").append(found.size()).append(" 个岗位**<br/><br/>");
-        found.stream().limit(maxResults).forEach(r -> appendJobMd(sb, r));
-        if (found.size() > maxResults) {
-            sb.append("> 仅展示前 ").append(maxResults).append(" 条，共 ").append(found.size()).append(" 条");
+        List<String> blocks = new java.util.ArrayList<>();
+        records.stream().limit(maxResults).forEach(r -> blocks.add(jobBlockMd(r)));
+        if (records.size() > maxResults) {
+            blocks.add("> 仅展示前 " + maxResults + " 条，共 " + records.size() + " 条");
         }
-        return sb.toString();
+        return String.join("\n\n", blocks);
     }
 
-    /** 空 @ 周报：卡片标题（占位，正文含周报头） */
-    private String formatWeeklyTitle(List<RecruitRecord> recent, boolean fallback) {
-        return "📋 招聘岗位";
-    }
-
-    /** 空 @ 周报：卡片正文（markdown，周报头放正文，fallback=无新增展示最近岗位） */
-    private String formatWeeklyBody(List<RecruitRecord> recent, boolean fallback, String senderNick) {
+    /** 单条岗位 markdown（对齐 sample：📌 加粗名称 · 公司 + 摘要 + 查看详情链接） */
+    private String jobBlockMd(RecruitRecord r) {
         StringBuilder sb = new StringBuilder();
-        if (senderNick != null && !senderNick.isBlank()) {
-            sb.append("**@").append(senderNick).append("**<br/><br/>");
+        String name = r.title() == null || r.title().isBlank() ? "（未命名岗位）" : r.title();
+        sb.append("📌 **").append(name).append("**");
+        if (r.company() != null && !r.company().isBlank()) sb.append(" · ").append(r.company());
+        String digest = shorten(r.description(), DIGEST_PER_JOB);
+        if (digest != null && !digest.isBlank()) {
+            sb.append("  \n").append(digest);
         }
-        if (recent.isEmpty()) {
-            sb.append("过去一周暂无新增岗位。");
-            return sb.toString();
-        }
-        if (fallback) {
-            sb.append("📋 **过去一周暂无新增，以下为最近岗位**<br/><br/>");
-        } else {
-            java.time.LocalDate today = java.time.LocalDate.now();
-            java.time.LocalDate weekAgo = today.minusDays(WEEK_DAYS - 1);
-            sb.append("📋 **过去一周（").append(weekAgo.getMonthValue()).append(".").append(weekAgo.getDayOfMonth())
-                    .append(" - ").append(today.getMonthValue()).append(".").append(today.getDayOfMonth())
-                    .append("）新增 ").append(recent.size()).append(" 个岗位**<br/><br/>");
-        }
-        recent.stream().limit(maxResults).forEach(r -> appendJobMd(sb, r));
-        if (recent.size() > maxResults) {
-            sb.append("> 仅展示前 ").append(maxResults).append(" 条，共 ").append(recent.size()).append(" 条");
-        }
+        sb.append("  \n👉 [查看详情](").append(recordUrl(r)).append(")");
         return sb.toString();
     }
 
-    /** 单条岗位 markdown（DESIGN.md 规范：元信息灰 #888、薪资橙 #FF6A00、急聘橙深 #E85D00） */
-    private void appendJobMd(StringBuilder sb, RecruitRecord r) {
-        String title = r.title() == null || r.title().isBlank() ? "（未命名岗位）" : r.title();
-        // actionCard 的 text 不支持 markdown 标题语法（### 会显示字面量），职位名用链接文本
-        sb.append("[").append(title).append("](").append(recordUrl(r)).append(")<br/>");
-        // 元信息：公司 · 地点（fg2 灰）
-        StringBuilder info = new StringBuilder();
-        if (r.company() != null && !r.company().isBlank()) info.append(r.company());
-        if (!r.locations().isEmpty()) info.append(" · ").append(String.join("/", r.locations()));
-        if (info.length() > 0) {
-            sb.append("<font color=\"#888888\">").append(info).append("</font><br/>");
+    /** 摘要截断：压平换行 + 超长截断（对齐 sample shorten） */
+    private String shorten(String text, int maxChars) {
+        if (text == null || text.isBlank()) {
+            return null;
         }
-        // 薪资（橙=价格强调）+ 急聘（橙深=信任标签）
-        StringBuilder meta = new StringBuilder();
-        if (r.salary() != null && !r.salary().isBlank()) {
-            meta.append("<font color=\"#FF6A00\">薪资：").append(r.salary()).append("</font>");
+        String flat = String.join(" ", text.strip().split("\\r?\\n")).trim();
+        if (flat.length() > maxChars) {
+            return flat.substring(0, maxChars).stripTrailing() + " ...";
         }
-        if (r.priority() != null && !r.priority().isBlank()) {
-            if (meta.length() > 0) meta.append(" · ");
-            meta.append("<font color=\"#E85D00\">").append(r.priority()).append("</font>");
-        }
-        if (meta.length() > 0) {
-            sb.append(meta).append("<br/>");
-        }
-        sb.append("<br/>");
+        return flat;
     }
 
-    /** 发送 ActionCard 卡片：markdown 正文 + 底部"查看全部岗位"按钮 */
-    private void sendGroupReply(String openConversationId, String title, String body) {
+    /** 发送钉钉互动卡片（模板卡片） */
+    private void sendInteractiveCard(String openConversationId, java.util.Map<String, String> paramMap) {
+        if (cardTemplateId == null || cardTemplateId.isBlank()) {
+            log.warn("[recruit-stream] card-template-id 未配置，跳过卡片发送");
+            return;
+        }
         try {
             String token = tokenClient.getAccessToken(appKey, appSecret);
-            ObjectNode card = objectMapper.createObjectNode();
-            card.put("title", title);
-            card.put("text", body);
-            card.put("singleTitle", "查看全部岗位");
-            card.put("singleURL", allJobsUrl);
+            ObjectNode cardData = objectMapper.createObjectNode();
+            ObjectNode cardParam = cardData.putObject("cardParamMap");
+            paramMap.forEach(cardParam::put);
 
-            ObjectNode msg = objectMapper.createObjectNode();
-            msg.put("robotCode", robotCode);
-            msg.put("openConversationId", openConversationId);
-            msg.put("msgKey", "sampleActionCard");
-            msg.put("msgParam", card.toString());
+            ObjectNode body = objectMapper.createObjectNode();
+            body.put("cardTemplateId", cardTemplateId);
+            body.put("openConversationId", openConversationId);
+            body.put("conversationType", 1);
+            body.put("robotCode", robotCode);
+            body.put("outTrackId", "recruit-reply-" + System.currentTimeMillis());
+            body.set("cardData", cardData);
+            body.put("userIdType", 1);
 
             HttpRequest request = HttpRequest.newBuilder(URI.create(SEND_URL))
                     .timeout(TIMEOUT)
                     .header("Content-Type", "application/json")
                     .header("x-acs-dingtalk-access-token", token)
-                    .POST(HttpRequest.BodyPublishers.ofString(objectMapper.writeValueAsString(msg)))
+                    .POST(HttpRequest.BodyPublishers.ofString(objectMapper.writeValueAsString(body)))
                     .build();
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
             String respBody = response.body();
             if (response.statusCode() >= 400) {
-                log.warn("[recruit-stream] 群回复失败: HTTP {} {}", response.statusCode(), respBody);
+                log.warn("[recruit-stream] 卡片发送失败: HTTP {} {}", response.statusCode(), respBody);
             } else {
-                log.info("[recruit-stream] 群回复成功: {}", respBody);
+                log.info("[recruit-stream] 卡片发送成功: {}", respBody);
             }
         } catch (BusinessException e) {
-            log.warn("[recruit-stream] 群回复失败: {}", e.getMessage());
+            log.warn("[recruit-stream] 卡片发送失败: {}", e.getMessage());
         } catch (Exception e) {
-            log.warn("[recruit-stream] 群回复异常", e);
+            log.warn("[recruit-stream] 卡片发送异常", e);
         }
     }
 
