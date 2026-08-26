@@ -99,13 +99,9 @@ function canOffRack(h) {
   return h.auditStatus === AUDIT_STATUS.ONLINE && h.rackStatus === RACK_STATUS.RENTING
 }
 
-/** 点击我的房源：仅已上架可进详情；待审核/驳回给状态提示（详情接口对未上架返回 404） */
+/** 点击我的房源：直接进入编辑页（我的发布 = 管理自己的房源，编辑页可改内容/图片并重新提交） */
 function openMyHouse(h) {
-  if (h.auditStatus !== AUDIT_STATUS.ONLINE) {
-    showToast(h.auditStatus === AUDIT_STATUS.PENDING ? '该房源待审核，上架后可查看' : `已驳回：${h.auditReason || '未通过审核'}`)
-    return
-  }
-  router.push({ name: 'house-detail', params: { id: h.id } })
+  router.push({ name: 'publish', query: { edit: h.id } })
 }
 
 async function load() {
