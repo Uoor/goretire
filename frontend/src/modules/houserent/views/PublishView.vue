@@ -272,6 +272,13 @@ async function submit() {
     showToast('有图片上传中或失败，请稍候')
     return
   }
+  // 兜底：存在没有服务端 URL 的缩略图（选图后上传从未成功，如部分 WebView 静默失败），
+  // 直接保存会把图片静默丢弃成空数组，必须明确阻止并提示
+  const noUrlCount = fileList.value.filter((f) => !f.url).length
+  if (noUrlCount > 0) {
+    showToast(`有 ${noUrlCount} 张图片未上传成功，请删除后重新选择`)
+    return
+  }
   const images = fileList.value.map((f) => f.url).filter(Boolean)
   submitting.value = true
   try {
