@@ -253,10 +253,10 @@ public class StreamRecruitReplyClient implements RecruitReplyClient, SmartLifecy
     /** 关键词搜索卡片 */
     private java.util.Map<String, String> buildSearchCard(List<RecruitRecord> found, String keyword) {
         java.util.Map<String, String> m = new java.util.LinkedHashMap<>();
-        m.put("title", found.isEmpty() ? "🔍 招聘查询" : "🔍 找到 " + found.size() + " 个岗位（" + keyword + "）");
+        m.put("title", "🔍 搜索：" + keyword);
         m.put("tag", "招聘");
         m.put("tagColor", "blue");
-        m.put("jobTitle", "点击查看详情");
+        m.put("jobTitle", found.isEmpty() ? "未找到匹配岗位" : "找到 " + found.size() + " 个岗位");
         m.put("company", "");
         m.put("location", "");
         m.put("contact", "");
@@ -264,11 +264,28 @@ public class StreamRecruitReplyClient implements RecruitReplyClient, SmartLifecy
         m.put("tag1", "");
         m.put("tag2", "");
         m.put("tag3", "");
-        m.put("descriptionMd", buildDescriptionMd(found));
+        m.put("descriptionMd", buildSearchDescriptionMd(found, keyword));
         m.put("requirementMd", "");
         m.put("detailUrl", jobsListUrl);
         m.put("contactUrl", "");
         return m;
+    }
+
+    /** 搜索卡片内容：开头带搜索标识（模板大标题是静态"本周热招Top5岗位"，搜索标识放内容里） */
+    private String buildSearchDescriptionMd(List<RecruitRecord> found, String keyword) {
+        if (found.isEmpty()) {
+            String tip = noResultTip == null || noResultTip.isBlank()
+                    ? "暂时没找到匹配岗位，换个关键词试试。"
+                    : noResultTip;
+            return "🔍 未找到匹配 **" + keyword + "** 的岗位\n\n" + tip;
+        }
+        List<String> blocks = new java.util.ArrayList<>();
+        blocks.add("🔍 **找到 " + found.size() + " 个岗位（" + keyword + "）**");
+        found.stream().limit(maxResults).forEach(r -> blocks.add(jobBlockMd(r)));
+        if (found.size() > maxResults) {
+            blocks.add("> 仅展示前 " + maxResults + " 条，共 " + found.size() + " 条");
+        }
+        return String.join("\n\n", blocks);
     }
 
     /** 空 @ 周报卡片（fallback=无新增展示最近岗位） */
