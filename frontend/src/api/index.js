@@ -9,14 +9,29 @@ export const authApi = {
 }
 
 /**
- * 原生 XHR 上传（华为 UWS 内核最兼容路径）：
- * 绕过 axios，直接 XMLHttpRequest + FormData，响应同样做 /uploads → 子路径前缀适配。
+ * FileReader 读文件为 data URL（最基础兼容 API，华为 UWS 内核亦支持）。
  */
-function uploadViaXHR(file) {
+function readAsDataURL(file) {
+  return new Promise((resolve, reject) => {
+    const fr = new FileReader()
+    fr.onload = () => resolve(fr.result)
+    fr.onerror = () => reject(new Error('图片读取失败'))
+    fr.readAsDataURL(file)
+  })
+}
+
+/**
+ * base64 + JSON 上传（华为 UWS 内核最兼容路径）：
+ * 社区通行方案（华为官方问答：鸿蒙 WebView 上 axios/multipart 上传不可靠 → 传 base64 让接口支持）。
+ * 完全绕开 FormData/File/canvas，只用 FileReader + XHR。
+ */
+async function uploadBase64(file) {
+  const dataUrl = await readAsDataURL(file)
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest()
-    xhr.open('POST', `${import.meta.env.BASE_URL}api/upload`)
-    xhr.timeout = 15000
+    xhr.open('POST', `${import.meta.env.BASE_URL}api/upload/base64`)
+    xhr.timeout = 20000
+    xhr.setRequestHeader('Content-Type', 'application/json')
     const token = localStorage.getItem('aliren_token')
     if (token) {
       xhr.setRequestHeader('Authorization', `Bearer ${token}`)
@@ -40,18 +55,16 @@ function uploadViaXHR(file) {
     }
     xhr.onerror = () => reject(new Error('网络异常，请重试'))
     xhr.ontimeout = () => reject(new Error('上传超时，请重试'))
-    const fd = new FormData()
-    fd.append('file', file)
-    xhr.send(fd)
+    xhr.send(JSON.stringify({ name: file.name || 'image.jpg', data: dataUrl }))
   })
 }
 
-// 图片上传（跨模块基础能力）：返回 /uploads/xxx 相对 URL（经拦截器加子路径前缀）
+// 图片上传（跨模块基础能力）：返回 /uploads/xxx 相对 URL（经拦截器/原生路径加子路径前缀）
 export const uploadApi = {
   image: (file) => {
-    // 华为 UWS 内核优先走原生 XHR（最兼容，规避 axios/FormData 兼容坑）
+    // 华为 UWS 内核走 base64 + JSON（最兼容，规避 multipart/FormData 兼容坑）
     if (isHuaweiUws) {
-      return uploadViaXHR(file)
+      return uploadBase64(file)
     }
     const fd = new FormData()
     fd.append('file', file)
