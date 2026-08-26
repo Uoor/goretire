@@ -72,10 +72,11 @@ public class StreamRecruitReplyClient implements RecruitReplyClient, SmartLifecy
         this.baseId = baseId;
         this.tableId = tableId;
         this.viewId = viewId;
-        // "查看全部岗位" 按钮 → 多维表视图（dingtalk scheme 在钉钉内置浏览器打开，避免跳外部浏览器）
+        // "查看全部岗位" 按钮 → 多维表视图（纯 https，钉钉原生拦截 alidocs 链接在应用内打开并深链；
+        // dingtalk:// 包装会让网页版打开而丢失记录深链）
         this.allJobsUrl = baseId == null || baseId.isBlank() || tableId == null || tableId.isBlank()
                 ? "https://alidocs.dingtalk.com"
-                : dingtalkLink("https://alidocs.dingtalk.com/i/nodes/" + baseId + "?entrance=data&sheetId=" + tableId);
+                : "https://alidocs.dingtalk.com/i/nodes/" + baseId + "?entrance=data&sheetId=" + tableId;
         this.aitableClient = aitableClient;
         this.tokenClient = tokenClient;
     }
@@ -86,10 +87,10 @@ public class StreamRecruitReplyClient implements RecruitReplyClient, SmartLifecy
                 || r.recordId() == null || r.recordId().isBlank()) {
             return allJobsUrl;
         }
-        return dingtalkLink("https://alidocs.dingtalk.com/notable/record?sheetId=" + tableId
+        return "https://alidocs.dingtalk.com/notable/record?sheetId=" + tableId
                 + "&viewId=" + viewId
                 + "&rowId=" + r.recordId()
-                + "&dentryUuid=" + baseId);
+                + "&dentryUuid=" + baseId;
     }
 
     @Override
@@ -356,16 +357,6 @@ public class StreamRecruitReplyClient implements RecruitReplyClient, SmartLifecy
             log.warn("[recruit-stream] 群回复失败: {}", e.getMessage());
         } catch (Exception e) {
             log.warn("[recruit-stream] 群回复异常", e);
-        }
-    }
-
-    /** 包装为钉钉内置浏览器打开链接（避免跳到外部浏览器） */
-    private String dingtalkLink(String url) {
-        try {
-            return "dingtalk://dingtalkclient/page/link?url="
-                    + java.net.URLEncoder.encode(url, java.nio.charset.StandardCharsets.UTF_8);
-        } catch (Exception e) {
-            return url;
         }
     }
 
