@@ -245,7 +245,15 @@ async function afterRead(item) {
     item.message = ''
   } catch (e) {
     item.status = 'failed'
-    item.message = e.message || '上传失败'
+    // 失败原因可读化：axios 网络/超时/HTTP 错误映射成用户能看懂的话
+    const msg = e?.message || ''
+    item.message = /timeout|timeout of/.test(msg)
+      ? '上传超时，请重试'
+      : /network|Network|Failed to fetch/.test(msg)
+        ? '网络异常，请重试'
+        : /status code 4\d\d/.test(msg)
+          ? '图片格式或大小不支持'
+          : e?.response?.data?.msg || msg || '上传失败'
   }
 }
 

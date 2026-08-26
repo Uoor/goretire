@@ -26,46 +26,53 @@ export async function compressImage(file, options = {}) {
     return file
   }
 
-  // 创建 Image 对象
-  const img = await loadImage(file)
+  try {
+    // 创建 Image 对象
+    const img = await loadImage(file)
 
-  // 计算压缩后的尺寸
-  let { width, height } = img
-  if (width > maxWidth || height > maxHeight) {
-    const ratio = Math.min(maxWidth / width, maxHeight / height)
-    width = Math.round(width * ratio)
-    height = Math.round(height * ratio)
+    // 计算压缩后的尺寸
+    let { width, height } = img
+    if (width > maxWidth || height > maxHeight) {
+      const ratio = Math.min(maxWidth / width, maxHeight / height)
+      width = Math.round(width * ratio)
+      height = Math.round(height * ratio)
+    }
+
+    // 创建 Canvas 并绘制
+    const canvas = document.createElement('canvas')
+    canvas.width = width
+    canvas.height = height
+    const ctx = canvas.getContext('2d')
+    ctx.drawImage(img, 0, 0, width, height)
+
+    // 部分定制 WebView（如鸿蒙 UWS / 蚂蚁专属钉钉）不支持 canvas.toBlob，
+    // 直接回退原图，避免选图后静默失败（缩略图看似已上传，实际请求从未发出）
+    if (typeof canvas.toBlob !== 'function') {
+      console.warn('[image] canvas.toBlob 不可用，跳过压缩直接上传原图')
+      return file
+    }
+
+    // 转换为 Blob
+    const blob = await new Promise((resolve, reject) => {
+      canvas.toBlob(
+        (b) => (b ? resolve(b) : reject(new Error('图片压缩失败'))),
+        type,
+        quality
+      )
+    })
+    // 如果压缩后更大，返回原文件
+    if (blob.size >= file.size) {
+      return file
+    }
+    // canvas.toBlob 产出无文件名的 Blob，multipart 默认文件名会是 "blob"，
+    // 后端按扩展名校验会直接拒绝；包装成带 .jpg 文件名的 File（输出固定 jpeg）
+    const name = (file.name || 'image').replace(/\.[^.]*$/, '') + '.jpg'
+    return new File([blob], name, { type })
+  } catch (e) {
+    // 压缩链路任何异常（图片解码/画布绘制失败等）→ 回退原图直传，不阻断上传
+    console.warn('[image] 图片压缩失败，回退原图上传:', e)
+    return file
   }
-
-  // 创建 Canvas 并绘制
-  const canvas = document.createElement('canvas')
-  canvas.width = width
-  canvas.height = height
-  const ctx = canvas.getContext('2d')
-  ctx.drawImage(img, 0, 0, width, height)
-
-  // 转换为 Blob
-  return new Promise((resolve, reject) => {
-    canvas.toBlob(
-      (blob) => {
-        if (blob) {
-          // 如果压缩后更大，返回原文件
-          if (blob.size >= file.size) {
-            resolve(file)
-          } else {
-            // canvas.toBlob 产出无文件名的 Blob，multipart 默认文件名会是 "blob"，
-            // 后端按扩展名校验会直接拒绝；包装成带 .jpg 文件名的 File（输出固定 jpeg）
-            const name = (file.name || 'image').replace(/\.[^.]*$/, '') + '.jpg'
-            resolve(new File([blob], name, { type }))
-          }
-        } else {
-          reject(new Error('图片压缩失败'))
-        }
-      },
-      type,
-      quality
-    )
-  })
 }
 
 /**
