@@ -133,7 +133,7 @@
 </template>
 
 <script setup>
-import { onMounted, reactive, ref, watch } from 'vue'
+import { reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { showToast, showSuccessToast } from 'vant'
 import TopBar from '@/modules/houserent/components/TopBar.vue'
@@ -358,13 +358,18 @@ async function loadForEdit(id) {
   }
 }
 
-onMounted(() => {
-  const id = route.query.edit
-  if (id) {
-    editId.value = id
-    loadForEdit(id)
-  }
-})
+// 编辑模式监听：Vue Router 同一路由不同 query 参数不会重新触发 onMounted，
+// 改用 watch 监听 route.query.edit，保证从「我的发布」反复点击不同房源时都能正确加载数据。
+watch(
+  () => route.query.edit,
+  (id) => {
+    if (id) {
+      editId.value = id
+      loadForEdit(id)
+    }
+  },
+  { immediate: true }
+)
 </script>
 
 <style scoped>
