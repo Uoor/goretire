@@ -7,6 +7,7 @@ import com.aliren.houserent.house.HouseMapper;
 import com.aliren.houserent.report.Report;
 import com.aliren.houserent.report.ReportService;
 import com.aliren.houserent.robot.PublishOrchestrator;
+import com.aliren.houserent.house.HouseResponse;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -187,6 +188,26 @@ public class AdminAuditService {
         if (userId == null) return null;
         com.aliren.core.user.User u = userMapper.selectById(userId);
         return u == null ? null : u.getNickname();
+    }
+
+    /**
+     * 全部房源列表（管理员专用）：按创建时间倒序，包含发布人昵称。
+     * 前端「我的发布」对管理员展示全部房源，复用同一套操作按钮（后端已校验发布人或管理员权限）。
+     */
+    public List<HouseResponse> listAllHouses(int operatorRole) {
+        requireAdmin(operatorRole);
+        List<House> houses = houseMapper.selectList(new QueryWrapper<House>().orderByDesc("created_at"));
+        return houses.stream().map(h -> {
+            HouseResponse r = HouseResponse.from(h);
+            if (h.getPublisherId() != null) {
+                com.aliren.core.user.User u = userMapper.selectById(h.getPublisherId());
+                if (u != null) {
+                    r.setPublisherName(u.getNickname());
+                    r.setPublisherAvatar(u.getAvatar());
+                }
+            }
+            return r;
+        }).toList();
     }
 
     /** 举报列表（按状态过滤，仅管理员） */

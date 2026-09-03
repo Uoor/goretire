@@ -35,8 +35,8 @@
     </div>
 
     <div class="me-list me-houses">
-      <div class="list-title">我的发布</div>
-      <div v-if="myHouses.length === 0" class="me-none">还没有发布过房源</div>
+      <div class="list-title">{{ listTitle }}</div>
+      <div v-if="myHouses.length === 0" class="me-none">{{ emptyText }}</div>
       <div v-for="h in myHouses" :key="h.id" class="my-house" @click="openMyHouse(h)">
         <div class="mh-main">
           <div class="mh-title">{{ h.community }} · {{ h.houseType }} {{ h.area }}㎡</div>
@@ -88,6 +88,8 @@ const showFeedback = ref(false)
 const pendingOffRack = ref(null)
 
 const activeCount = computed(() => myHouses.value.filter((h) => h.auditStatus === AUDIT_STATUS.ONLINE && h.rackStatus === RACK_STATUS.RENTING).length)
+const listTitle = computed(() => store.isAdmin ? '全部房源' : '我的发布')
+const emptyText = computed(() => store.isAdmin ? '暂无房源' : '还没有发布过房源')
 
 function statusText(h) {
   return getHouseStatusText(h.auditStatus, h.rackStatus)
@@ -106,7 +108,11 @@ function openMyHouse(h) {
 
 async function load() {
   try {
-    myHouses.value = await houseApi.mine()
+    if (store.isAdmin) {
+      myHouses.value = await houseApi.adminList()
+    } else {
+      myHouses.value = await houseApi.mine()
+    }
   } catch (e) {
     showToast(e.message || '加载失败')
   }

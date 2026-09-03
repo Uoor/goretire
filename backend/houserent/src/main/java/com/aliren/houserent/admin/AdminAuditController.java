@@ -3,6 +3,7 @@ package com.aliren.houserent.admin;
 import com.aliren.houserent.admin.dto.AuditRequest;
 import com.aliren.core.auth.UserContext;
 import com.aliren.core.common.ApiResponse;
+import com.aliren.houserent.house.HouseResponse;
 import com.aliren.houserent.report.Report;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -26,6 +27,12 @@ public class AdminAuditController {
     @GetMapping("/audit/pending")
     public ApiResponse<List<Map<String, Object>>> pendingList() {
         return ApiResponse.ok(adminAuditService.pendingList(UserContext.requireRole()));
+    }
+
+    /** 全部房源列表（仅管理员）：包含所有状态的房源 + 发布人昵称，供「我的发布」对管理员展示 */
+    @GetMapping("/houses")
+    public ApiResponse<List<HouseResponse>> allHouses() {
+        return ApiResponse.ok(adminAuditService.listAllHouses(UserContext.requireRole()));
     }
 
     /** 审核：通过/驳回（驳回必填原因）；通过后上层编排触发订阅/求租匹配 */

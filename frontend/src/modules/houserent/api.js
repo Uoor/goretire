@@ -13,6 +13,7 @@ export const houseApi = {
   },
   detail: (id) => request.get(`/houses/${id}`),
   mine: () => request.get('/houses/mine'),
+  adminList: () => request.get('/admin/houses'),
   publish: (data) => request.post('/houses', data),
   update: (id, data) => request.put(`/houses/${id}`, data),
   offRack: (id) => request.post(`/houses/${id}/off-rack`),
