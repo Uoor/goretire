@@ -197,17 +197,29 @@ public class AdminAuditService {
     public List<HouseResponse> listAllHouses(int operatorRole) {
         requireAdmin(operatorRole);
         List<House> houses = houseMapper.selectList(new QueryWrapper<House>().orderByDesc("created_at"));
-        return houses.stream().map(h -> {
-            HouseResponse r = HouseResponse.from(h);
-            if (h.getPublisherId() != null) {
-                com.aliren.core.user.User u = userMapper.selectById(h.getPublisherId());
-                if (u != null) {
-                    r.setPublisherName(u.getNickname());
-                    r.setPublisherAvatar(u.getAvatar());
-                }
+        return houses.stream().map(this::toHouseResponse).toList();
+    }
+
+    /** 管理员获取任意房源详情（含发布人信息，用于编辑回填）：仅管理员可调用 */
+    public HouseResponse houseForEdit(int operatorRole, Long houseId) {
+        requireAdmin(operatorRole);
+        House h = houseMapper.selectById(houseId);
+        if (h == null) {
+            throw new BusinessException(404, "房源不存在");
+        }
+        return toHouseResponse(h);
+    }
+
+    private HouseResponse toHouseResponse(House h) {
+        HouseResponse r = HouseResponse.from(h);
+        if (h.getPublisherId() != null) {
+            com.aliren.core.user.User u = userMapper.selectById(h.getPublisherId());
+            if (u != null) {
+                r.setPublisherName(u.getNickname());
+                r.setPublisherAvatar(u.getAvatar());
             }
-            return r;
-        }).toList();
+        }
+        return r;
     }
 
     /** 举报列表（按状态过滤，仅管理员） */

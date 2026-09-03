@@ -142,9 +142,11 @@ import { uploadApi } from '@/api'
 import { formatMoney } from '@/utils/format'
 import { compressImage } from '@/utils/image'
 import { AUDIT_STATUS } from '@/constants/status'
+import { useUserStore } from '@/store/user'
 
 const route = useRoute()
 const router = useRouter()
+const store = useUserStore()
 const submitting = ref(false)
 const fileList = ref([])
 const priceTip = ref(null)
@@ -326,8 +328,14 @@ async function submit() {
 async function loadForEdit(id) {
   editLoading.value = true
   try {
-    const list = await houseApi.mine()
-    const h = list.find((x) => x.id === Number(id))
+    let h
+    if (store.isAdmin) {
+      // 管理员可编辑任意房源（包括其他人的），调用管理员专用接口
+      h = await houseApi.adminDetail(id)
+    } else {
+      const list = await houseApi.mine()
+      h = list.find((x) => x.id === Number(id))
+    }
     if (!h) {
       showToast('房源不存在')
       return

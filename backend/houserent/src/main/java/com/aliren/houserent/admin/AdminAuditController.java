@@ -35,6 +35,12 @@ public class AdminAuditController {
         return ApiResponse.ok(adminAuditService.listAllHouses(UserContext.requireRole()));
     }
 
+    /** 管理员获取任意房源详情（用于编辑回填，含发布人信息） */
+    @GetMapping("/houses/{houseId}")
+    public ApiResponse<HouseResponse> houseDetail(@PathVariable Long houseId) {
+        return ApiResponse.ok(adminAuditService.houseForEdit(UserContext.requireRole(), houseId));
+    }
+
     /** 审核：通过/驳回（驳回必填原因）；通过后上层编排触发订阅/求租匹配 */
     @PostMapping("/audit/{houseId}")
     public ApiResponse<Void> audit(@PathVariable Long houseId,
