@@ -3,7 +3,7 @@ package com.aliren.houserent.admin;
 import com.aliren.houserent.admin.dto.AuditRequest;
 import com.aliren.core.auth.UserContext;
 import com.aliren.core.common.ApiResponse;
-import com.aliren.houserent.house.HouseResponse;
+import com.aliren.houserent.house.dto.HouseResponse;
 import com.aliren.houserent.report.Report;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;

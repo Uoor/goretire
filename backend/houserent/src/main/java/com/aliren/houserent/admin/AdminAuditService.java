@@ -7,7 +7,7 @@ import com.aliren.houserent.house.HouseMapper;
 import com.aliren.houserent.report.Report;
 import com.aliren.houserent.report.ReportService;
 import com.aliren.houserent.robot.PublishOrchestrator;
-import com.aliren.houserent.house.HouseResponse;
+import com.aliren.houserent.house.dto.HouseResponse;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
