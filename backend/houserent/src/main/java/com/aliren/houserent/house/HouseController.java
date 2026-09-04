@@ -58,10 +58,10 @@ public class HouseController {
         return ApiResponse.ok(r);
     }
 
-    /** 编辑房源（仅发布人）：返回编辑后的实际审核状态 */
+    /** 编辑房源（发布人或管理员）：返回编辑后的实际审核状态 */
     @PutMapping("/{id}")
     public ApiResponse<PublishResult> update(@PathVariable Long id, @Valid @RequestBody HouseCreateRequest req) {
-        PublishResult r = houseService.update(UserContext.requireUserId(), id, req);
+        PublishResult r = houseService.update(UserContext.requireUserId(), UserContext.requireRole(), id, req);
         return ApiResponse.ok(r);
     }
 

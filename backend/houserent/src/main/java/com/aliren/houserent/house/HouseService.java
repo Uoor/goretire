@@ -73,12 +73,12 @@ public class HouseService {
     }
 
     /**
-     * 编辑房源（仅发布人本人）：更新字段并重新置为待审核（驳回后修改重提 / 上架后改内容）。
-     * 保留发布人、房号；审核状态回待审核，需管理员重新审核。
-     * 返回编辑后的实际审核状态（免审模式下直接回到已上架）。
+     * 编辑房源：发布人本人或管理员可修改。
+     * 免审模式下直接回到已上架；审核开启时置为待审核，需管理员重新审核。
+     * 返回编辑后的实际审核状态。
      */
-    public PublishResult update(Long userId, Long id, HouseCreateRequest req) {
-        log.info("updating house: userId={}, houseId={}", userId, id);
+    public PublishResult update(Long userId, int operatorRole, Long id, HouseCreateRequest req) {
+        log.info("updating house: userId={}, role={}, houseId={}", userId, operatorRole, id);
         if (req.getRent() == null || req.getRent().signum() <= 0) {
             throw new BusinessException("租金不合法");
         }
@@ -86,8 +86,8 @@ public class HouseService {
         if (h == null) {
             throw new BusinessException(404, "房源不存在");
         }
-        if (!h.getPublisherId().equals(userId)) {
-            throw new BusinessException(403, "无权限：仅发布人可修改");
+        if (operatorRole != 1 && !h.getPublisherId().equals(userId)) {
+            throw new BusinessException(403, "无权限：仅发布人或管理员可修改");
         }
         applyFields(h, req);
         h.setAuditStatus(auditEnabled ? House.AUDIT_PENDING : House.AUDIT_ONLINE);
