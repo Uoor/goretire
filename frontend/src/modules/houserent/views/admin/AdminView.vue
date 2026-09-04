@@ -457,6 +457,9 @@ onMounted(loadAudit)
   color: var(--fg2);
   margin-top: 6px;
   line-height: 1.5;
+  /* 描述/举报原因是多行输入，保留换行 */
+  white-space: pre-line;
+  overflow-wrap: anywhere;
 }
 .ac-result {
   font-size: 0.7rem;

@@ -30,7 +30,16 @@
         <div class="d-specs">
           <div class="d-spec"><div class="v num">{{ house.area }}㎡</div><div class="k">面积</div></div>
           <div class="d-spec"><div class="v">{{ house.depositPay }}</div><div class="k">押付</div></div>
-          <div class="d-spec"><div class="v">{{ house.commute || '—' }}</div><div class="k">通勤</div></div>
+          <div class="d-spec"><div class="v">{{ house.leaseTerm || '面议' }}</div><div class="k">租期</div></div>
+        </div>
+
+        <!-- 通勤为自由文本，不用 label 卡片：独立区块整行展示（长文本自动换行，不受卡片宽度限制） -->
+        <div v-if="house.commute" class="d-sec d-commute-sec">
+          <h5>通勤</h5>
+          <div class="d-commute">
+            <span class="c-ico">🚲</span>
+            <span class="c-txt">{{ house.commute }}</span>
+          </div>
         </div>
 
         <!-- 水电网物业（产品 4.2 价格明细） -->
@@ -325,6 +334,31 @@ onMounted(load)
   font-size: 0.8rem;
   color: var(--fg2);
   line-height: 1.6;
+  /* 保留多行输入（textarea）里的换行，长词/长 URL 自动折行 */
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+/* 通勤：自由长文本，整行展示，自动换行 */
+.d-commute {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  background: var(--bg);
+  border-radius: 12px;
+  padding: 10px 12px;
+}
+.d-commute .c-ico {
+  font-size: 1rem;
+  line-height: 1.6;
+  flex-shrink: 0;
+}
+.d-commute .c-txt {
+  font-size: 0.8rem;
+  color: var(--fg2);
+  line-height: 1.6;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+  flex: 1;
 }
 .landlord {
   display: flex;
