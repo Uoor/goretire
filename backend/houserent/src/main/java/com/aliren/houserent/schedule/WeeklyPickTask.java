@@ -15,7 +15,10 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 /**
- * 周五精选周推：本周精选 3 套（MVP：最近上架且仍在租）+ 本周新上架数概览 → 推送子群。
+ * 周五精选周推：
+ * - 本周（7 天内）新上架且在线在租房源 ≥7 套 → 精选前 3 套；
+ * - 本周不足 7 套 → 回退展示全站最新 5 套在线在租房源，避免周推冷场。
+ * 另附本周新上架数概览 → 推送子群。
  * cron：每周五 19:00。
  */
 @Slf4j
@@ -23,6 +26,10 @@ import java.util.List;
 public class WeeklyPickTask {
 
     private static final int PICK_SIZE = 3;
+    /** 本周房源达到该数量时按本周精选；否则回退全站最新 */
+    private static final int WEEK_THRESHOLD = 7;
+    /** 回退时展示的房源条数 */
+    private static final int FALLBACK_SIZE = 5;
 
     private final HouseMapper houseMapper;
     private final PushClient pushClient;
@@ -43,13 +50,25 @@ public class WeeklyPickTask {
     @Scheduled(cron = "${aliren.schedule.weekly-pick-cron:0 0 19 * * FRI}")
     public void weeklyPick() {
         LocalDateTime weekStart = LocalDate.now().minusDays(7).atStartOfDay();
-        // 本周精选：本周新上架（7 天内创建）且仍在租的房源，最多 3 套
-        List<House> picks = houseMapper.selectList(new QueryWrapper<House>()
+        // 本周精选候选：本周（7 天内）新上架且在线在租
+        List<House> weekPicks = houseMapper.selectList(new QueryWrapper<House>()
                 .eq("audit_status", House.AUDIT_ONLINE)
                 .eq("rack_status", House.RACK_RENTING)
                 .ge("created_at", weekStart)
-                .orderByDesc("created_at")
-                .last("LIMIT " + PICK_SIZE));
+                .orderByDesc("created_at"));
+        List<House> picks;
+        if (weekPicks.size() >= WEEK_THRESHOLD) {
+            // 本周房源充足：精选最新 3 套
+            picks = weekPicks.stream().limit(PICK_SIZE).toList();
+        } else {
+            // 本周房源少于 7：回退展示全站最新 5 套在线在租，保证周推不冷场
+            log.info("weekly pick fallback: only {} houses this week, use latest {}", weekPicks.size(), FALLBACK_SIZE);
+            picks = houseMapper.selectList(new QueryWrapper<House>()
+                    .eq("audit_status", House.AUDIT_ONLINE)
+                    .eq("rack_status", House.RACK_RENTING)
+                    .orderByDesc("created_at")
+                    .last("LIMIT " + FALLBACK_SIZE));
+        }
         // 本周新上架数概览：7 天内创建且审核通过的房源数
         long newThisWeek = houseMapper.selectCount(new QueryWrapper<House>()
                 .eq("audit_status", House.AUDIT_ONLINE)

@@ -3,6 +3,7 @@ package com.aliren.houserent.schedule;
 import com.aliren.houserent.house.House;
 import com.aliren.houserent.house.HouseMapper;
 import com.aliren.houserent.robot.PushClient;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -11,12 +12,14 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -48,45 +51,62 @@ class WeeklyPickTaskTest {
         return h;
     }
 
+    private List<House> houses(int n) {
+        List<House> list = new ArrayList<>();
+        for (long i = 1; i <= n; i++) {
+            list.add(house(i, "本周房源" + i, String.valueOf(i * 1000)));
+        }
+        return list;
+    }
+
     @Test
-    void weeklyPick_pushesTop3Houses() {
-        when(houseMapper.selectList(any())).thenReturn(List.of(house(1L, "西溪八方城", "5800")));
-        when(houseMapper.selectCount(any())).thenReturn(3L);
+    void weeklyPick_weekPlenty_picksTop3ThisWeek() {
+        // 本周 ≥7 套：只查一次本周库（含 created_at 过滤），精选前 3
+        when(houseMapper.selectList(any())).thenReturn(houses(7));
+        when(houseMapper.selectCount(any())).thenReturn(7L);
 
         task.weeklyPick();
 
-        ArgumentCaptor<String> title = ArgumentCaptor.forClass(String.class);
+        ArgumentCaptor<QueryWrapper> qw = ArgumentCaptor.forClass(QueryWrapper.class);
+        verify(houseMapper, times(1)).selectList(qw.capture());
+        assertThat(qw.getValue().getSqlSegment())
+                .contains("audit_status").contains("rack_status").contains("created_at");
+
         ArgumentCaptor<String> md = ArgumentCaptor.forClass(String.class);
-        verify(pushClient).sendGroupCard(title.capture(), md.capture());
-        assertThat(title.getValue()).isEqualTo("本周精选");
-        assertThat(md.getValue()).contains("西溪八方城").contains("5800").contains("房东直租");
-        // 每条房源带 dingtalk page/link 详情链接（无 pc_slide，与群卡片一致）
+        verify(pushClient).sendGroupCard(anyString(), md.capture());
+        // 前 3 套展示，第 4 套不在卡片里
+        assertThat(md.getValue()).contains("本周房源1").contains("本周房源3")
+                .doesNotContain("本周房源4");
+        // 卡片带 dingtalk page/link 详情链接（无 pc_slide，与群卡片一致）
         assertThat(md.getValue()).contains(
                 "👉 [查看房源详情](dingtalk://dingtalkclient/page/link?url=https%3A%2F%2Fh5.example.com%2F%23%2Flanding%3Fredirect%3D%252Fhouse%252F1)");
     }
 
     @Test
-    void weeklyPick_filtersThisWeekOnlineRenting() {
-        when(houseMapper.selectList(any())).thenReturn(List.of());
+    void weeklyPick_fewThisWeek_fallsBackToLatestFive() {
+        // 本周只有 2 套（<7）：第一次查本周，第二次回退全站最新（不含 created_at 周过滤）
+        when(houseMapper.selectList(any()))
+                .thenReturn(houses(2))          // 本周候选查询
+                .thenReturn(houses(3));         // 回退查询（模拟最新 5 条里取到 3 条）
+        when(houseMapper.selectCount(any())).thenReturn(2L);
+
         task.weeklyPick();
 
-        // 精选列表限定：审核通过 + 在租中 + 本周（7 天内创建）
-        ArgumentCaptor<com.baomidou.mybatisplus.core.conditions.query.QueryWrapper> qw =
-                ArgumentCaptor.forClass(com.baomidou.mybatisplus.core.conditions.query.QueryWrapper.class);
-        verify(houseMapper).selectList(qw.capture());
-        String sql = qw.getValue().getSqlSegment();
-        assertThat(sql).contains("audit_status").contains("rack_status").contains("created_at");
-        // 概览数同样限定本周 + 审核通过
-        ArgumentCaptor<com.baomidou.mybatisplus.core.conditions.query.QueryWrapper> qw2 =
-                ArgumentCaptor.forClass(com.baomidou.mybatisplus.core.conditions.query.QueryWrapper.class);
-        verify(houseMapper).selectCount(qw2.capture());
-        assertThat(qw2.getValue().getSqlSegment()).contains("audit_status").contains("created_at");
+        ArgumentCaptor<QueryWrapper> captor = ArgumentCaptor.forClass(QueryWrapper.class);
+        verify(houseMapper, times(2)).selectList(captor.capture());
+        List<QueryWrapper> all = captor.getAllValues();
+        assertThat(all.get(0).getSqlSegment()).contains("created_at");   // 本周查询带周过滤
+        assertThat(all.get(1).getSqlSegment()).doesNotContain("created_at"); // 回退全站无周过滤
+
+        ArgumentCaptor<String> md = ArgumentCaptor.forClass(String.class);
+        verify(pushClient).sendGroupCard(anyString(), md.capture());
+        assertThat(md.getValue()).contains("本周房源1"); // 回退的房源进入卡片
     }
 
     @Test
     void weeklyPick_h5NotConfigured_noLinks() {
         task = new WeeklyPickTask(houseMapper, pushClient, "", "");
-        when(houseMapper.selectList(any())).thenReturn(List.of(house(1L, "西溪八方城", "5800")));
+        when(houseMapper.selectList(any())).thenReturn(houses(1));
         when(houseMapper.selectCount(any())).thenReturn(1L);
 
         task.weeklyPick();
@@ -108,7 +128,7 @@ class WeeklyPickTaskTest {
     void weeklyPick_groupInviteUrl_included() {
         task = new WeeklyPickTask(houseMapper, pushClient, "https://h5.example.com",
                 "https://qr.dingtalk.com/action/joingroup?code=test123");
-        when(houseMapper.selectList(any())).thenReturn(List.of(house(1L, "西溪八方城", "5800")));
+        when(houseMapper.selectList(any())).thenReturn(houses(1));
         when(houseMapper.selectCount(any())).thenReturn(1L);
 
         task.weeklyPick();
@@ -121,7 +141,7 @@ class WeeklyPickTaskTest {
     @Test
     void weeklyPick_noGroupInviteUrl_noGroupSection() {
         // groupInviteUrl 为空时不显示入群入口
-        when(houseMapper.selectList(any())).thenReturn(List.of(house(1L, "西溪八方城", "5800")));
+        when(houseMapper.selectList(any())).thenReturn(houses(1));
         when(houseMapper.selectCount(any())).thenReturn(1L);
 
         task.weeklyPick();
