@@ -39,7 +39,7 @@
       <div v-if="myHouses.length === 0" class="me-none">{{ emptyText }}</div>
       <div v-for="h in myHouses" :key="h.id" class="my-house" @click="openMyHouse(h)">
         <div class="mh-main">
-          <div class="mh-title">{{ h.community }} · {{ h.houseType }} {{ h.area }}㎡</div>
+          <div class="mh-title">{{ h.title || (h.community + ' · ' + h.houseType + ' ' + h.area + '㎡') }}</div>
           <div class="mh-meta">
             <span class="st-tag" :class="statusClass(h)">{{ statusText(h) }}</span>
             <span v-if="h.auditReason" class="reason">驳回：{{ h.auditReason }}</span>

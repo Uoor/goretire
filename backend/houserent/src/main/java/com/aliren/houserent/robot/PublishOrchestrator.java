@@ -81,7 +81,8 @@ public class PublishOrchestrator {
         // 移动端钉钉内置浏览器打开，PC 端唤起钉钉，域名不暴露在浏览器地址栏
         String md = buildHouseCard(h)
                 + (detailUrl.isBlank() ? "" : "<br/>👉 [查看房源详情](" + H5Links.dingtalkLink(detailUrl) + ")");
-        pushClient.sendGroupCard("🏠 新上架 · " + h.getCommunity(), md);
+        String cardTitle = (h.getTitle() != null && !h.getTitle().isBlank()) ? h.getTitle() : h.getCommunity();
+        pushClient.sendGroupCard("🏠 新上架 · " + cardTitle, md);
         for (SubscriptionHit hit : subHits) {
             Subscribe s = subscribeMapper.selectById(hit.getSubscribeId());
             if (s != null) {

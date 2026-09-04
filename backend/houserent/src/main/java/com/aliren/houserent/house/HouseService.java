@@ -98,6 +98,7 @@ public class HouseService {
 
     private void applyFields(House h, HouseCreateRequest req) {
         h.setCommunity(req.getCommunity());
+        h.setTitle(req.getTitle());
         h.setRoomNo(req.getRoomNo());
         h.setRegion(req.getRegion());
         h.setHouseType(req.getHouseType());

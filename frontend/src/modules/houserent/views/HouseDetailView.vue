@@ -26,7 +26,7 @@
           <span v-if="house.rackStatus === RACK_STATUS.RENTED" class="tag status-rented">已租出</span>
           <span v-else-if="house.rackStatus === RACK_STATUS.OFF" class="tag status-off">已下架</span>
         </div>
-        <div class="d-title">{{ house.community }} · {{ house.houseType }} {{ house.area }}㎡</div>
+        <div class="d-title">{{ house.title || (house.community + ' · ' + house.houseType + ' ' + house.area + '㎡') }}</div>
         <div class="d-specs">
           <div class="d-spec"><div class="v num">{{ house.area }}㎡</div><div class="k">面积</div></div>
           <div class="d-spec"><div class="v">{{ house.depositPay }}</div><div class="k">押付</div></div>

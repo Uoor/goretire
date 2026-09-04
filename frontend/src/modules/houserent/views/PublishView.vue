@@ -18,6 +18,10 @@
     </div>
 
     <div class="form-sec">
+      <div class="form-label"><span>标题</span><span class="hint">可空，用于卡片展示（如：西溪八方城精装三居，近地铁）</span></div>
+      <div class="form-field">
+        <input v-model="form.title" placeholder="一句话吸引租客，建议 20 字以内" maxlength="100" />
+      </div>
       <div class="form-label"><span>小区名称</span><span class="req">*</span></div>
       <div class="form-field">
         <input v-model="form.community" placeholder="如：西溪八方城" @blur="autoRegion" />
@@ -117,9 +121,9 @@
         <div class="seg-item" :class="{ on: form.petOk === 1 }" @click="form.petOk = 1">可以</div>
         <div class="seg-item" :class="{ on: form.petOk === 0 }" @click="form.petOk = 0">不可以</div>
       </div>
-      <div class="form-label"><span>一句话描述</span><span class="hint">可空</span></div>
+      <div class="form-label"><span>房源描述</span><span class="hint">可空，介绍亮点、配套、舍友等</span></div>
       <div class="form-field">
-        <input v-model="form.description" placeholder="如：房东自住刚搬走，家具全" />
+        <van-field v-model="form.description" type="textarea" rows="3" autosize maxlength="500" show-word-limit placeholder="如：房东自住刚搬走，家具全；近地铁，步行 5 分钟到园区" />
       </div>
     </div>
 
@@ -154,7 +158,7 @@ const editId = ref(null) // 编辑模式：null=发布，有值=修改重新提�
 const editLoading = ref(false)
 
 const houseTypes = ['1室0厅', '1室1厅', '2室1厅', '2室2厅', '3室1厅', '3室2厅', '主卧', '次卧', '整租']
-const payTypes = ['押一付一', '押一付三', '押二付一', '半年付', '年付']
+const payTypes = ['押一付一', '押一付三', '押二付一', '半年付', '年付', '面议']
 const leaseTerms = ['面议', '半年', '一年', '两年', '三年以上']
 const labels = [
   { value: 1, text: '房东直租' },
@@ -177,6 +181,7 @@ const quickCommunities = [
 ]
 
 const form = reactive({
+  title: '',
   community: '',
   roomNo: '',
   region: '',
@@ -341,6 +346,7 @@ async function loadForEdit(id) {
       return
     }
     Object.assign(form, {
+      title: h.title || '',
       community: h.community || '',
       roomNo: h.roomNo || '',
       region: h.region || '',

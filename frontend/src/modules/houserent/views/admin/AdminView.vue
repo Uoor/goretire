@@ -16,7 +16,7 @@
     <div v-if="tab === 'audit'" class="panel">
       <div v-for="h in pending" :key="h.id" class="audit-card">
         <div class="ac-top">
-          <b>{{ h.community }} · {{ h.houseType }} {{ h.area }}㎡</b>
+          <b>{{ h.title || (h.community + ' · ' + h.houseType + ' ' + h.area + '㎡') }}</b>
           <span class="ac-price num">{{ h.rent }} 元/月</span>
         </div>
         <div class="ac-meta">{{ h.region }} · {{ h.depositPay }}{{ h.leaseTerm ? ' · ' + h.leaseTerm : '' }} · 房号 {{ h.roomNo || '—' }} · 发布人 {{ h.publisherName || ('校友 #' + h.publisherId) }}</div>
@@ -103,7 +103,7 @@
           <h4>审核详情</h4>
           <i class="ph ph-x" @click="showPendingDetail = false"></i>
         </div>
-        <div class="pd-title">{{ pendingDetail.community }} · {{ pendingDetail.houseType }} {{ pendingDetail.area }}㎡</div>
+        <div class="pd-title">{{ pendingDetail.title || (pendingDetail.community + ' · ' + pendingDetail.houseType + ' ' + pendingDetail.area + '㎡') }}</div>
         <div class="ac-price num">{{ pendingDetail.rent }} 元/月（{{ pendingDetail.depositPay }}）</div>
         <div class="pd-grid">
           <div><span class="k">区域</span><span class="v">{{ pendingDetail.region }}</span></div>
@@ -129,7 +129,7 @@
       <div class="mini-panel" v-if="reportedHouse">
         <h4>被举报房源</h4>
         <div class="ac-top">
-          <b>{{ reportedHouse.community }} · {{ reportedHouse.houseType }} {{ reportedHouse.area }}㎡</b>
+          <b>{{ reportedHouse.title || (reportedHouse.community + ' · ' + reportedHouse.houseType + ' ' + reportedHouse.area + '㎡') }}</b>
           <span class="ac-price num">{{ reportedHouse.rent }} 元/月</span>
         </div>
         <div class="ac-meta">{{ reportedHouse.region }} · {{ reportedHouse.depositPay }} · 状态：{{ statusText(reportedHouse) }}</div>

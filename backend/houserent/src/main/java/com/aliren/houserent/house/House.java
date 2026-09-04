@@ -31,6 +31,8 @@ public class House {
     private Long id;
     private Long publisherId;
     private String community;
+    /** 房源标题（可选，优先展示；为空时降级为 小区·户型·面积） */
+    private String title;
     private String roomNo;
     private String region;
     private String houseType;

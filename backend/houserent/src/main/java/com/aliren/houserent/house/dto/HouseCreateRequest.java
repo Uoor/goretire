@@ -11,6 +11,8 @@ import java.math.BigDecimal;
 public class HouseCreateRequest {
     @NotBlank(message = "小区不能为空")
     private String community;
+    /** 房源标题（可选，优先展示；为空时降级为 小区·户型·面积） */
+    private String title;
     private String roomNo;
     @NotBlank(message = "区域不能为空")
     private String region;

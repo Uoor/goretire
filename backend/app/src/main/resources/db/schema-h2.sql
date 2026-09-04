@@ -31,6 +31,7 @@ CREATE TABLE house (
   id               BIGINT AUTO_INCREMENT PRIMARY KEY,
   publisher_id     BIGINT       NOT NULL,
   community        VARCHAR(128) NOT NULL,
+  title            VARCHAR(100),
   room_no          VARCHAR(32)  NOT NULL DEFAULT '',
   region           VARCHAR(32)  NOT NULL,
   house_type       VARCHAR(32)  NOT NULL,

@@ -15,6 +15,8 @@ public class HouseResponse {
 
     private Long id;
     private String community;
+    /** 房源标题（可选） */
+    private String title;
     /** 房号：仅发布人自己（mine 接口）可见，普通详情不含（审核敏感） */
     private String roomNo;
     private String region;
@@ -44,6 +46,7 @@ public class HouseResponse {
         HouseResponse r = new HouseResponse();
         r.setId(h.getId());
         r.setCommunity(h.getCommunity());
+        r.setTitle(h.getTitle());
         r.setRegion(h.getRegion());
         r.setHouseType(h.getHouseType());
         r.setArea(h.getArea());

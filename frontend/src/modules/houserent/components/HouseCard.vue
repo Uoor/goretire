@@ -5,7 +5,7 @@
       <span class="pricetag num">{{ formatMoney(house.rent) }}</span>
     </div>
     <div class="h-body">
-      <div class="h-title">{{ house.community }} · {{ house.houseType }} {{ house.area }}㎡</div>
+      <div class="h-title">{{ house.title || (house.community + ' · ' + house.houseType + ' ' + house.area + '㎡') }}</div>
       <div class="h-meta">{{ meta }}</div>
       <div class="h-tags">
         <span class="tag owner">{{ labelText }}</span>

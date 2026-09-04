@@ -33,6 +33,7 @@ CREATE TABLE IF NOT EXISTS `house` (
   `id`              BIGINT        NOT NULL AUTO_INCREMENT COMMENT '主键ID',
   `publisher_id`    BIGINT        NOT NULL COMMENT '发布人ID（user.id）',
   `community`       VARCHAR(128)  NOT NULL COMMENT '小区名称',
+  `title`           VARCHAR(100)  NULL COMMENT '房源标题（可选，优先展示；为空时降级为小区·户型·面积）',
   `room_no`         VARCHAR(32)   NOT NULL DEFAULT '' COMMENT '房间号（仅审核可见）',
   `region`          VARCHAR(32)   NOT NULL COMMENT '区域',
   `house_type`      VARCHAR(32)   NOT NULL COMMENT '户型',
