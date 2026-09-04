@@ -95,8 +95,13 @@ class WeeklyPickTaskTest {
         ArgumentCaptor<QueryWrapper> captor = ArgumentCaptor.forClass(QueryWrapper.class);
         verify(houseMapper, times(2)).selectList(captor.capture());
         List<QueryWrapper> all = captor.getAllValues();
-        assertThat(all.get(0).getSqlSegment()).contains("created_at");   // 本周查询带周过滤
-        assertThat(all.get(1).getSqlSegment()).doesNotContain("created_at"); // 回退全站无周过滤
+        // 两条查询都是 在线+在租
+        assertThat(all.get(0).getSqlSegment()).contains("audit_status").contains("rack_status");
+        assertThat(all.get(1).getSqlSegment()).contains("audit_status").contains("rack_status");
+        // 用 WHERE 占位参数区分：本周查询带 created_at 过滤（>= weekStart），回退全站查询没有
+        // （不能看 sqlSegment 文本——两条都有 orderByDesc("created_at") 的 ORDER BY）
+        assertThat(all.get(0).getParamNameValuePairs()).containsKey("created_at");
+        assertThat(all.get(1).getParamNameValuePairs()).doesNotContainKey("created_at");
 
         ArgumentCaptor<String> md = ArgumentCaptor.forClass(String.class);
         verify(pushClient).sendGroupCard(anyString(), md.capture());
