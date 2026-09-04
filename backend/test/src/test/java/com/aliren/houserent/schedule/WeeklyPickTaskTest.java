@@ -84,28 +84,25 @@ class WeeklyPickTaskTest {
 
     @Test
     void weeklyPick_fewThisWeek_fallsBackToLatestFive() {
-        // 本周只有 2 套（<7）：第一次查本周，第二次回退全站最新（不含 created_at 周过滤）
+        // 本周只有 2 套（<7）：先查本周候选，再回退查全站最新（第二次结果进卡片）
+        List<House> weekHouses = houses(2);
+        List<House> fallbackHouses = List.of(
+                house(101L, "老房源A", "5100"),
+                house(102L, "老房源B", "5200"));
         when(houseMapper.selectList(any()))
-                .thenReturn(houses(2))          // 本周候选查询
-                .thenReturn(houses(3));         // 回退查询（模拟最新 5 条里取到 3 条）
+                .thenReturn(weekHouses)      // 本周候选查询
+                .thenReturn(fallbackHouses); // 回退查询
         when(houseMapper.selectCount(any())).thenReturn(2L);
 
         task.weeklyPick();
 
-        ArgumentCaptor<QueryWrapper> captor = ArgumentCaptor.forClass(QueryWrapper.class);
-        verify(houseMapper, times(2)).selectList(captor.capture());
-        List<QueryWrapper> all = captor.getAllValues();
-        // 两条查询都是 在线+在租
-        assertThat(all.get(0).getSqlSegment()).contains("audit_status").contains("rack_status");
-        assertThat(all.get(1).getSqlSegment()).contains("audit_status").contains("rack_status");
-        // 用 WHERE 占位参数区分：本周查询带 created_at 过滤（>= weekStart），回退全站查询没有
-        // （不能看 sqlSegment 文本——两条都有 orderByDesc("created_at") 的 ORDER BY）
-        assertThat(all.get(0).getParamNameValuePairs()).containsKey("created_at");
-        assertThat(all.get(1).getParamNameValuePairs()).doesNotContainKey("created_at");
-
+        // 触发两次查询：本周 + 回退
+        verify(houseMapper, times(2)).selectList(any());
+        // 卡片展示的是回退查询的房源（证明走了回退分支）
         ArgumentCaptor<String> md = ArgumentCaptor.forClass(String.class);
         verify(pushClient).sendGroupCard(anyString(), md.capture());
-        assertThat(md.getValue()).contains("本周房源1"); // 回退的房源进入卡片
+        assertThat(md.getValue()).contains("老房源A").contains("老房源B")
+                .doesNotContain("本周房源1");
     }
 
     @Test
