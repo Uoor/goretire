@@ -28,12 +28,16 @@ public class WeeklyPickTask {
     private final PushClient pushClient;
     /** H5 访问地址（配置 aliren.h5.base-url），用于卡片跳转；未配置时卡片不带跳转链接 */
     private final String h5BaseUrl;
+    /** 租房群入群链接（钉钉群二维码链接，如 https://qr.dingtalk.com/action/joingroup?code=...） */
+    private final String groupInviteUrl;
 
     public WeeklyPickTask(HouseMapper houseMapper, PushClient pushClient,
-            @Value("${aliren.h5.base-url:}") String h5BaseUrl) {
+            @Value("${aliren.h5.base-url:}") String h5BaseUrl,
+            @Value("${aliren.robot.group-invite-url:}") String groupInviteUrl) {
         this.houseMapper = houseMapper;
         this.pushClient = pushClient;
         this.h5BaseUrl = h5BaseUrl == null ? "" : h5BaseUrl.trim();
+        this.groupInviteUrl = groupInviteUrl == null ? "" : groupInviteUrl.trim();
     }
 
     @Scheduled(cron = "${aliren.schedule.weekly-pick-cron:0 0 19 * * FRI}")
@@ -69,6 +73,10 @@ public class WeeklyPickTask {
                 md.append("<br/>👉 [查看房源详情](").append(H5Links.dingtalkLink(link)).append(")");
             }
             md.append("\n\n");
+        }
+        // 租房群入群入口：钉钉群二维码链接（钉钉容器内点击直接唤起加群页）
+        if (!groupInviteUrl.isBlank()) {
+            md.append("🏠 [加入租房群](").append(H5Links.dingtalkLink(groupInviteUrl)).append(")");
         }
         pushClient.sendGroupCard("本周精选", md.toString());
     }

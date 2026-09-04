@@ -32,7 +32,7 @@ class WeeklyPickTaskTest {
 
     @BeforeEach
     void setUp() {
-        task = new WeeklyPickTask(houseMapper, pushClient, "https://h5.example.com");
+        task = new WeeklyPickTask(houseMapper, pushClient, "https://h5.example.com", "");
     }
 
     private House house(Long id, String community, String rent) {
@@ -85,7 +85,7 @@ class WeeklyPickTaskTest {
 
     @Test
     void weeklyPick_h5NotConfigured_noLinks() {
-        task = new WeeklyPickTask(houseMapper, pushClient, "");
+        task = new WeeklyPickTask(houseMapper, pushClient, "", "");
         when(houseMapper.selectList(any())).thenReturn(List.of(house(1L, "西溪八方城", "5800")));
         when(houseMapper.selectCount(any())).thenReturn(1L);
 
@@ -102,5 +102,32 @@ class WeeklyPickTaskTest {
         when(houseMapper.selectList(any())).thenReturn(List.of());
         task.weeklyPick();
         verify(pushClient, never()).sendGroupCard(anyString(), anyString());
+    }
+
+    @Test
+    void weeklyPick_groupInviteUrl_included() {
+        task = new WeeklyPickTask(houseMapper, pushClient, "https://h5.example.com",
+                "https://qr.dingtalk.com/action/joingroup?code=test123");
+        when(houseMapper.selectList(any())).thenReturn(List.of(house(1L, "西溪八方城", "5800")));
+        when(houseMapper.selectCount(any())).thenReturn(1L);
+
+        task.weeklyPick();
+
+        ArgumentCaptor<String> md = ArgumentCaptor.forClass(String.class);
+        verify(pushClient).sendGroupCard(anyString(), md.capture());
+        assertThat(md.getValue()).contains("加入租房群").contains("joingroup");
+    }
+
+    @Test
+    void weeklyPick_noGroupInviteUrl_noGroupSection() {
+        // groupInviteUrl 为空时不显示入群入口
+        when(houseMapper.selectList(any())).thenReturn(List.of(house(1L, "西溪八方城", "5800")));
+        when(houseMapper.selectCount(any())).thenReturn(1L);
+
+        task.weeklyPick();
+
+        ArgumentCaptor<String> md = ArgumentCaptor.forClass(String.class);
+        verify(pushClient).sendGroupCard(anyString(), md.capture());
+        assertThat(md.getValue()).doesNotContain("加入租房群");
     }
 }

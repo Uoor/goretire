@@ -32,6 +32,10 @@ public class WeeklyStoryTask {
         long found = houseMapper.selectCount(new QueryWrapper<House>()
                 .eq("feedback_answer", 1)
                 .ge("updated_at", LocalDate.now().minusDays(7).atStartOfDay()));
+        if (found == 0) {
+            log.info("weekly story skipped: no alumni found home this week");
+            return;
+        }
         String md = "🎉 **本周直租故事**\n\n上周有 **" + found + "** 位校友通过「校友直租」找到了新家。<br/>"
                 + "真实房源 · 校友互信 · 免费直租，让每一次换城都有托底。";
         pushClient.sendGroupCard("直租故事", md);

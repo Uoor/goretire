@@ -60,6 +60,8 @@ aliren:
     webhook: ${ROBOT_WEBHOOK:}
     # 工作通知（私聊）需要应用 agentId（数字），配置后启用；未配置降级为日志
     agent-id: ${ROBOT_AGENT_ID:}
+    # 租房群入群链接（钉钉群二维码链接）：周推卡片底部展示，引导加入
+    group-invite-url: ${ROBOT_GROUP_INVITE_URL:}
   push:
     # 防骚扰：单订阅每日推送上限（条/天），超限当天不再私聊提醒
     daily-sub-limit: ${DAILY_SUB_LIMIT:3}
