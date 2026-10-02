@@ -1,0 +1,51 @@
+/* Ali 社区专属样式 */
+
+/* Hero 视觉区：社区入口图 + 文字描述 */
+.hero-image {
+  width: 100%;
+  max-width: 320px;
+  height: auto;
+  max-height: 320px;
+  object-fit: contain;
+  border-radius: 12px;
+  box-shadow: 0 10px 32px rgba(255, 106, 0, 0.10);
+  transition: transform 0.4s ease, box-shadow 0.4s ease;
+}
+
+.hero-image:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 14px 40px rgba(255, 106, 0, 0.15);
+}
+
+.hero-image-caption {
+  margin-top: 16px;
+  padding: 14px 18px;
+  background: rgba(255, 250, 246, 0.65);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 106, 0, 0.10);
+  border-radius: 10px;
+}
+
+.hero-image-caption p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.65;
+  color: var(--ink);
+}
+
+/* 移动端适配 */
+@media (max-width: 768px) {
+  .hero-image {
+    max-width: 240px;
+    max-height: 240px;
+  }
+  
+  .hero-image-caption {
+    margin-top: 14px;
+    padding: 12px 14px;
+  }
+  
+  .hero-image-caption p {
+    font-size: 13px;
+  }
+}
