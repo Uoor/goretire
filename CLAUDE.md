@@ -7,7 +7,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 校友安居 (Alumni Housing) — 阿里/蚂蚁校友可信租房网络，钉钉内 H5 微应用。
 
 - **Backend**: Spring Boot 3 (Java 17) + MySQL 8 + MyBatis-Plus，Maven 多模块
-- **Frontend**: Vue 3 + Vant 4 + Vite + Pinia，钉钉 H5（hash 路由，postcss-px-to-viewport 按 375 设计稿转 vw）
+- **Frontend**: Vue 3 + Vant 4 + Vite + Pinia，钉钉 H5（hash 路由，postcss-px-to-viewport 按 375 设计稿转 vw），代码在 `frontend/`，线上挂在 `/ali/house/`
+- **Portal**: React 19 + TS + Ant Design 5 + Webpack 5，对外门户（代码在 `root-site/`），线上服务 `/` 与 `/ali`；与 H5 由 `scripts/build-web.mjs` 汇总成同一个产物树、一次发布
 
 ## Commands
 
@@ -135,15 +136,30 @@ frontend/src/styles/
 
 本地 `deploy-remote.sh` 通过 SSH 连接 `ecs-alr`，执行远程的 `deploy-ecs.sh`。远程脚本在 ECS 上编译 jar 并放入 `/root/aliren-data/releases/`，通过软链 `current.jar` 切换版本。服务端口 8080，nginx 反代 80 → 8080。
 
-### 前端
+### 前端（门户 + 租房 H5，统一产物树）
 
-```bash
-./scripts/deploy-frontend-remote.sh               # 完整部署（拉代码 → npm install → 构建）
-./scripts/deploy-frontend-remote.sh --skip-build   # 只切换版本
-./scripts/deploy-frontend-remote.sh --rollback     # 回滚到上一个版本
+一个前端工程、一次构建、一次发布。`scripts/build-web.mjs` 把两个应用汇总成一个产物树：
+
+```
+dist/index.html + dist/assets/     门户（root-site/，React）    → /
+dist/ali/index.html                门户 HTML 副本              → /ali
+dist/ali/house/                    租房 H5（frontend/，Vue）   → /ali/house/
 ```
 
-本地 `deploy-frontend-remote.sh` 通过 SSH 连接 `ecs-alr`，执行远程的 `deploy-frontend-ecs.sh`。构建产物放入 `/root/aliren-data/frontend/releases/`，通过软链 `current` 切换版本，nginx 直接指向 `current` 目录。
+```bash
+./scripts/deploy-web-remote.sh                # 构建 + 发布（构建 → 上传 → 切软链）
+./scripts/deploy-web-remote.sh --skip-build   # 用现有 dist 发布
+./scripts/deploy-web-remote.sh --rollback     # 回滚到上一个版本
+./scripts/deploy-web-remote.sh --current      # 查看当前版本
+```
+
+本地 `deploy-web-remote.sh` 通过 SSH 连接 `ecs-alr`，执行远程的 `deploy-web-ecs.sh`。产物放入 `/root/aliren-data/web/releases/<时间戳>/`，软链 `web/current` 切换版本，nginx `location /` 的 root 指向 `web/current`。**门户与 H5 永远同版本，一次回滚退回两者的同一版本。**
+
+构建顺序不能颠倒：门户的 webpack 配了 `output.clean`，会清空自己的 `dist`，所以**先建门户汇总到根 `dist/`，再建 H5 搬进 `dist/ali/house/`**。
+
+**改 nginx 前必读的两个坑**：`dist/ali/index.html` 不能省 —— `dist/ali/` 目录一旦存在，请求 `/ali` 会先命中目录再找 index，缺了它 nginx 直接 403；同时 `/ali` 要用 `location = /ali` 精确匹配，否则会被 301 到 `/ali/`。
+
+旧的 `deploy-frontend-*.sh`、`deploy-rootsite-*.sh` 与 `frontend/releases`、`root-site-releases` 是历史链路，已不再写入。
 
 ---
 

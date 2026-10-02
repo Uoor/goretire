@@ -59,7 +59,7 @@ export const portalContent = {
       title: "工作生活",
       subtitle: "让校友关系产生真实价值",
       links: [
-        { label: "校友租房", url: "https://goretire.cn/ali/house/#/", qrPopover: true, qrImage: "assets/groups-xiaoyouzufang.jpg", qrAlt: "校友租房社群二维码" },
+        { label: "校友租房", url: "/ali/house/#/", qrPopover: true, qrImage: "assets/groups-xiaoyouzufang.jpg", qrAlt: "校友租房社群二维码" },
         { label: "招聘内推", url: "https://www.axureshow.com/project/puAKIzIU/", qrImage: "assets/ali-community-qr.png", qrAlt: "招聘内推社群二维码" },
         { label: "香港身份 DIY", qrImage: "assets/groups-xianggangshenfen.png", qrAlt: "香港身份 DIY 社群二维码" },
         { label: "团建轰趴", qrImage: "assets/groups-bieshuhongpa.jpg", qrAlt: "团建轰趴社群二维码" },

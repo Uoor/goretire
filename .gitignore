@@ -37,3 +37,6 @@ hs_err_pid*
 .env.local
 node_modules/
 .npm-cache/
+
+# 统一前端构建产物（scripts/build-web.mjs 产出）
+dist/

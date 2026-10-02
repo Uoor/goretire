@@ -1,30 +1,37 @@
 #!/bin/bash
 # ============================================================
-# 一起提前退休官网 · ECS 侧发布脚本（在 ECS 上执行）
+# 一起提前退休 · 统一前端 ECS 侧发布脚本（在 ECS 上执行）
 #
-# 站点目录：/root/aliren-data/root-site（软链，指向 root-site-releases/site_<时间戳>）
-# nginx：location / → root /root/aliren-data/root-site
+# 产物目录：/root/aliren-data/web/releases/<时间戳>/
+#   ├── index.html        门户（React）   → /
+#   ├── 404.html
+#   ├── assets/                           → /assets/*
+#   └── ali/
+#       ├── index.html    门户副本        → /ali
+#       └── house/        租房 H5（Vue）  → /ali/house/
+# 软链：/root/aliren-data/web/current → 最新版本
+# nginx：location / 的 root 指向 web/current
 #
 # 用法:
-#   ./scripts/deploy-rootsite-ecs.sh --activate site_20261003_000751
-#   ./scripts/deploy-rootsite-ecs.sh --rollback
-#   ./scripts/deploy-rootsite-ecs.sh --current
+#   ./scripts/deploy-web-ecs.sh --activate 20261003_010000
+#   ./scripts/deploy-web-ecs.sh --rollback
+#   ./scripts/deploy-web-ecs.sh --current
 # ============================================================
 set -e
 
 # ---- 路径配置 ----
 DATA_DIR="/root/aliren-data"
-RELEASES_DIR="$DATA_DIR/root-site-releases"
-CURRENT_LINK="$DATA_DIR/root-site"
+RELEASES_DIR="$DATA_DIR/web/releases"
+CURRENT_LINK="$DATA_DIR/web/current"
 
 GREEN='\033[0;32m'; YELLOW='\033[1;33m'; RED='\033[0;31m'; NC='\033[0m'
 log()  { echo -e "${GREEN}[INFO]${NC} $*"; }
 warn() { echo -e "${YELLOW}[WARN]${NC} $*"; }
 err()  { echo -e "${RED}[ERR]${NC}  $*"; }
 
-# 按修改时间倒序列出正式版本（忽略 legacy_* 归档）
+# 按修改时间倒序列出所有版本
 releases_desc() {
-    ls -dt "$RELEASES_DIR"/site_*/ 2>/dev/null || true
+    ls -dt "$RELEASES_DIR"/*/ 2>/dev/null || true
 }
 
 activate() {
@@ -34,10 +41,16 @@ activate() {
         err "版本目录不存在: $target"
         exit 1
     fi
+    # 两个入口都必须齐，否则发出去就是半残的站
     if [ ! -f "$target/index.html" ]; then
-        err "版本目录缺少 index.html，拒绝发布: $target"
+        err "版本目录缺少 index.html（门户）: $target"
         exit 1
     fi
+    if [ ! -f "$target/ali/house/index.html" ]; then
+        err "版本目录缺少 ali/house/index.html（租房 H5）: $target"
+        exit 1
+    fi
+    mkdir -p "$DATA_DIR/web"
     ln -sfn "$target" "$CURRENT_LINK"
     log "已切换: $CURRENT_LINK -> $target"
 }
@@ -61,7 +74,7 @@ rollback() {
 
 case "${1:-}" in
     --activate)
-        [ -n "${2:-}" ] || { err "缺少版本目录名，例: --activate site_20261003_000751"; exit 1; }
+        [ -n "${2:-}" ] || { err "缺少版本目录名，例: --activate 20261003_010000"; exit 1; }
         activate "$2"
         ;;
     --rollback)
@@ -70,7 +83,7 @@ case "${1:-}" in
     --current)
         ;;
     *)
-        err "用法: $0 --activate <site_xxx> | --rollback | --current"
+        err "用法: $0 --activate <版本名> | --rollback | --current"
         exit 1
         ;;
 esac
