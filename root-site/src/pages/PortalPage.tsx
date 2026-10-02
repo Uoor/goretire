@@ -237,8 +237,9 @@ export default function PortalPage({ variant }: { variant: PortalVariant }) {
 
   useEffect(() => {
     const syncCarouselToHash = () => {
-      if (window.location.hash === "#community-invites") carouselRef.current?.goTo(1);
-      if (window.location.hash === "#home") carouselRef.current?.goTo(0);
+      // 幻灯片顺序：0 = 加入社群，1 = 品牌首屏
+      if (window.location.hash === "#community-invites") carouselRef.current?.goTo(0);
+      if (window.location.hash === "#home") carouselRef.current?.goTo(1);
     };
 
     window.addEventListener("hashchange", syncCarouselToHash);

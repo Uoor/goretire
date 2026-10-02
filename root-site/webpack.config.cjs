@@ -51,8 +51,7 @@ module.exports = (_environment, arguments_) => ({
       patterns: [
         { from: path.join(root, ".nojekyll"), to: ".nojekyll", toType: "file" },
         { from: path.join(root, "wxpic.png"), to: "wxpic.png" },
-        { from: path.join(root, "assets", "content-data.js"), to: "assets/content-data.js" },
-        { from: path.join(root, "assets"), to: "assets", globOptions: { ignore: ["**/*.js", "**/*.scss", "**/*.css", "**/*.md", "**/Bold_poster_style*"] } }
+        { from: path.join(root, "assets"), to: "assets", globOptions: { ignore: ["**/*.js", "**/*.scss", "**/*.css", "**/*.md"] } }
       ]
     })
   ],

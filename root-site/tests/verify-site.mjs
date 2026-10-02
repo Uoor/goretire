@@ -37,7 +37,7 @@ assert.match(siteFooter, /portalContent\.footer\.filing/);
 assert.doesNotMatch(siteFooter, /qrCodes|footer-qrcode/);
 assert.match(inviteSection, /portalContent\.footer\.qrCodes\.map/);
 assert.match(page, /<CommunityInviteSection \/>/);
-assert.match(page, /<Carousel[\s\S]*<HeroSection \/>[\s\S]*<CommunityInviteSection \/>[\s\S]*<\/Carousel>/);
+assert.match(page, /<Carousel[\s\S]*<CommunityInviteSection \/>[\s\S]*<HeroSection \/>[\s\S]*<\/Carousel>/);
 assert.match(page, /carouselRef\.current\?\.goTo\(1\)/);
 assert.doesNotMatch(page, /window\.location\.pathname/);
 assert.match(html, /src=["']?\/assets\/main\.[\w-]+\.js/);
@@ -47,28 +47,29 @@ assert.ok(!outputFiles.includes("ali"), "SPA build should not emit a route-speci
 assert.ok(outputFiles.includes("index.html") && outputFiles.includes("404.html"));
 assert.match(siteHeader, /Link className="nav-brand" to="\/"/);
 assert.match(content, /离职员工 SOP/);
-assert.match(content, /社群服务/);
+assert.match(content, /子群服务/);
 assert.match(content, /qrImage:/);
 assert.match(content, /qrAlt:/);
 assert.match(content, /imageAlt:/);
 assert.match(content, /url: "https:\/\/alidocs\.dingtalk\.com/);
-assert.match(page, /trigger=\{\["hover", "click"\]\}/);
+assert.match(page, /trigger=\{\["hover"\]\}/);
 assert.match(page, /group\.links\.map\(\(link\)/);
 assert.match(page, /window\.open\(item\.url/);
 assert.match(page, /topic-preview/);
 assert.match(styles, /\.community-invites\s*\{/);
 assert.match(styles, /\.portal-top-carousel/);
 assert.match(entry, /site\.scss/);
-for (const id of ["home", "insight", "community", "community-invites", "mutual-aid"]) {
+for (const id of ["home", "insight", "community", "mutual-aid"]) {
   assert.ok(page.includes(`id="${id}"`), `missing section: ${id}`);
 }
+assert.ok(inviteSection.includes('id="community-invites"'), "missing section: community-invites");
 
 for (const copy of [
   "致力于", "拉平信息差、", "提升认知、", "互助避坑、", "善用金融工具，", "探索更自由人生",
   "内容观点", "A股行情", "黄金行情", "港美股行情", "二手房价格推送",
-  "房产拐点知识库", "AI 每日日报", "离职员工 SOP", "社群服务", "A股交流", "港美股交流",
-  "银行咨询", "融资服务", "节税专区", "香港港险", "校友租房", "招聘内推", "香港身份 DIY",
-  "别墅轰趴", "资源互助", "antfin2018", "一起提前退休"
+  "房产拐点知识库", "AI 每日日报", "离职员工 SOP", "子群服务", "A股交流", "港美股交流",
+  "信贷资源汇总", "融资服务", "节税专区", "港险避坑", "校友租房", "招聘内推", "香港身份 DIY",
+  "团建轰趴", "资源互助", "antfin2018", "一起提前退休"
 ]) assert.ok(`${page}${content}${siteHeader}`.includes(copy), `missing copy: ${copy}`);
 
 assert.match(siteHeader, /className="brand-symbol"/);
