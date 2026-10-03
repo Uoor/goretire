@@ -9,7 +9,7 @@
 set -e
 
 # ---- 路径配置 ----
-REPO_DIR="/root/aliren"
+REPO_DIR="/root/goretire"
 DATA_DIR="/root/aliren-data"
 RELEASES_DIR="$DATA_DIR/releases"
 LOGS_DIR="$DATA_DIR/logs"

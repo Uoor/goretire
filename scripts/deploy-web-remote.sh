@@ -17,7 +17,7 @@ HOST="ecs-alr"
 DATA_DIR="/root/aliren-data"
 RELEASES_DIR="$DATA_DIR/web/releases"
 CURRENT_LINK="$DATA_DIR/web/current"
-REMOTE_SCRIPT="/root/aliren/scripts/deploy-web-ecs.sh"
+REMOTE_SCRIPT="/root/goretire/scripts/deploy-web-ecs.sh"
 REPO_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 DIST_DIR="$REPO_DIR/dist"
 

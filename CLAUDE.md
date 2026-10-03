@@ -132,6 +132,8 @@ frontend/src/styles/
 
 生产环境部署到 **ecs-alr**（阿里云 ECS），通过 SSH 执行远程脚本。前后端分开部署，均有版本管理和回滚能力。
 
+服务器路径：仓库目录 **`/root/goretire`**（git clone，部署脚本在此 `git pull`）；产物与运行数据在 **`/root/aliren-data/`**（数据目录沿用旧名，未随仓库改名 —— nginx 与后端 `UPLOAD_DIR` 都指向它）。
+
 ### 后端
 
 ```bash

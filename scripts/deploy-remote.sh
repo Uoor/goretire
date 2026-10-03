@@ -9,7 +9,7 @@
 set -e
 
 HOST="ecs-alr"
-REMOTE_SCRIPT="/root/aliren/scripts/deploy-ecs.sh"
+REMOTE_SCRIPT="/root/goretire/scripts/deploy-ecs.sh"
 
 echo "🚀 连接 $HOST 执行部署..."
 ssh -o ConnectTimeout=10 "$HOST" "bash $REMOTE_SCRIPT $*"
