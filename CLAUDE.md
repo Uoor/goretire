@@ -14,6 +14,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 门户与租房 H5 由 `scripts/build-web.mjs` 汇总成同一个产物树、一次发布，永远同版本。
 
+**主线分支 = `goretire`** —— 开发与部署都在这条分支上。服务器 `/root/aliren` 也跟踪 `goretire`，后端 `deploy-ecs.sh` 的 `git pull --ff-only` 走的就是它。旧的 `backend-core` 与空占位 `master` 已退役。
+
 ## Commands
 
 ### Backend（在 `backend/` 下执行）
