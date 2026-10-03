@@ -1,7 +1,9 @@
-import { useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import { Avatar, Button, Card, Carousel, Image, List, Popover, Typography } from "antd";
 import type { CarouselRef } from "antd/es/carousel";
-import CommunityInviteSection from "../components/site/CommunityInviteSection";
+import CommunityInviteSection, { buildCommunityInviteSlides } from "../components/site/CommunityInviteSection";
+import HeroVisual from "../components/site/HeroVisual";
 import SiteFooter from "../components/site/SiteFooter";
 import SiteHeader from "../components/site/SiteHeader";
 import { portalContent, type PortalVariant } from "../data/portalContent";
@@ -19,16 +21,7 @@ function HeroSection() {
             <em>探索更自由人生</em>
           </Typography.Title>
         </div>
-        <div className="hero-visual reveal" aria-label="信息、认知、互助与工具共同通向提前退休">
-          <div className="orbit orbit-one" />
-          <div className="orbit orbit-two" />
-          <div className="orbit orbit-three" />
-          <span className="orbit-label label-info">INFO <b>信息</b></span>
-          <span className="orbit-label label-insight">INSIGHT <b>认知</b></span>
-          <span className="orbit-label label-mutual">MUTUAL <b>互助</b></span>
-          <span className="orbit-label label-tools">TOOLS <b>工具</b></span>
-          <div className="visual-core"><strong>一起<br />提前退休</strong></div>
-        </div>
+        <HeroVisual />
       </div>
     </section>
   );
@@ -113,8 +106,10 @@ function InsightSection({ variant }: { variant: PortalVariant }) {
   );
 }
 
-function CommunitySection() {
+function CommunitySection({ variant }: { variant: PortalVariant }) {
   const [activeQr, setActiveQr] = useState<string | null>(null);
+  const isHome = variant === "home";
+  const isMobile = window.matchMedia("(max-width: 700px)").matches;
 
   return (
     <section className="community section" id="community" aria-labelledby="community-title">
@@ -128,56 +123,135 @@ function CommunitySection() {
             <Card className="service-group" role="group" aria-label={group.title} key={group.title} variant="outlined">
               <div className="service-heading"><div><Typography.Title level={5}>{group.title}</Typography.Title><Typography.Text type="secondary">{group.subtitle}</Typography.Text></div></div>
               <div className="community-links">
-                {group.links.map((link) => (
-                  <Popover
-                    key={link.label}
-                    open={activeQr === link.label}
-                    onOpenChange={(open) => {
-                      if (open) {
-                        setActiveQr(link.label);
-                      } else {
-                        setActiveQr((current) => current === link.label ? null : current);
-                      }
-                    }}
-                    trigger={["hover"]}
-                    placement="top"
-                    mouseEnterDelay={0.12}
-                    content={(
-                      "url" in link && link.url && !("qrPopover" in link && link.qrPopover) ? (
-                        <div className="community-popover-content">
-                          <Typography.Link
-                            className="community-popover-link"
-                            onClick={(event) => {
-                              event.preventDefault();
-                              window.open(link.url, "_blank", "noopener,noreferrer");
-                            }}
-                          >
-                            点击查看详情
-                          </Typography.Link>
-                        </div>
-                      ) : (
-                        <div className="community-popover-content">
-                          <Image src={assetUrl(link.qrImage)} alt={link.qrAlt} preview={false} />
-                          <Typography.Text>钉钉扫码加入{link.label}</Typography.Text>
-                        </div>
-                      )
-                    )}
-                  >
+                {group.links.map((link) => {
+                  if (isHome) {
+                    return (
+                      <div className="community-tag community-tag-static" key={link.label}>
+                        <Typography.Text strong>{link.label}</Typography.Text>
+                      </div>
+                    );
+                  }
+                  const hasQr = "qrImage" in link && Boolean(link.qrImage);
+                  const button = (
                     <Button
                       className="community-tag"
-                      aria-label={"url" in link && link.url ? `${link.label}，打开详情页` : `${link.label}，查看进群二维码`}
-                      onClick={"url" in link && link.url ? () => window.open(link.url, "_blank", "noopener,noreferrer") : undefined}
+                      aria-label={hasQr ? `${link.label}，查看进群二维码` : `${link.label}，打开详情页`}
+                      onClick={link.url ? () => window.open(link.url, "_blank", "noopener,noreferrer") : undefined}
                     >
                       <Typography.Text strong>{link.label}</Typography.Text>
                       <span aria-hidden="true">↗</span>
                     </Button>
-                  </Popover>
-                ))}
+                  );
+                  if (!hasQr || isMobile) {
+                    return <Fragment key={link.label}>{button}</Fragment>;
+                  }
+                  return (
+                    <Popover
+                      key={link.label}
+                      open={activeQr === link.label}
+                      onOpenChange={(open) => {
+                        if (open) {
+                          setActiveQr(link.label);
+                        } else {
+                          setActiveQr((current) => current === link.label ? null : current);
+                        }
+                      }}
+                      trigger={["hover"]}
+                      placement="top"
+                      mouseEnterDelay={0.12}
+                      content={(
+                        <div className="community-popover-content">
+                          <Image src={assetUrl(link.qrImage)} alt={link.qrAlt} preview={false} />
+                          <Typography.Text>钉钉扫码加入{link.label}</Typography.Text>
+                        </div>
+                      )}
+                    >
+                      {button}
+                    </Popover>
+                  );
+                })}
               </div>
             </Card>
           ))}
         </div>
         <p className="risk-note reveal">市场及金融相关内容仅供信息交流与学习参考，不构成任何投资、税务或金融建议</p>
+      </div>
+    </section>
+  );
+}
+
+function CompanyNetworkSection() {
+  const autoplayEnabled = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const showAll = portalContent.companyNetworksShowAll;
+  const companies = showAll
+    ? portalContent.companyNetworks
+    : portalContent.companyNetworks.filter((company) => company.id === "ali");
+  const pages: (typeof companies)[number][][] = [];
+  for (let i = 0; i < companies.length; i += 3) {
+    pages.push(companies.slice(i, i + 3));
+  }
+
+  const renderCard = (company: (typeof companies)[number]) => (
+    <Card className="company-card" key={company.id} variant="outlined">
+      <div className="company-copy">
+        <Typography.Text className="company-name" strong>{company.name}</Typography.Text>
+        <Typography.Paragraph className="company-desc">{company.description}</Typography.Paragraph>
+        {"link" in company && company.link ? (
+          <Link className="company-link" to={company.link}>
+            {company.linkLabel}
+            <span aria-hidden="true">→</span>
+          </Link>
+        ) : null}
+      </div>
+      <div className="company-qr">
+        <img src={assetUrl(company.qrImage)} alt={company.qrAlt} />
+        <Typography.Text type="secondary">扫码加入总群</Typography.Text>
+      </div>
+    </Card>
+  );
+
+  return (
+    <section className="company-networks section" id="company-networks" aria-labelledby="company-networks-title">
+      <div className="shell">
+        <div className="section-head reveal">
+          <div>
+            <p className="section-index">大厂社群</p>
+            <Typography.Title id="company-networks-title" level={2}>{showAll ? <>按公司找到组织<br />专属圈子持续扩展</> : <>按公司找到组织<br />阿里校友专属圈子</>}</Typography.Title>
+          </div>
+          <Typography.Paragraph>{showAll ? "目前已覆盖阿里巴巴/字节/携程/得物/小米/海康... 更多大厂的专属社群正在路上" : "阿里巴巴专属社群入口，6000+ 校友在这里互助同行"}</Typography.Paragraph>
+        </div>
+        {pages.length > 1 ? (
+          <Carousel
+            className="company-carousel reveal"
+            aria-label="大厂社群卡片轮播"
+            arrows
+            dots
+            autoplay={autoplayEnabled}
+            autoplaySpeed={3000}
+            pauseOnHover
+            adaptiveHeight
+            accessibility
+          >
+            {pages.map((page, index) => (
+              <div className="company-slide" key={index}>
+                <div className="company-grid">
+                  {page.map((company, cardIndex) => (
+                    cardIndex === page.length - 1 ? (
+                      <div className="company-mask" key={company.id}>
+                        {renderCard(company)}
+                        <div className="company-mask-tip" aria-hidden="true">滑动查看更多 →</div>
+                      </div>
+                    ) : renderCard(company)
+                  ))}
+                </div>
+              </div>
+            ))}
+          </Carousel>
+        ) : (
+          <div className={`company-grid reveal${showAll ? "" : " is-single"}`}>
+            {companies.map(renderCard)}
+          </div>
+        )}
       </div>
     </section>
   );
@@ -206,6 +280,17 @@ function MutualAidSection() {
 export default function PortalPage({ variant }: { variant: PortalVariant }) {
   const carouselRef = useRef<CarouselRef>(null);
   const autoplayEnabled = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const [isMobile, setIsMobile] = useState(() => window.matchMedia("(max-width: 700px)").matches);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 700px)");
+    const onChange = (event: MediaQueryListEvent) => setIsMobile(event.matches);
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, []);
+
+  const heroSlideIndex = isMobile ? 0 : 1;
+  const inviteStartIndex = isMobile ? 1 : 0;
 
   useEffect(() => {
     const reveals = [...document.querySelectorAll<HTMLElement>(".reveal")];
@@ -237,14 +322,14 @@ export default function PortalPage({ variant }: { variant: PortalVariant }) {
 
   useEffect(() => {
     const syncCarouselToHash = () => {
-      if (window.location.hash === "#community-invites") carouselRef.current?.goTo(1);
-      if (window.location.hash === "#home") carouselRef.current?.goTo(0);
+      if (window.location.hash === "#community-invites") carouselRef.current?.goTo(inviteStartIndex);
+      if (window.location.hash === "#home") carouselRef.current?.goTo(heroSlideIndex);
     };
 
     window.addEventListener("hashchange", syncCarouselToHash);
     syncCarouselToHash();
     return () => window.removeEventListener("hashchange", syncCarouselToHash);
-  }, []);
+  }, [heroSlideIndex, inviteStartIndex]);
 
   return (
     <>
@@ -259,15 +344,24 @@ export default function PortalPage({ variant }: { variant: PortalVariant }) {
           dots
           autoplay={autoplayEnabled}
           pauseOnHover
-          adaptiveHeight
+          adaptiveHeight={!isMobile}
           accessibility
         >
-          <div className="portal-carousel-slide"><CommunityInviteSection /></div>
-          <div className="portal-carousel-slide"><HeroSection /></div>
-
+          {isMobile ? (
+            [
+              <div className="portal-carousel-slide" key="hero-mobile"><HeroSection /></div>,
+              ...buildCommunityInviteSlides(variant)
+            ]
+          ) : (
+            [
+              <div className="portal-carousel-slide" key="invite"><CommunityInviteSection variant={variant} /></div>,
+              <div className="portal-carousel-slide" key="hero"><HeroSection /></div>
+            ]
+          )}
         </Carousel>
+        {variant === "home" && <CompanyNetworkSection />}
         <InsightSection variant={variant} />
-        <CommunitySection />
+        <CommunitySection variant={variant} />
         <MutualAidSection />
       </main>
       <SiteFooter />

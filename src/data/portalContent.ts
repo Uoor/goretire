@@ -25,6 +25,25 @@ export const portalContent = {
     { label: "AI 日报", accent: false, intro: "AI 产品、行业与 Agent 权限边界的每日精选", image: "assets/bots-ai-daily.jpg", imageAlt: "AI Agent 权限边界专题" },
     { label: "二手房价格推送", accent: false, intro: "按城市和片区追踪公开房价变化", image: "assets/bots-second-hand-house-price.jpg", imageAlt: "公开市场数据参考图" }
   ],
+  // 大厂社群展示开关：true = 轮播展示全部公司；false = 只展示阿里卡片 + 「更多大厂社群接入中」占位卡（无轮播动效）
+  // URL 拼接 ?debug=1 时强制置为 true，便于预览全量效果
+  companyNetworksShowAll: typeof window !== "undefined" && new URLSearchParams(window.location.search).get("debug") === "1",
+  companyNetworks: [
+    {
+      id: "ali",
+      name: "阿里巴巴",
+      description: "离职校友 SOP、校友内推与 6000+ 阿里校友的专属交流圈",
+      link: "/ali",
+      linkLabel: "进入阿里专区",
+      qrImage: "assets/ali-community-qr.png",
+      qrAlt: "阿里校友总群二维码"
+    },
+    { id: "bytedance", name: "字节跳动", description: "字节校友在职/跳槽交流与内推互助", qrImage: "assets/zijie-community-qr.jpg", qrAlt: "字节校友群二维码" },
+    { id: "ctrip", name: "携程", description: "携程校友交流群，出行圈信息互通", qrImage: "assets/xiecheng-community-qr.jpg", qrAlt: "携程校友群二维码" },
+    { id: "dewu", name: "得物", description: "得物校友交流群，潮流电商圈互助", qrImage: "assets/ali-community-qr.png", qrAlt: "得物校友群二维码" },
+    { id: "xiaomi", name: "小米", description: "小米校友交流群，硬件与生态圈互助", qrImage: "assets/ali-community-qr.png", qrAlt: "小米校友群二维码" },
+    { id: "hikvision", name: "海康威视", description: "海康校友交流群，安防圈信息互通", qrImage: "assets/ali-community-qr.png", qrAlt: "海康校友群二维码" }
+  ],
   knowledge: {
     shared: [
       { icon: "⌁", title: "房产拐点知识库", detail: "周期观察 · 城市数据 · 决策框架", url: "https://alidocs.dingtalk.com/i/nodes/amweZ92PV6yogvAwTgXmqnk9WxEKBD6p" },
@@ -37,21 +56,21 @@ export const portalContent = {
       title: "每日交流",
       subtitle: "一起聊市场，也聊变化",
       links: [
-        { label: "A股交流", qrImage: "assets/groups-agujiaoliu.jpg", qrAlt: "A股交流社群二维码" },
-        { label: "港美股交流", qrImage: "assets/groups-gangmeigujiaoliu.png", qrAlt: "港美股交流社群二维码" },
-        { label: "AI 交流", qrImage: "assets/groups-aijiaoliu.jpg", qrAlt: "AI 交流社群二维码" }
+        { label: "A股交流", url:"https://qr.dingtalk.com/action/joingroup?code=v1,k1,nYV0Gc8LPGhoKjojhlz+49TPVGO5LYSTZypc/qZuX1FuRVJIwrSsXmL8oFqU5ajJ&_dt_no_comment=1&origin=11?",qrImage: "assets/groups-agujiaoliu.jpg", qrAlt: "A股交流社群二维码" },
+        { label: "港美股交流",url: "https://qr.dingtalk.com/action/joingroup?code=v1,k1,bdVh4BikBa96rCbp9q3Cm9TPVGO5LYSTa6veUVEtLh5uRVJIwrSsXmL8oFqU5ajJ&_dt_no_comment=1&origin=11?", qrImage: "assets/groups-gangmeigujiaoliu.png", qrAlt: "港美股交流社群二维码" },
+        { label: "AI 交流", url:"https://qr.dingtalk.com/action/joingroup?code=v1,k1,tWZcJD6gNGsdvHz0NL4QrtTPVGO5LYSTJsgSTKhBBiidR7ksupjDEA==&_dt_no_comment=1&origin=11?",qrImage: "assets/groups-aijiaoliu.jpg", qrAlt: "AI 交流社群二维码" }
       ]
     },
     {
       title: "金融工具",
       subtitle: "理解工具，理性做选择",
       links: [
-        { label: "信贷资源汇总", url: "https://alidocs.dingtalk.com/i/p/O1pMzN6O07ezBnePqWXwPVvj98E19m31", qrImage: "assets/ali-community-qr.png", qrAlt: "信贷资源汇总社群二维码" },
-        { label: "融资服务", url: "https://alidocs.dingtalk.com/notable/share/form/v014j6OJ5PzGG5YEq3p_dv19yqvsgs3oebp3pcjys_1qX0QQ0?source=link", qrImage: "assets/ali-community-qr.png", qrAlt: "融资服务社群二维码" },
-        { label: "节税专区", url: "https://alidocs.dingtalk.com/i/nodes/NZQYprEoWobMqeRpCqyRp7Xz81waOeDk?utm_scene=team_space", qrImage: "assets/ali-community-qr.png", qrAlt: "节税专区社群二维码" },
-        { label: "港险避坑", url: "https://alidocs.dingtalk.com/i/nodes/P7QG4Yx2Jp3jl702Hg01n16bV9dEq3XD?utm_scene=team_space", qrImage: "assets/ali-community-qr.png", qrAlt: "港险避坑社群二维码" },
-        { label: "港美股交流", url: "https://alidocs.dingtalk.com/i/nodes/XPwkYGxZV3y5vRlwTprqlYjE8AgozOKL?utm_scene=team_space", qrImage: "assets/ali-community-qr.png", qrAlt: "港美股开户社群二维码" },
-        { label: "A股证券开户", url: "https://alidocs.dingtalk.com/i/nodes/kDnRL6jAJMDrw3bztXxjpRZRVyMoPYe1?utm_scene=team_space", qrImage: "assets/ali-community-qr.png", qrAlt: "A股证券开户社群二维码" }
+        { label: "信贷资源汇总", url: "https://alidocs.dingtalk.com/i/p/O1pMzN6O07ezBnePqWXwPVvj98E19m31"},
+        { label: "融资服务", url: "https://alidocs.dingtalk.com/notable/share/form/v014j6OJ5PzGG5YEq3p_dv19yqvsgs3oebp3pcjys_1qX0QQ0?source=link" },
+        { label: "节税专区", url: "https://alidocs.dingtalk.com/i/nodes/NZQYprEoWobMqeRpCqyRp7Xz81waOeDk?utm_scene=team_space", },
+        { label: "港险避坑", url: "https://alidocs.dingtalk.com/i/nodes/P7QG4Yx2Jp3jl702Hg01n16bV9dEq3XD?utm_scene=team_space",  },
+        { label: "港美股交流", url: "https://alidocs.dingtalk.com/i/nodes/XPwkYGxZV3y5vRlwTprqlYjE8AgozOKL?utm_scene=team_space",  },
+        { label: "A股证券开户", url: "https://alidocs.dingtalk.com/i/nodes/kDnRL6jAJMDrw3bztXxjpRZRVyMoPYe1?utm_scene=team_space",  }
 
       ]
     },
@@ -60,10 +79,10 @@ export const portalContent = {
       subtitle: "让校友关系产生真实价值",
       links: [
         { label: "校友租房", url: "https://goretire.cn/ali/house/#/", qrPopover: true, qrImage: "assets/groups-xiaoyouzufang.jpg", qrAlt: "校友租房社群二维码" },
-        { label: "招聘内推", url: "https://www.axureshow.com/project/puAKIzIU/", qrImage: "assets/ali-community-qr.png", qrAlt: "招聘内推社群二维码" },
-        { label: "香港身份 DIY", qrImage: "assets/groups-xianggangshenfen.png", qrAlt: "香港身份 DIY 社群二维码" },
-        { label: "团建轰趴", qrImage: "assets/groups-bieshuhongpa.jpg", qrAlt: "团建轰趴社群二维码" },
-        { label: "育儿交流", qrImage: "assets/groups-yuerjiaoliu.png", qrAlt: "育儿交流社群二维码" }
+        { label: "招聘内推", url: "https://www.axureshow.com/project/puAKIzIU/"},
+        { label: "香港身份 DIY", url:"https://qr.dingtalk.com/action/joingroup?code=v1,k1,zzVGmjTxMHzFdLERPcucsdTPVGO5LYSTFwlWOqLhHXBuRVJIwrSsXmL8oFqU5ajJ&_dt_no_comment=1&origin=11?",qrImage: "assets/groups-xianggangshenfen.png", qrAlt: "香港身份 DIY 社群二维码" },
+        { label: "团建轰趴", url:"https://qr.dingtalk.com/action/joingroup?code=v1,k1,NPqb2xjkAVTlcriThPGrodTPVGO5LYSTTcEEFV7bwnhuRVJIwrSsXmL8oFqU5ajJ&_dt_no_comment=1&origin=11?",qrImage: "assets/groups-bieshuhongpa.jpg", qrAlt: "团建轰趴社群二维码" },
+        { label: "育儿交流", url:"https://qr.dingtalk.com/action/joingroup?code=v1,k1,bK1FbZglRJVLWYTb9mZQZtTPVGO5LYSTZxI4mT1g0rBuRVJIwrSsXmL8oFqU5ajJ&_dt_no_comment=1&origin=11?",qrImage: "assets/groups-yuerjiaoliu.png", qrAlt: "育儿交流社群二维码" }
       ]
     }
   ],

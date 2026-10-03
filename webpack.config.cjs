@@ -57,6 +57,7 @@ module.exports = (_environment, arguments_) => ({
     })
   ],
   devServer: {
+    host: "0.0.0.0",
     port: 8774,
     static: { directory: path.join(root, "dist") },
     historyApiFallback: true,
