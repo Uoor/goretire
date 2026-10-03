@@ -101,7 +101,7 @@ stop() {
 # ---- 启动 ----
 start() {
     log "===== 启动服务 ====="
-    LAST_JAR=$(readlink "$LATEST_LINK" 2>/dev/null || ls -t "$RELEASES_DIR"/*.jar 2>/dev/null | head -1)
+    LAST_JAR=$(readlink "$LATEST_LINK" 2>/dev/null || ls -t "$RELEASES_DIR"/${JAR_NAME}-*.jar 2>/dev/null | head -1)
     if [ -z "$LAST_JAR" ]; then
         err "没有可用的 jar 包"
         exit 1
@@ -142,14 +142,22 @@ start() {
 # ---- 回滚 ----
 rollback() {
     log "===== 回滚到上一个版本 ====="
-    JARS=($(ls -t "$RELEASES_DIR"/*.jar 2>/dev/null))
-    if [ ${#JARS[@]} -lt 2 ]; then
+    local current target="" jar
+    current="$(readlink -f "$LATEST_LINK" 2>/dev/null || true)"
+    # 只列真实 jar：current.jar 是软链，每次部署 mtime 都被刷新，若一并列出会排在首位，
+    # 导致“上一个版本”取到当前版本 → 回滚变成空操作。
+    for jar in $(ls -t "$RELEASES_DIR"/${JAR_NAME}-*.jar 2>/dev/null || true); do
+        if [ "$(readlink -f "$jar")" != "$current" ]; then
+            target="$jar"
+            break
+        fi
+    done
+    if [ -z "$target" ]; then
         err "没有可回滚的版本"
         exit 1
     fi
-    PREV="${JARS[1]}"
-    ln -sf "$PREV" "$LATEST_LINK"
-    log "回滚到: $(basename $PREV)"
+    ln -sf "$target" "$LATEST_LINK"
+    log "回滚到: $(basename "$target")"
     stop
     start
 }
