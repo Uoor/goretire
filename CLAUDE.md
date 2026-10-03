@@ -4,11 +4,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-校友安居 (Alumni Housing) — 阿里/蚂蚁校友可信租房网络，钉钉内 H5 微应用。
+**一起提前退休**（goretire）— 面向互联网从业者的社群门户与互助服务，线上 `https://goretire.cn`。
 
-- **Backend**: Spring Boot 3 (Java 17) + MySQL 8 + MyBatis-Plus，Maven 多模块
-- **Frontend**: Vue 3 + Vant 4 + Vite + Pinia，钉钉 H5（hash 路由，postcss-px-to-viewport 按 375 设计稿转 vw），代码在 `frontend/`，线上挂在 `/ali/house/`
-- **Portal**: React 19 + TS + Ant Design 5 + Webpack 5，对外门户（代码在 `root-site/`），线上服务 `/` 与 `/ali`；与 H5 由 `scripts/build-web.mjs` 汇总成同一个产物树、一次发布
+模块划分（与线上路径一一对应）：
+
+- **首页（门户）** —— React 19 + TS + Ant Design 5 + Webpack 5，源码 `root-site/`，线上 `/` 与 `/ali`
+- **ali 子模块** —— 阿里社区，入口页 `/ali` 由门户 SPA 渲染；**目前包含租房业务**：Vue 3 + Vant 4 + Vite + Pinia 的钉钉 H5（hash 路由，postcss-px-to-viewport 按 375 设计稿转 vw），源码 `frontend/`，线上 `/ali/house/`。后续该子模块下的其他业务同样按 `/ali/<业务>/` 挂载
+- **后端** —— Spring Boot 3 (Java 17) + MySQL 8 + MyBatis-Plus，Maven 多模块，服务 `/ali/house/api/`
+
+门户与租房 H5 由 `scripts/build-web.mjs` 汇总成同一个产物树、一次发布，永远同版本。
 
 ## Commands
 

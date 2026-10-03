@@ -1,8 +1,8 @@
-# 一起提前退休 · 门户
+# 一起提前退休 · 首页（门户）
 
 React + TypeScript + React Router + Ant Design + SCSS + Webpack 社区门户。站点采用单 HTML 入口，首页 `/` 和阿里社区 `/ali` 由客户端路由切换。
 
-> **本目录是 aliren 仓库的前端门户源码，改这里就是改线上门户。** 历史来源是独立工程 `goretire`（GitHub `Uoor/goretire`），已于 2026-10-03 并入本仓库，之后不再从那边做手工同步。
+> **本目录是「一起提前退休」首页（门户）的源码，改这里就是改线上首页。** 历史来源是独立工程 `goretire`（GitHub `Uoor/goretire`），已于 2026-10-03 并入本仓库，之后不再从那边做手工同步。
 
 页面按职责拆分：`src/app` 管路由，`src/pages` 放页面组合，`src/components/site` 放共享站点组件，`src/data` 放页面数据；全站样式位于 `assets/site.scss`。
 

@@ -1,28 +1,33 @@
-# goretire.cn · 一起提前退休 / 校友安居
+# 一起提前退休（goretire）
 
-> 线上两个入口：
-> - `/` 与 `/ali` —— **一起提前退休**门户（React 19 + TS + Ant Design 5 + Webpack 5，源码在 `root-site/`）
-> - `/ali/house/` —— **校友安居**租房 H5，钉钉内微应用（Vue 3 + Vant 4 + Vite，源码在 `frontend/`）
->
-> 后端：Spring Boot 3（Java 17）+ MySQL 8 + MyBatis-Plus，Maven 多模块
+> 面向互联网从业者的社群门户与互助服务 · 线上 https://goretire.cn
+
+## 模块划分
+
+| 模块 | 内容 | 线上路径 | 源码 |
+|---|---|---|---|
+| **首页（门户）** | 社群门户：品牌首屏 / 内容观点 / 子群服务 / 大厂社群 / 资源互助 | `/`、`/ali` | `root-site/`（React 19 + TS + Ant Design 5 + Webpack 5） |
+| **ali 子模块** | 阿里社区，**目前包含租房业务** | `/ali/house/` | `frontend/`（Vue 3 + Vant 4 + Vite）+ `backend/`（Spring Boot 3 / Java 17） |
+
+`/ali` 是 ali 子模块的入口页，由门户 SPA 渲染；租房业务作为它的下级页面挂在 `/ali/house/`。后续 ali 子模块下的其他业务，同样按 `/ali/<业务>/` 挂载。
 
 ## 工程结构
 
 ```
 aliren/
-├── backend/                 # 后端（Maven 多模块）
-│   ├── core/                #   基础设施：认证/用户/统一响应/拦截器
-│   ├── houserent/           #   租房业务：房源/求租/订阅/匹配/审核/举报/定时
-│   ├── app/                 #   应用入口（唯一可执行，exec fat jar + 配置 + 建表脚本）
-│   └── test/                #   集中测试（59 个用例）
-├── root-site/               # 门户（React 19 + TS + Ant Design 5 + Webpack 5）→ 线上 / 与 /ali
+├── root-site/               # 首页（门户）→ 线上 / 与 /ali
 │   └── src/                 #   app 路由 / pages 页面 / components/site 共享组件 / data 页面数据
-├── frontend/                # 租房 H5（Vue3 + Vant4）→ 线上 /ali/house/
+├── frontend/                # ali 子模块 · 租房业务 H5 → 线上 /ali/house/
 │   ├── DESIGN.md            #   设计系统（源自原型，供 AI/开发者遵循）
 │   └── src/
 │       ├── styles/          #   设计令牌 tokens.css
 │       ├── router|store|utils|api   # 壳层
 │       └── modules/houserent/       # 租房页面/组件/接口
+├── backend/                 # 租房业务后端（Maven 多模块），服务 /ali/house/api/
+│   ├── core/                #   基础设施：认证/用户/统一响应/拦截器
+│   ├── houserent/           #   租房业务：房源/求租/订阅/匹配/审核/举报/定时
+│   ├── app/                 #   应用入口（唯一可执行，exec fat jar + 配置 + 建表脚本）
+│   └── test/                #   集中测试（59 个用例）
 ├── scripts/                 # 构建与部署（见「部署」）
 └── docs/design/             # 产品/钉钉/前后端实现方案 + H5 原型
 ```
