@@ -1,7 +1,10 @@
-# 校友安居（Alumni Housing）
+# goretire.cn · 一起提前退休 / 校友安居
 
-> 阿里/蚂蚁校友可信租房网络 · 钉内 H5 微应用
-> 技术栈：Spring Boot 3（Java 17）+ MySQL 8 + MyBatis-Plus ｜ Vue 3 + Vant 4 + Vite
+> 线上两个入口：
+> - `/` 与 `/ali` —— **一起提前退休**门户（React 19 + TS + Ant Design 5 + Webpack 5，源码在 `root-site/`）
+> - `/ali/house/` —— **校友安居**租房 H5，钉钉内微应用（Vue 3 + Vant 4 + Vite，源码在 `frontend/`）
+>
+> 后端：Spring Boot 3（Java 17）+ MySQL 8 + MyBatis-Plus，Maven 多模块
 
 ## 工程结构
 
@@ -12,12 +15,15 @@ aliren/
 │   ├── houserent/           #   租房业务：房源/求租/订阅/匹配/审核/举报/定时
 │   ├── app/                 #   应用入口（唯一可执行，exec fat jar + 配置 + 建表脚本）
 │   └── test/                #   集中测试（59 个用例）
-├── frontend/                # 前端（Vue3 + Vant4，壳 + modules/houserent 业务模块）
+├── root-site/               # 门户（React 19 + TS + Ant Design 5 + Webpack 5）→ 线上 / 与 /ali
+│   └── src/                 #   app 路由 / pages 页面 / components/site 共享组件 / data 页面数据
+├── frontend/                # 租房 H5（Vue3 + Vant4）→ 线上 /ali/house/
 │   ├── DESIGN.md            #   设计系统（源自原型，供 AI/开发者遵循）
 │   └── src/
 │       ├── styles/          #   设计令牌 tokens.css
 │       ├── router|store|utils|api   # 壳层
 │       └── modules/houserent/       # 租房页面/组件/接口
+├── scripts/                 # 构建与部署（见「部署」）
 └── docs/design/             # 产品/钉钉/前后端实现方案 + H5 原型
 ```
 
@@ -63,6 +69,25 @@ cd frontend && npm install && npm run dev
 - 审核/下架/举报处理审计日志；周推/安居故事定时任务骨架
 - 后端 59 个测试全绿；前端构建通过，与后端全接口联调验证
 - **图片上传已闭环**：`POST /api/upload` → 存 `/uploads/` 本地静态目录（`aliren.upload.dir` 配置），发布页 Vant Uploader 真实上传；后续切 OSS 只改上传接口实现
+
+## 部署
+
+前后端分开，都是「本地触发 → SSH 到 `ecs-alr` 执行远程脚本」：产物按时间戳落版本目录、软链切换，均支持 `--rollback`。
+
+```bash
+./scripts/deploy-remote.sh          # 后端：拉代码 → mvn package → 停旧服务 → 启动（8080）
+./scripts/deploy-web-remote.sh      # 前端：构建 → 上传 → 切软链（一步，内部会调 build-web.mjs）
+```
+
+前端**不要单独发布某一个应用** —— 门户与租房 H5 由 `scripts/build-web.mjs` 汇总成一个产物树、一次发布，两者永远同版本：
+
+```
+dist/                门户（React）      → /
+dist/ali/index.html  门户 HTML 副本    → /ali
+dist/ali/house/      租房 H5（Vue）    → /ali/house/
+```
+
+`node scripts/build-web.mjs` 是只构建不发布的入口（本地看产物用）。构建顺序与两个 nginx 坑见 `CLAUDE.md`。
 
 ## 未完成（需真实凭证）
 

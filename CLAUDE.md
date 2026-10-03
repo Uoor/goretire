@@ -159,7 +159,7 @@ dist/ali/house/                    租房 H5（frontend/，Vue）   → /ali/hou
 
 **改 nginx 前必读的两个坑**：`dist/ali/index.html` 不能省 —— `dist/ali/` 目录一旦存在，请求 `/ali` 会先命中目录再找 index，缺了它 nginx 直接 403；同时 `/ali` 要用 `location = /ali` 精确匹配，否则会被 301 到 `/ali/`。
 
-旧的 `deploy-frontend-*.sh`、`deploy-rootsite-*.sh` 与 `frontend/releases`、`root-site-releases` 是历史链路，已不再写入。
+脚本只剩两条链路：后端 `deploy-remote.sh` / `deploy-ecs.sh`，前端 `deploy-web-remote.sh` / `deploy-web-ecs.sh`。历史脚本（`deploy-frontend-*.sh`、`deploy-rootsite-*.sh`）已删除；服务器上 `frontend/releases`、`root-site-releases` 两个目录与 `root-site`、`frontend/current` 两个软链是旧链路遗留，nginx 已不引用。
 
 ### 门户源码（root-site/）
 
