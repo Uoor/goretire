@@ -167,7 +167,9 @@ dist/ali/house/                    租房 H5（frontend/，Vue）   → /ali/hou
 
 历史：`root-site/` 原本是独立工程 `goretire`（GitHub `Uoor/goretire`），2026-10-03 并入本仓库。**并入时做了删减，不是逐字节副本** —— 删掉了引用为零的死文件（`src/App.tsx`、`src/data/webpack.config.cjs`、`assets/{ali.css,site.js,content-data.js}`、`Bold_poster_style_*.png`、5 张无主配图、3 张与同名 `.png` 重复的群二维码），把 10 张 bot 配图压到 1200px/q80，并修好了 `tests/verify-site.mjs`。**所以不要从 goretire 整目录覆盖回来**，那会把这些改动全部冲掉。回看历史可以去那个仓库，但新增改动一律落在这里。
 
-改完走一遍：`node scripts/build-web.mjs` → `node root-site/tests/verify-site.mjs` → `./scripts/deploy-web-remote.sh`。测试断言红了就改断言或改代码，**别"改一个跑一次"** —— 用 `node:assert` 打桩把 82 条断言逐条列出失败项，一次性对齐（做法见提交 `05e148b`）。
+改完发布：`./scripts/deploy-web-remote.sh` —— **一条命令**，它内部会调 `scripts/build-web.mjs`（构建 → 上传 → 切软链）。`node scripts/build-web.mjs` 是只构建不发布的入口，单独跑不会上线。要单独跑检查就在 `root-site/` 里 `npm test`（它自己会 build）。
+
+测试断言红了就改断言或改代码，**别"改一个跑一次"** —— 用 `node:assert` 打桩把 82 条断言逐条列出失败项，一次性对齐（做法见提交 `05e148b`）。
 
 ---
 

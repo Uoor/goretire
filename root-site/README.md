@@ -26,11 +26,12 @@ npm test          # npm run build && node tests/verify-site.mjs
 
 ## 部署
 
-**不要单独发布本目录。** 门户与租房 H5（仓库根的 `frontend/`）由编排脚本汇总成一个产物树、一次发布：
+**不要单独发布本目录。** 门户与租房 H5（仓库根的 `frontend/`）由编排脚本汇总成一个产物树、**一条命令发布** —— 脚本内部会自己调 `build-web.mjs`：
 
 ```sh
-node scripts/build-web.mjs          # 产出根 dist/：门户 → /，门户副本 → /ali，H5 → /ali/house/
-./scripts/deploy-web-remote.sh      # 构建 + 上传 + 切软链
+./scripts/deploy-web-remote.sh      # 构建 → 上传 → 切软链（一步）
 ```
+
+`node scripts/build-web.mjs` 是**只构建、不发布**的入口，用于本地看产物；单独跑它不会上线。
 
 细节见仓库根 `CLAUDE.md` 的「前端（门户 + 租房 H5，统一产物树）」，含构建顺序与 nginx 的两个坑。
