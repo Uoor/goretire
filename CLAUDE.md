@@ -161,24 +161,13 @@ dist/ali/house/                    租房 H5（frontend/，Vue）   → /ali/hou
 
 旧的 `deploy-frontend-*.sh`、`deploy-rootsite-*.sh` 与 `frontend/releases`、`root-site-releases` 是历史链路，已不再写入。
 
-### 门户源码的上游同步（root-site/ ← goretire）
+### 门户源码（root-site/）
 
-`root-site/` 是独立工程 `goretire`（GitHub `Uoor/goretire`）并入本仓库的副本。上游更新后**不能整目录覆盖** —— 集成侧有一批本地改动会被冲掉。正确做法是**只搬上游改动的文件**：
+**门户源码就在本仓库的 `root-site/`，改这里就是改线上门户。**
 
-```bash
-cd /Volumes/extend/code/goretire && git fetch && git log --oneline <上次同步的commit>..HEAD
-git diff --name-only <上次同步的commit>..HEAD   # 只 cp 这些文件到 aliren/root-site/ 对应位置
-```
+历史：`root-site/` 原本是独立工程 `goretire`（GitHub `Uoor/goretire`），2026-10-03 并入本仓库。**并入时做了删减，不是逐字节副本** —— 删掉了引用为零的死文件（`src/App.tsx`、`src/data/webpack.config.cjs`、`assets/{ali.css,site.js,content-data.js}`、`Bold_poster_style_*.png`、5 张无主配图、3 张与同名 `.png` 重复的群二维码），把 10 张 bot 配图压到 1200px/q80，并修好了 `tests/verify-site.mjs`。**所以不要从 goretire 整目录覆盖回来**，那会把这些改动全部冲掉。回看历史可以去那个仓库，但新增改动一律落在这里。
 
-**必须保留、不可被上游覆盖的本地改动**：
-- `tests/verify-site.mjs` —— 上游那份是旧的且断言过期；本地这份已对齐（上游不改它，别搬）
-- `assets/bots-*.jpg` —— 本地已压到 1200px/q80（上游仍是 2848px/3MB）
-- `src/data/portalContent.ts` 的 `校友租房` 入口 —— 本地是相对路径 `/ali/house/#/`，上游写死 `https://goretire.cn`
-- `webpack.config.cjs` 的 `CopyWebpackPlugin` —— 本地已去掉 `content-data.js` 复制与 `Bold_poster_style` 忽略
-- 已删除的死文件（`src/App.tsx`、`src/data/webpack.config.cjs`、`assets/{ali.css,site.js,content-data.js}` 等）不要恢复
-- 上游的 `src/pages/CommunityInviteSection.tsx` 是零引用的半成品草稿，不要收录
-
-搬完按 `node scripts/build-web.mjs` → `node root-site/tests/verify-site.mjs` → `./scripts/deploy-web-remote.sh` 走一遍；上游改结构时测试断言会跟着红，用 `node:assert` 打桩逐条列出失败项再对齐，别改一个跑一次。
+改完走一遍：`node scripts/build-web.mjs` → `node root-site/tests/verify-site.mjs` → `./scripts/deploy-web-remote.sh`。测试断言红了就改断言或改代码，**别"改一个跑一次"** —— 用 `node:assert` 打桩把 82 条断言逐条列出失败项，一次性对齐（做法见提交 `05e148b`）。
 
 ---
 
