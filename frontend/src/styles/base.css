@@ -1,0 +1,136 @@
+/* 全局基础样式（设计规范见 docs/design/2026-08-16-校友安居-前端实现方案.md） */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 16px;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Noto Sans SC', 'Segoe UI', sans-serif;
+  background: var(--bg);
+  color: var(--fg);
+  min-height: 100vh;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* 移动端全屏无壳 */
+#app {
+  min-height: 100vh;
+  background: var(--bg);
+}
+
+/* PC 端（≥768px）：居中宽内容区 + 纯白底 */
+@media (min-width: 768px) {
+  body {
+    background: var(--bg);
+  }
+  #app {
+    min-height: 100vh;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+}
+
+a {
+  color: var(--primary);
+  text-decoration: none;
+}
+
+/* 价格等数字统一字体 */
+.num {
+  font-family: var(--num);
+  font-weight: 600;
+}
+
+/* 通用页面容器 */
+.page {
+  padding: 16px;
+}
+@media (min-width: 768px) {
+  .page {
+    padding: 24px 0;
+  }
+}
+
+.page .placeholder {
+  margin-top: 12px;
+  padding: 20px 16px;
+  background: var(--card);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-md);
+  color: var(--fg2);
+  font-size: 14px;
+}
+
+/* ===== PC 响应式辅助类（≥768px） ===== */
+/* 卡片网格：在 PC 端自动多列 */
+@media (min-width: 768px) {
+  .grid-pc {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
+}
+@media (min-width: 1024px) {
+  .grid-pc {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* ===== PC 端全局覆盖（≥768px） ===== */
+@media (min-width: 768px) {
+  /* Vant bottom-sheet popup → PC 端居中弹窗（不再贴底，贴底窄条在 PC 上违和） */
+  .van-popup--bottom {
+    max-width: 480px;
+    left: 50% !important;
+    right: auto !important;
+    top: 50% !important;
+    bottom: auto !important;
+    transform: translate(-50%, -50%) !important;
+    border-radius: 12px;
+    max-height: 80vh;
+    overflow-y: auto;
+  }
+  /* Vant toast / dialog 保持居中（默认行为即可） */
+}
+
+/* ===== 钉钉登录按钮 ===== */
+.dingtalk-login-btn {
+  width: 100%;
+  padding: 14px 24px;
+  background: #0089FF;
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  transition: all 0.15s ease;
+  box-shadow: 0 2px 0 #0070E0;
+}
+
+.dingtalk-login-btn:hover {
+  background: #0070E0;
+}
+
+.dingtalk-login-btn:active {
+  transform: translateY(1px);
+  box-shadow: none;
+}
+
+.dingtalk-icon {
+  flex-shrink: 0;
+}

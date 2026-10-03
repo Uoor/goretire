@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.aliren</groupId>
+        <artifactId>aliren-backend</artifactId>
+        <version>0.1.0-SNAPSHOT</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+
+    <artifactId>aliren-test</artifactId>
+    <name>aliren-test</name>
+    <description>校友安居 - 集中测试模块（依赖 app，间接获得 core + rent 全部模块）</description>
+
+    <dependencies>
+        <!-- 依赖应用模块（传递依赖 core + rent 等全部业务模块） -->
+        <dependency>
+            <groupId>com.aliren</groupId>
+            <artifactId>aliren-app</artifactId>
+        </dependency>
+
+        <!-- Test -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+</project>

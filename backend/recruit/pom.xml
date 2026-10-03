@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.aliren</groupId>
+        <artifactId>aliren-backend</artifactId>
+        <version>0.1.0-SNAPSHOT</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+
+    <artifactId>aliren-recruit</artifactId>
+    <name>aliren-recruit</name>
+    <description>校友安居 - 招聘模块（钉钉群里 @ 招聘机器人 → 实时查多维表 → 回复）</description>
+
+    <dependencies>
+        <!-- 依赖核心公共模块（仅复用 common 基础设施，无业务模块依赖） -->
+        <dependency>
+            <groupId>com.aliren</groupId>
+            <artifactId>aliren-core</artifactId>
+        </dependency>
+
+        <!-- DingStream：钉钉开放平台长连接（机器人 @ 消息实时接收，Stream 模式） -->
+        <dependency>
+            <groupId>com.dingtalk.open</groupId>
+            <artifactId>dingtalk-stream</artifactId>
+        </dependency>
+
+        <!-- Lombok -->
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <optional>true</optional>
+        </dependency>
+    </dependencies>
+</project>

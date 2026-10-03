@@ -1,0 +1,109 @@
+server:
+  port: ${port:8080}
+
+spring:
+  application:
+    name: aliren-backend
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/aliren?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
+    username: root
+    password: ${DB_PASSWORD:Test!123}
+  sql:
+    init:
+      mode: never
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  global-config:
+    banner: false
+    db-config:
+      id-type: auto
+
+aliren:
+  jwt:
+    # 生产环境务必通过 JWT_SECRET 环境变量覆盖
+    secret: ${JWT_SECRET:aliren-dev-secret-key-please-change-in-prod-0123456789}
+    expire-hours: 168
+  auth:
+    # 浏览器联调 dev-code 桩放行开关：默认关闭（fail-closed），
+    # 本地开发在 .env 中显式设 DEV_CODE_ENABLED=true 打开；生产绝不开启
+    dev-code-enabled: ${DEV_CODE_ENABLED:false}
+  dingtalk:
+    app-key: ${DING_APP_KEY:}
+    app-secret: ${DING_APP_SECRET:}
+    corp-id: ${DING_CORP_ID:}
+    # JSAPI 签名（dd.config）所需 agentId，与应用内工作通知共用
+    agent-id: ${ROBOT_AGENT_ID:}
+  llm:
+    # 匹配引擎（一句话找房/订阅匹配/求租墙匹配）：配置 LLM_API_KEY 后启用通义千问，
+    # 否则走本地简单过滤降级
+    api-key: ${LLM_API_KEY:}
+    model: ${LLM_MODEL:qwen-max}
+    timeout-seconds: 10
+  h5:
+    # H5 访问地址（部署后配置，用于钉钉卡片"查看详情"按钮跳转；本地联调可留空）
+    base-url: ${H5_BASE_URL:}
+  upload:
+    # 图片上传（MVP 本地静态目录，后续可切 OSS）：目录相对 backend 启动位置
+    dir: ${UPLOAD_DIR:./uploads}
+    max-size-mb: 5
+  house:
+    # 房源审核开关：false=关闭审核，发布即上架；true=开启审核，需管理员通过后上架
+    audit-enabled: ${HOUSE_AUDIT_ENABLED:false}
+  robot:
+    # 钉钉推送：enabled=true 且提供凭证后启用真实发送（群卡片/工作通知）；
+    # 未启用时 PushClientStub 仅记录日志，编排与定时任务照常跑通
+    enabled: ${ROBOT_ENABLED:false}
+    webhook: ${ROBOT_WEBHOOK:}
+    # 工作通知（私聊）需要应用 agentId（数字），配置后启用；未配置降级为日志
+    agent-id: ${ROBOT_AGENT_ID:}
+    # 租房群入群链接（钉钉群二维码链接）：周推卡片底部展示，引导加入
+    group-invite-url: ${ROBOT_GROUP_INVITE_URL:}
+  push:
+    # 防骚扰：单订阅每日推送上限（条/天），超限当天不再私聊提醒
+    daily-sub-limit: ${DAILY_SUB_LIMIT:3}
+  guide:
+    # 避坑指南知识库：钉钉知识库 workspaceId + 操作管理员 unionId；
+    # 配置后 GuideView 从钉钉知识库读取（钉钉为唯一数据源）
+    workspace-id: ${GUIDE_WORKSPACE_ID:}
+    operator-id: ${GUIDE_OPERATOR_ID:}
+  schedule:
+    # 定时任务：周五精选周推 / 周一安居故事（缺省开启；真实推送依赖 robot）
+    enabled: ${SCHEDULE_ENABLED:true}
+    weekly-pick-cron: "0 0 19 * * FRI"
+    weekly-story-cron: "0 0 10 * * MON"
+  recruit:
+    # 招聘模块 · 群里 @ 招聘机器人 → 查多维表 → 回复。
+    # enabled=true 且提供凭证后启用真实接收；未启用时 RecruitReplyClientStub / AitableClientStub 仅记日志
+    enabled: ${RECRUIT_ENABLED:false}
+    robot:
+      # 招聘机器人（收 @ + 回复），独立于推送应用
+      app-key: ${RECRUIT_DING_APP_KEY:}
+      app-secret: ${RECRUIT_DING_APP_SECRET:}
+      robot-code: ${RECRUIT_ROBOT_CODE:}
+      agent-id: ${RECRUIT_AGENT_ID:}
+    aitable:
+      # 多维表访问（Notable v1.0）：应用需开通 Notable.Base.Read.All（AI 表格应用读权限）。
+      # 应用凭证：招聘机器人应用（ding4xcc…）或 aliren 应用均可（实测两者都可读）
+      app-key: ${RECRUIT_AITABLE_APP_KEY:}
+      app-secret: ${RECRUIT_AITABLE_APP_SECRET:}
+      base-id: ${RECRUIT_AITABLE_BASE_ID:}
+      table-id: ${RECRUIT_AITABLE_TABLE_ID:}
+      # 岗位详情链接所用视图 ID（多维表视图，默认"岗位信息填写"YDu1ejs）
+      view-id: ${RECRUIT_AITABLE_VIEW_ID:YDu1ejs}
+      # v1.0 接口必填操作者：有表权限用户的 unionId（传 userId 会报 paramError-operatorId）
+      operator-id: ${RECRUIT_AITABLE_OPERATOR_ID:}
+    reply:
+      # 接收模式：stream（WebSocket 长连接，推荐，无需公网回调）/ callback
+      mode: ${RECRUIT_REPLY_MODE:stream}
+      # 被 @ 后最多回复的岗位条数
+      max-results: ${RECRUIT_REPLY_MAX:5}
+      # 无匹配时的引导话术
+      no-result-tip: ${RECRUIT_NO_RESULT_TIP:暂时没找到匹配岗位，换个关键词试试，或联系招聘同学。}
+      # 钉钉互动卡片模板 ID（后台注册的模板卡片）
+      card-template-id: ${RECRUIT_CARD_TEMPLATE_ID:}
+      # "查看全部岗位" 列表链接（岗位列表分享视图）
+      jobs-list-url: ${RECRUIT_JOBS_LIST_URL:}

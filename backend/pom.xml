@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>3.3.4</version>
+        <relativePath/>
+    </parent>
+
+    <groupId>com.aliren</groupId>
+    <artifactId>aliren-backend</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
+    <packaging>pom</packaging>
+    <name>aliren-backend</name>
+    <description>校友安居 - 阿里/蚂蚁校友租房社群后端（多模块父工程）</description>
+
+    <modules>
+        <module>core</module>
+        <module>houserent</module>
+        <module>recruit</module>
+        <module>app</module>
+        <module>test</module>
+    </modules>
+
+    <properties>
+        <java.version>17</java.version>
+        <mybatis-plus.version>3.5.7</mybatis-plus.version>
+        <jjwt.version>0.12.6</jjwt.version>
+        <dingtalk.version>2.1.30</dingtalk.version>
+        <dingtalk-stream.version>1.3.12</dingtalk-stream.version>
+        <tea-openapi.version>0.2.4</tea-openapi.version>
+    </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <!-- 模块间依赖：新能力模块（subscribe/match/robot...）在此登记版本 -->
+            <dependency>
+                <groupId>com.aliren</groupId>
+                <artifactId>aliren-core</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.aliren</groupId>
+                <artifactId>aliren-houserent</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.aliren</groupId>
+                <artifactId>aliren-recruit</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.aliren</groupId>
+                <artifactId>aliren-app</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <!-- 三方依赖版本统一管理 -->
+            <dependency>
+                <groupId>com.baomidou</groupId>
+                <artifactId>mybatis-plus-spring-boot3-starter</artifactId>
+                <version>${mybatis-plus.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.jsonwebtoken</groupId>
+                <artifactId>jjwt-api</artifactId>
+                <version>${jjwt.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.jsonwebtoken</groupId>
+                <artifactId>jjwt-impl</artifactId>
+                <version>${jjwt.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.jsonwebtoken</groupId>
+                <artifactId>jjwt-jackson</artifactId>
+                <version>${jjwt.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.aliyun</groupId>
+                <artifactId>dingtalk</artifactId>
+                <version>${dingtalk.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.aliyun</groupId>
+                <artifactId>tea-openapi</artifactId>
+                <version>${tea-openapi.version}</version>
+            </dependency>
+            <!-- DingStream：钉钉开放平台长连接（机器人 @ 消息实时接收） -->
+            <dependency>
+                <groupId>com.dingtalk.open</groupId>
+                <artifactId>dingtalk-stream</artifactId>
+                <version>${dingtalk-stream.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-maven-plugin</artifactId>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+    </build>
+</project>

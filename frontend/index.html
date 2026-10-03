@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    />
+    <title>校友直租</title>
+    <!-- 钉钉 JSAPI SDK：容器内注入 dd 全局（免登/单聊等 JSAPI 必需）。
+         普通浏览器加载无副作用（dd.env.platform === 'notInDingTalk'） -->
+    <script src="https://g.alicdn.com/dingding/dingtalk-jsapi/2.10.3/dingtalk.open.js"></script>
+    <!-- 注意：不引入 Google Fonts——fonts.googleapis.com 在大陆网络（尤其钉钉内置浏览器 Wi-Fi 场景）
+         会被墙/超时，且 <link rel="stylesheet"> 阻塞渲染导致页面卡住。数字字体用系统字体栈。 -->
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

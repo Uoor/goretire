@@ -1,4 +1,44 @@
+# Compiled class file
+*.class
+
+# Log file
+*.log
+
+# BlueJ files
+*.ctxt
+
+# Mobile Tools for Java (J2ME)
+.mtj.tmp/
+
+# Package Files #
+*.jar
+*.war
+*.nar
+*.ear
+*.zip
+*.tar.gz
+*.rar
+
+# virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
+hs_err_pid*
+
+# Build & IDE
+**/target/
+/.idea/
+*.iml
+/.vscode/
 .DS_Store
+
+# 本地上传目录
+/uploads/
+
+# 环境变量（含真实凭证，绝不提交）；.env.example 是模板，需要提交
+**/.env
+**/.env.*
+!**/.env.example
 node_modules/
+.npm-cache/
+
+# 统一前端构建产物（scripts/build-web.mjs 产出）
 dist/
-.openai/
+.workbuddy-ai/

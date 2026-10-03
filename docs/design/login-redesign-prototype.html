@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>校友安居 · 登录页设计稿（移动端 + PC 适配）</title>
+<style>
+  /* ===== 设计令牌（与 frontend/src/styles/tokens.css 一致） ===== */
+  :root {
+    --primary: #ff6a00;
+    --primary-soft: #fff3e6;
+    --primary-deep: #e85d00;
+    --accent: #16a34a;
+    --accent-soft: #f0fdf4;
+    --accent-border: #bbf7d0;
+    --bg: #f5f5f4;
+    --card: #ffffff;
+    --fg: rgba(0,0,0,0.85);
+    --fg2: rgba(0,0,0,0.55);
+    --fg3: rgba(0,0,0,0.35);
+    --border: rgba(0,0,0,0.08);
+    --num: 'DM Sans', -apple-system, sans-serif;
+    --radius-lg: 16px;
+    --radius-md: 10px;
+    --radius-sm: 6px;
+    /* 钉钉蓝（登录按钮，与 base.css .dingtalk-login-btn 一致） */
+    --dd: #0089FF;
+    --dd-deep: #0070E0;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    font-family: -apple-system, 'PingFang SC', 'Helvetica Neue', sans-serif;
+    background: #ececeb;
+    color: var(--fg);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 24px 16px 60px;
+  }
+  .page-title { font-size: 14px; color: var(--fg2); margin: 8px 0 20px; text-align: center; }
+  .page-title b { color: var(--primary); }
+
+  /* ===== 手机壳 ===== */
+  .phone {
+    width: 375px;
+    background: var(--bg);
+    border-radius: 32px;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.18);
+    overflow: hidden;
+    position: relative;
+    margin-bottom: 36px;
+  }
+  .status-bar {
+    height: 44px;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 24px;
+    font-size: 12px; font-weight: 600; color: var(--fg);
+    background: var(--bg);
+  }
+  .status-bar .notch { width: 90px; height: 22px; background: #000; border-radius: 12px; position: absolute; left: 50%; transform: translateX(-50%); top: 8px; opacity: 0.9; }
+
+  /* ===== 登录页主体（移动端） ===== */
+  .login-page {
+    min-height: 667px;
+    display: flex;
+    flex-direction: column;
+    padding: 56px 24px 24px;
+    background: var(--bg);
+  }
+  .brand { text-align: center; }
+  .logo {
+    width: 68px; height: 68px;
+    margin: 0 auto 16px;
+    background: var(--primary-soft);
+    border-radius: 20px;
+    display: flex; align-items: center; justify-content: center;
+    border: 1px solid var(--border);
+  }
+  .logo .house { width: 30px; height: 30px; color: var(--primary); }
+  .brand h1 { font-size: 26px; font-weight: 700; letter-spacing: 2px; color: var(--fg); }
+  .brand .slogan { margin-top: 8px; font-size: 14px; color: var(--fg2); line-height: 1.6; }
+  .brand .slogan .community-name { color: var(--primary-deep); font-weight: 600; }
+  .member-badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    margin-top: 12px; padding: 4px 12px;
+    background: var(--primary-soft);
+    border: 1px solid rgba(255,106,0,0.35);
+    border-radius: 999px;
+    font-size: 12px; color: var(--primary-deep); font-weight: 500;
+  }
+  .member-badge .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--primary); }
+
+  /* 信任卡 */
+  .trust-card {
+    margin-top: 24px;
+    background: var(--card);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border);
+    padding: 16px 16px 12px;
+    text-align: left;
+  }
+  .trust-card .title {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 13px; font-weight: 600; color: var(--fg);
+    margin-bottom: 8px;
+  }
+  .trust-card .title .shield { width: 16px; height: 16px; color: var(--accent); }
+  .trust-item {
+    display: flex; align-items: flex-start; gap: 8px;
+    padding: 4px 0;
+    font-size: 13px; line-height: 1.55; color: var(--fg2);
+  }
+  .trust-item .icon { flex-shrink: 0; margin-top: 2px; font-size: 13px; line-height: 1.4; }
+  .trust-item .yes { color: var(--accent); font-weight: 700; }
+  .trust-item .no { color: var(--fg3); font-weight: 700; }
+  .trust-item b { color: var(--fg); font-weight: 600; }
+  .trust-item.highlight {
+    background: var(--primary-soft);
+    border-radius: 8px;
+    padding: 8px 10px;
+    margin: 4px 0;
+    border: 1px solid rgba(255,106,0,0.35);
+  }
+  .trust-item.highlight .impossible { color: var(--primary-deep); font-weight: 600; }
+
+  /* 钉钉蓝主按钮 */
+  .login-btn {
+    margin-top: 20px;
+    width: 100%; height: 48px;
+    border: none; border-radius: 10px;
+    background: var(--dd); color: #fff;
+    font-size: 16px; font-weight: 600;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    cursor: pointer;
+    box-shadow: 0 2px 0 var(--dd-deep);
+    transition: all 0.15s ease;
+  }
+  .login-btn:active { transform: translateY(1px); box-shadow: none; }
+  .btn-sub { margin-top: 10px; font-size: 11px; color: var(--fg3); text-align: center; }
+  .btn-sub a { color: var(--fg2); text-decoration: underline; text-underline-offset: 2px; }
+
+  /* 底部背书 */
+  .footer { margin-top: auto; text-align: center; padding-top: 28px; }
+  .footer .comm { font-size: 12px; color: var(--fg2); line-height: 1.8; }
+  .footer .num { font-family: var(--num); font-weight: 700; color: var(--primary); font-size: 13px; }
+  .footer .divider { width: 24px; height: 1px; background: var(--border); margin: 12px auto; }
+  .footer .powered { font-size: 10px; color: var(--fg3); letter-spacing: 0.5px; }
+
+  /* ===== PC 窗口预览（≥768px 桌面） ===== */
+  .pc-window {
+    width: 1080px;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 16px 48px rgba(0,0,0,0.2);
+    background: var(--card);
+    border: 1px solid var(--border);
+    margin-bottom: 36px;
+  }
+  /* 顶部导航（对齐 App.vue TopNav） */
+  .pc-topnav {
+    height: 56px;
+    background: rgba(255,255,255,0.96);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center;
+    padding: 0 24px; gap: 24px;
+  }
+  .pc-topnav .t-brand { display: flex; align-items: center; gap: 8px; font-size: 16px; font-weight: 700; color: var(--primary); }
+  .pc-topnav nav { display: flex; gap: 2px; flex: 1; }
+  .pc-topnav nav a { padding: 6px 14px; border-radius: 8px; font-size: 14px; color: var(--fg2); }
+  .pc-topnav .t-pub { background: var(--primary); color: #fff; padding: 7px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; }
+  /* 内容区：左侧品牌/信任 + 右侧登录卡（左右分栏，占满 1200px 内容区） */
+  .pc-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    min-height: calc(100vh - 56px);
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap: 56px;
+    align-items: center;
+    padding: 48px 56px;
+  }
+  /* 左侧品牌列 */
+  .pc-brand { max-width: 460px; }
+  .pc-brand .logo-lg {
+    width: 84px; height: 84px;
+    background: var(--primary-soft);
+    border-radius: 22px;
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 24px;
+  }
+  .pc-brand .logo-lg .house { width: 38px; height: 38px; color: var(--primary); }
+  .pc-brand h1 { font-size: 34px; font-weight: 700; color: var(--fg); letter-spacing: 1px; }
+  .pc-brand .slogan-lg { margin-top: 12px; font-size: 17px; color: var(--fg2); line-height: 1.7; }
+  .pc-brand .slogan-lg .community-name { color: var(--primary-deep); font-weight: 600; }
+  .pc-brand .member-badge-lg {
+    display: inline-flex; align-items: center; gap: 6px;
+    margin-top: 18px; padding: 6px 16px;
+    background: var(--primary-soft);
+    border: 1px solid rgba(255,106,0,0.35);
+    border-radius: 999px;
+    font-size: 14px; color: var(--primary-deep); font-weight: 600;
+  }
+  .pc-brand .member-badge-lg .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--primary); }
+  /* 左侧信任清单（PC 版更展开） */
+  .pc-trust {
+    margin-top: 32px;
+    display: flex; flex-direction: column; gap: 12px;
+  }
+  .pc-trust-item {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 14px 16px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+  }
+  .pc-trust-item .icon {
+    width: 28px; height: 28px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 700;
+    flex-shrink: 0;
+  }
+  .pc-trust-item .icon.yes { background: var(--accent-soft); color: var(--accent); }
+  .pc-trust-item .icon.no { background: var(--bg); color: var(--fg3); }
+  .pc-trust-item .tx { font-size: 14px; line-height: 1.6; color: var(--fg2); }
+  .pc-trust-item .tx b { color: var(--fg); font-weight: 600; }
+  .pc-trust-item .tx .imp { color: var(--primary-deep); font-weight: 600; }
+  .pc-brand .pc-footer-note { margin-top: 28px; font-size: 13px; color: var(--fg3); }
+  .pc-brand .pc-footer-note .num { font-family: var(--num); color: var(--primary); font-weight: 700; }
+
+  /* 右侧登录卡：纯行动区（信任清单已在左侧，不重复） */
+  .pc-login-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 48px 36px 40px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.06);
+    text-align: center;
+  }
+  .pc-login-card .lc-title { font-size: 20px; font-weight: 700; color: var(--fg); }
+  .pc-login-card .lc-sub { margin-top: 8px; font-size: 13px; color: var(--fg2); line-height: 1.6; }
+  .pc-login-card .login-btn { margin-top: 32px; height: 50px; font-size: 16px; }
+  .pc-login-card .btn-sub { margin-top: 12px; }
+
+  /* ===== 说明 ===== */
+  .notes {
+    width: 1080px;
+    background: var(--card);
+    border-radius: 16px;
+    border: 1px solid var(--border);
+    padding: 18px 22px;
+    font-size: 13px; line-height: 1.9; color: var(--fg2);
+  }
+  .notes h3 { font-size: 14px; color: var(--fg); margin-bottom: 8px; }
+  .notes li { margin-left: 18px; }
+  .notes .k { color: var(--primary-deep); font-weight: 600; }
+  .notes code {
+    background: var(--primary-soft);
+    color: var(--primary-deep);
+    padding: 1px 6px; border-radius: 4px;
+    font-size: 12px;
+  }
+  .state-strip { width: 1080px; margin-top: 16px; display: flex; flex-direction: column; gap: 10px; }
+  .state-card {
+    background: var(--card);
+    border-radius: 12px;
+    border: 1px dashed var(--border);
+    padding: 12px 14px;
+    font-size: 12px; color: var(--fg2); line-height: 1.7;
+  }
+  .state-card b { color: var(--fg); }
+  .state-card .tag {
+    display: inline-block;
+    font-size: 10px; padding: 1px 8px; border-radius: 999px;
+    margin-right: 6px;
+  }
+  .tag-todo { background: var(--accent-soft); color: var(--accent); border: 1px solid var(--accent-border); }
+  .tag-warn { background: #fffbe6; color: #874d00; border: 1px solid #ffe58f; }
+</style>
+</head>
+<body>
+
+<div class="page-title">校友安居 · 登录页设计稿 — <b>移动端</b>（375 手机壳）+ <b>PC 端</b>（左右分栏）· 社群绑定「阿里人·一起提前退休」</div>
+
+<!-- ================= 移动端手机预览 ================= -->
+<div class="phone">
+  <div class="status-bar"><span>9:41</span><div class="notch"></div><span>100%</span></div>
+  <div class="login-page">
+    <div class="brand">
+      <div class="logo">
+        <svg class="house" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 10.5L12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/><path d="M9 21v-6h6v6"/>
+        </svg>
+      </div>
+      <h1>校友安居</h1>
+      <p class="slogan">「<span class="community-name">阿里人·一起提前退休</span>」<br>社群专属 · 校友互信租房</p>
+      <div class="member-badge"><span class="dot"></span>仅限社群成员使用</div>
+    </div>
+
+    <div class="trust-card">
+      <div class="title">
+        <svg class="shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2l8 3.5v5.5c0 5-3.4 9.4-8 10.5-4.6-1.1-8-5.5-8-10.5V5.5L12 2z"/><path d="M9 12l2 2 4-4"/>
+        </svg>
+        授权与隐私说明
+      </div>
+      <div class="trust-item"><span class="icon yes">✓</span><span>仅获取 <b>昵称、钉钉ID</b>，用于校验你是否属于本社群</span></div>
+      <div class="trust-item highlight"><span class="icon yes">✓</span><span>仅关联「阿里人·一起提前退休」<b>社群企业</b>；你在阿里/蚂蚁企业内的信息，<span class="impossible">技术上无法获取、也不会收集</span></span></div>
+      <div class="trust-item"><span class="icon yes">✓</span><span>授权由 <b>钉钉官方</b> 完成，可随时在钉钉中撤销</span></div>
+      <div class="trust-item"><span class="icon no">✗</span><span>不读取 <b>聊天记录、通讯录、公司组织信息</b> 等任何数据</span></div>
+    </div>
+
+    <button class="login-btn">
+      <svg viewBox="0 0 1024 1024" width="20" height="20" fill="currentColor">
+        <path d="M512 0C229.2 0 0 229.2 0 512s229.2 512 512 512 512-229.2 512-512S794.8 0 512 0z m256.4 438.4l-95.6 44.8c-4 2-8.4-0.4-9.6-4.4l-13.2-44.4c-1.2-4 1.6-8.4 5.6-9.2l95.6-22.4c4.4-1.2 8.4 2 8.8 6.4l8.4 20.4c0.8 4-1.6 8-5.6 8.8z m-124.8 188.8c-16.4 24-60.4 56.4-60.4 56.4l-132.4-116.4 92.4-76.4-20.4-17.2-116.4 96.4-44.4-38.8c-8.4-7.2-8.8-20-0.8-27.6l180.4-168.4c8.4-7.6 21.2-7.2 28.8 0.8l168.4 180.4c7.6 8.4 7.2 21.2-0.8 28.8l-94.8 82z"/>
+      </svg>
+      使用钉钉授权登录
+    </button>
+    <p class="btn-sub">点击登录即代表你同意 <a href="#">《隐私说明》</a></p>
+
+    <div class="footer">
+      <p class="comm">由「阿里人·一起提前退休」社群发起<br>已服务 <span class="num">128</span> 位校友 · 信任来自社群</p>
+      <div class="divider"></div>
+      <p class="powered">POWERED BY ALUMNI COMMUNITY</p>
+    </div>
+  </div>
+</div>
+
+<!-- ================= PC 窗口预览 ================= -->
+<div class="pc-window">
+  <div class="pc-topnav">
+    <div class="t-brand">🏠 校友安居</div>
+    <nav>
+      <a>房源</a><a>求租</a><a>订阅</a><a>我的</a>
+    </nav>
+    <div class="t-pub">＋ 发布房源</div>
+  </div>
+
+  <div class="pc-content">
+    <!-- 左侧：品牌 + 信任 -->
+    <div class="pc-brand">
+      <div class="logo-lg">
+        <svg class="house" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 10.5L12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/><path d="M9 21v-6h6v6"/>
+        </svg>
+      </div>
+      <h1>校友安居</h1>
+      <p class="slogan-lg">「<span class="community-name">阿里人·一起提前退休</span>」<br>社群专属 · 校友互信租房</p>
+      <div class="member-badge-lg"><span class="dot"></span>仅限社群成员使用</div>
+
+      <div class="pc-trust">
+        <div class="pc-trust-item">
+          <span class="icon yes">✓</span>
+          <span class="tx">仅获取 <b>头像、昵称、钉钉工号</b>，用于校验你是否属于本社群</span>
+        </div>
+        <div class="pc-trust-item">
+          <span class="icon yes">✓</span>
+          <span class="tx">仅关联「阿里人·一起提前退休」<b>社群企业</b>；你在阿里/蚂蚁企业内的信息，<span class="imp">技术上无法获取、也不会收集</span></span>
+        </div>
+        <div class="pc-trust-item">
+          <span class="icon yes">✓</span>
+          <span class="tx">授权由 <b>钉钉官方</b> 完成，可随时在钉钉中撤销</span>
+        </div>
+        <div class="pc-trust-item">
+          <span class="icon no">✗</span>
+          <span class="tx">不读取 <b>聊天记录、通讯录、公司组织信息</b> 等任何数据</span>
+        </div>
+      </div>
+
+      <p class="pc-footer-note">由「阿里人·一起提前退休」社群发起 · 已服务 <span class="num">128</span> 位校友 · 信任来自社群</p>
+    </div>
+
+    <!-- 右侧：登录卡（纯行动区，信任清单只在左侧出现一次） -->
+    <div class="pc-login-card">
+      <div class="lc-title">登录以使用校友安居</div>
+      <p class="lc-sub">通过钉钉官方授权校验社群身份，约 3 秒完成</p>
+
+      <button class="login-btn">
+        <svg viewBox="0 0 1024 1024" width="20" height="20" fill="currentColor">
+          <path d="M512 0C229.2 0 0 229.2 0 512s229.2 512 512 512 512-229.2 512-512S794.8 0 512 0z m256.4 438.4l-95.6 44.8c-4 2-8.4-0.4-9.6-4.4l-13.2-44.4c-1.2-4 1.6-8.4 5.6-9.2l95.6-22.4c4.4-1.2 8.4 2 8.8 6.4l8.4 20.4c0.8 4-1.6 8-5.6 8.8z m-124.8 188.8c-16.4 24-60.4 56.4-60.4 56.4l-132.4-116.4 92.4-76.4-20.4-17.2-116.4 96.4-44.4-38.8c-8.4-7.2-8.8-20-0.8-27.6l180.4-168.4c8.4-7.6 21.2-7.2 28.8 0.8l168.4 180.4c7.6 8.4 7.2 21.2-0.8 28.8l-94.8 82z"/>
+        </svg>
+        使用钉钉授权登录
+      </button>
+      <p class="btn-sub">点击登录即代表你同意 <a href="#">《隐私说明》</a></p>
+    </div>
+  </div>
+</div>
+
+<!-- ================= 设计说明 ================= -->
+<div class="notes">
+  <h3>设计意图</h3>
+  <ul>
+    <li><span class="k">移动端</span>：单列卡片，360px 宽，信任清单常驻按钮上方（A 方案）。</li>
+    <li><span class="k">PC 端（≥768px）</span>：<b>左右分栏占满 1200px 内容区，信息不重复</b>——<b>左侧 = 说服</b>（品牌 + 信任清单，信任项从紧凑卡变成列表项，信息更舒展）；<b>右侧 = 行动</b>（独立登录卡 ~420px，只有标题 + 钉钉蓝按钮）。信任清单只在左侧出现一次。</li>
+    <li><span class="k">社群绑定前置</span>：左侧展示「仅限社群成员使用」徽章 + 点名「阿里人·一起提前退休」。</li>
+    <li><span class="k">企业边界</span>：橙色高亮「仅关联社群企业，阿里/蚂蚁企业信息技术上无法获取」——"做不到"比"承诺不碰"更有说服力。</li>
+    <li><span class="k">按钮</span>：钉钉官方蓝 <code>#0089FF</code>（与 base.css <code>.dingtalk-login-btn</code> 一致），强化"钉钉官方授权"感知。</li>
+  </ul>
+  <h3 style="margin-top:12px">组织校验链路</h3>
+  <ul>
+    <li>扫码 → 后端按应用所属企业校验成员身份；<b>非组织内成员 → 302 回 <code>/#/login?error=not_in_org</code> → 弹窗 → 跳 /join</b>（已实现，见 AuthController.oauthCallback）。</li>
+    <li>钉钉容器内 JSAPI 免登不受此页影响，仅浏览器扫码场景展示。</li>
+  </ul>
+</div>
+
+<!-- ================= 状态覆盖 ================= -->
+<div class="state-strip">
+  <div class="state-card"><span class="tag tag-todo">状态 1 · 初始</span><b>未登录</b>：移动端单列卡 / PC 左右分栏，如上预览。</div>
+  <div class="state-card"><span class="tag tag-warn">状态 2 · 组织校验失败</span><b>扫码后非组织内成员</b>：后端 403 → 重定向 <code>/login?error=not_in_org</code> → Vant 弹窗「需要先加入『阿里人·一起提前退休』社群组织才能使用」→ 确认后跳 /join。</div>
+  <div class="state-card"><span class="tag tag-todo">状态 3 · 授权中</span><b>跳转钉钉 OAuth</b>：钉钉官方授权页（无 UI 工作）。</div>
+  <div class="state-card"><span class="tag tag-todo">状态 4 · 已登录</span><b>回跳 /oauth-callback</b>：loading「登录中…」→ 跳首页（现有逻辑）。</div>
+</div>
+
+</body>
+</html>
