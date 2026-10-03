@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const read = (name) => readFile(path.join(root, name), "utf8");
 const outputFiles = await readdir(path.join(root, "dist"));
-const [html, notFoundHtml, app, homePage, aliPage, page, siteHeader, siteFooter, inviteSection, content, styles, entry] = await Promise.all([
+const [html, notFoundHtml, app, homePage, aliPage, page, siteHeader, siteFooter, inviteSection, heroVisual, content, styles, entry] = await Promise.all([
   read("dist/index.html"),
   read("dist/404.html"),
   read("src/app/App.tsx"),
@@ -16,6 +16,7 @@ const [html, notFoundHtml, app, homePage, aliPage, page, siteHeader, siteFooter,
   read("src/components/site/SiteHeader.tsx"),
   read("src/components/site/SiteFooter.tsx"),
   read("src/components/site/CommunityInviteSection.tsx"),
+  read("src/components/site/HeroVisual.tsx"),
   read("src/data/portalContent.ts"),
   read("assets/site.scss"),
   read("src/main.tsx")
@@ -35,10 +36,10 @@ assert.match(aliPage, /variant="ali"/);
 assert.match(entry, /<BrowserRouter[\s\S]*basename=\{__APP_BASE_PATH__\}/);
 assert.match(siteFooter, /portalContent\.footer\.filing/);
 assert.doesNotMatch(siteFooter, /qrCodes|footer-qrcode/);
-assert.match(inviteSection, /portalContent\.footer\.qrCodes\.map/);
-assert.match(page, /<CommunityInviteSection \/>/);
-assert.match(page, /<Carousel[\s\S]*<CommunityInviteSection \/>[\s\S]*<HeroSection \/>[\s\S]*<\/Carousel>/);
-assert.match(page, /carouselRef\.current\?\.goTo\(1\)/);
+assert.match(inviteSection, /portalContent\.footer\.qrCodes/);
+assert.match(page, /<CommunityInviteSection variant=\{variant\} \/>/);
+assert.match(page, /<Carousel[\s\S]*<CommunityInviteSection variant=\{variant\} \/>[\s\S]*<HeroSection \/>[\s\S]*<\/Carousel>/);
+assert.match(page, /carouselRef\.current\?\.goTo\(heroSlideIndex\)/);
 assert.doesNotMatch(page, /window\.location\.pathname/);
 assert.match(html, /src=["']?\/assets\/main\.[\w-]+\.js/);
 assert.match(html, /href=["']?\/assets\/main\.[\w-]+\.css/);
@@ -73,7 +74,7 @@ for (const copy of [
 ]) assert.ok(`${page}${content}${siteHeader}`.includes(copy), `missing copy: ${copy}`);
 
 assert.match(siteHeader, /className="brand-symbol"/);
-assert.match(page, /一起<br\s*\/>提前退休/);
+assert.match(heroVisual, /一起<br\s*\/>提前退休/);
 assert.match(page, /IntersectionObserver/);
 assert.match(page, /prefers-reduced-motion/);
 assert.match(styles, /--orange:\s*#ff6a00/);
