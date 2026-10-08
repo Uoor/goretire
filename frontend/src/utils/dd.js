@@ -213,9 +213,13 @@ export async function redirectToDingTalkOAuth(redirect) {
     console.error('[dd] VITE_DING_APP_KEY 未配置，无法发起 OAuth2 登录')
     return
   }
-  // 回调地址：始终使用生产环境的回调 URL（钉钉只允许已配置的回调地址）。
+  // 回调地址：必须是钉钉后台已登记的 redirect_uri（钉钉只允许已配置的回调地址），
+  // 所以**不要**从 location.origin 推导 —— 换域名要先在钉钉后台登记新地址，再用
+  // VITE_DING_CALLBACK_URL 覆盖。默认值保持当前在用的地址，不改变现有行为。
   // 部署子路径 /ali/house：API 在 {domain}/ali/house/api 下
-  const callbackUrl = encodeURIComponent('https://test.nekomiao.com/ali/house/api/auth/dingtalk/callback')
+  const callbackUrl = encodeURIComponent(
+    import.meta.env.VITE_DING_CALLBACK_URL || 'https://test.nekomiao.com/ali/house/api/auth/dingtalk/callback'
+  )
   // state 参数：origin（含部署子路径 pathname）+ 可选 redirect（JSON 后 base64），
   // 后端解码出 origin 重定向，并把 redirect 追加到回调 URL，实现扫码后回跳目标页。
   // 注意：必须带 location.pathname（/ali/house），否则扫码回跳会丢子路径前缀。
@@ -232,7 +236,6 @@ export async function redirectToDingTalkOAuth(redirect) {
     'prompt=consent',
     `state=${state}`
   ]
-  // prompt=auto：首次授权后不再弹授权页，直接登录
   const oauthUrl = `https://login.dingtalk.com/oauth2/auth?${params.join('&')}`
   // 诊断上报：记录实际跳转的 OAuth URL（定位 authCode 兑换失败的根因）
   try {

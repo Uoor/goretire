@@ -14,6 +14,7 @@
 //   node scripts/build-web.mjs                  # 安装依赖 + 构建
 //   node scripts/build-web.mjs --skip-install   # 跳过 npm install
 // ============================================================
+import { existsSync, readFileSync } from "node:fs";
 import { cp, mkdir, rm } from "node:fs/promises";
 import { spawnSync } from "node:child_process";
 import path from "node:path";
@@ -35,6 +36,47 @@ function run(command, args, cwd) {
 }
 
 const step = (message) => console.log(`\n[build-web] ${message}`);
+
+// ------------------------------------------------------------
+// 构建期配置校验（fail fast，放在任何构建动作之前）
+//
+// Vite 在构建期把 import.meta.env.VITE_* 内联成字面量。构建时若缺少
+// VITE_DING_APP_KEY，`if (!appKey) { console.error(...); return }` 会成为唯一
+// 代码路径，terser 把后面的拼 OAuth URL / 跳转逻辑整体当死代码消除 —— 产物里
+// 只剩一行 console.error：页面看着正常，点登录毫无反应，直到线上用户发现
+// （2026-10-08 线上 /ali/house/#/login 就是这么挂的）。
+// 所以这里直接让构建失败，且不清理旧 dist，保留上一版可用产物。
+// ------------------------------------------------------------
+const REQUIRED_HOUSE_ENV = ["VITE_DING_APP_KEY"];
+
+function readEnvFile(file) {
+  if (!existsSync(file)) return {};
+  const entries = {};
+  for (const rawLine of readFileSync(file, "utf8").split(/\r?\n/)) {
+    const line = rawLine.trim();
+    if (!line || line.startsWith("#")) continue; // 空行与注释不计入，与 dotenv 语义一致
+    const separator = line.indexOf("=");
+    if (separator === -1) continue;
+    const key = line.slice(0, separator).trim();
+    let value = line.slice(separator + 1).trim();
+    const quoted =
+      value.length >= 2 &&
+      ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'")));
+    if (quoted) value = value.slice(1, -1);
+    entries[key] = value;
+  }
+  return entries;
+}
+
+const houseEnv = readEnvFile(path.join(houseDir, ".env"));
+// Vite 也会把进程环境里同名的 VITE_* 变量注入产物，所以两者任一非空即可。
+const missingHouseEnv = REQUIRED_HOUSE_ENV.filter((key) => !(houseEnv[key] || process.env[key]));
+if (missingHouseEnv.length > 0) {
+  console.error(`\n[build-web] 构建中止：frontend/.env 缺少 ${missingHouseEnv.join(", ")}`);
+  console.error("  影响：Vite 在构建期内联 VITE_*，缺失会让钉钉扫码登录在线上静默失效（产物只剩一行 console.error）。");
+  console.error("  处理：参考 frontend/.env.example 补齐，或用同名环境变量注入后重试。");
+  process.exit(1);
+}
 
 step("清理 dist/");
 await rm(dist, { recursive: true, force: true });
