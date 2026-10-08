@@ -4,8 +4,6 @@ import { portalContent, type PortalVariant } from "../../data/portalContent";
 import assetUrl from "../../utils/assetUrl";
 import HeroVisual from "./HeroVisual";
 
-const MOBILE_QUERY = "(max-width: 700px)";
-
 type QrCodeItem = (typeof portalContent.footer.qrCodes)[number];
 type GroupCard = Extract<QrCodeItem, { label: string }>;
 type WechatCard = Extract<QrCodeItem, { qrImage: string }>;
@@ -13,11 +11,6 @@ type WechatCard = Extract<QrCodeItem, { qrImage: string }>;
 function getInviteCards(variant: PortalVariant) {
   const isHome = variant === "home";
   return portalContent.footer.qrCodes.filter((qr) => !isHome || "qrImage" in qr);
-}
-
-/** 移动端拆分后的 slide 数量（每张卡一个 slide），供外层轮播计算 Hero 的页码 */
-export function getInviteSlideCount(variant: PortalVariant) {
-  return getInviteCards(variant).length;
 }
 
 function renderLabelRow(qr: GroupCard) {

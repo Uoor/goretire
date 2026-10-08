@@ -14,7 +14,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 门户与租房 H5 由 `scripts/build-web.mjs` 汇总成同一个产物树、一次发布，永远同版本。
 
-**主线分支 = `goretire`** —— 开发与部署都在这条分支上。服务器 `/root/aliren` 也跟踪 `goretire`，后端 `deploy-ecs.sh` 的 `git pull --ff-only` 走的就是它。旧的 `backend-core` 与空占位 `master` 已退役。
+**主线分支 = `master`** —— 开发与部署都在这条分支上（`git ls-remote origin` 确认远端只有 `master`；历史上的 `backend-core` 与规划中的 `goretire` 分支名都不再对应远端）。服务器仓库目录是 `/root/goretire`（旧名 `/root/aliren`），后端 `deploy-ecs.sh` 的 `git pull --ff-only` 走这条分支。
 
 ## Commands
 
@@ -93,7 +93,7 @@ frontend/src/
 - **统一响应解包**：后端返回 `{code, msg, data}`（`code === 0` 成功）。[request.js](frontend/src/utils/request.js) 拦截器自动注入 `Bearer token` 并解包成 `data`，业务 API 直接拿数据。
 - **路由壳**：`router/index.js` 懒加载 `modules/<module>/views/`，`meta.tab = true` 的页面显示底部 TabBar；`beforeEach` 里做免登（`ensureLogin`）+ 管理后台角色校验（`meta.admin`）。
 - **钉钉环境判断**：必须用 `dd.js` 的 `isDingTalk()`（`dd.env.platform !== 'notInDingTalk'`），不要用 `typeof dd === 'undefined'`——官方 SDK 在普通浏览器也会注入 `dd`。
-- **前端环境变量**：`frontend/.env`（已 gitignore）放 `VITE_DING_CORP_ID`；模板见 `frontend/.env.example`。
+- **前端环境变量**：`frontend/.env`（已 gitignore）放 `VITE_DING_CORP_ID` 与 `VITE_DING_APP_KEY`，可选 `VITE_DING_CALLBACK_URL`；模板见 `frontend/.env.example`。**`VITE_DING_APP_KEY` 缺失会让钉钉扫码登录在线上静默失效** —— Vite 在构建期内联 `VITE_*`，缺值时 `if (!appKey)` 成为唯一路径，terser 会把整段 OAuth 逻辑当死代码消除，页面看着正常、点登录毫无反应（2026-10-08 线上事故）。`scripts/build-web.mjs` 已加构建期门禁，缺这个键直接 `exit 1`；回调地址必须与钉钉后台登记的 `redirect_uri` 一致，所以不要让它随 `location.origin` 变化，换域名先登记再用 `VITE_DING_CALLBACK_URL` 覆盖。
 - **视觉规范**：新增/改 UI 前读 [frontend/DESIGN.md](frontend/DESIGN.md)（暖白 `#F5F5F4` + 活力橙 `#FF6A00`，数字用 `--num`/DM Sans，橙色只用于行动/价格/信任信号）。设计令牌在 `styles/tokens.css`。
 
 ### 前端样式规范（CSS 架构）
@@ -133,6 +133,8 @@ frontend/src/styles/
 生产环境部署到 **ecs-alr**（阿里云 ECS），通过 SSH 执行远程脚本。前后端分开部署，均有版本管理和回滚能力。
 
 服务器路径：仓库目录 **`/root/goretire`**（git clone，部署脚本在此 `git pull`）；产物与运行数据在 **`/root/aliren-data/`**（数据目录沿用旧名，未随仓库改名 —— nginx 与后端 `UPLOAD_DIR` 都指向它）。
+
+**nginx 是宝塔面板装的**：主配置在 `/www/server/nginx/conf/nginx.conf`，站点配置在 `/www/server/panel/vhost/nginx/`，本站点是 **`test.nekomiao.com.conf`**。一个 server 块用 `server_name test.nekomiao.com goretire.cn www.goretire.cn;` 同时承载三个域名，`upstream aliren-backend` 也定义在该文件里，各 `location` 的 `root` 指向 `/root/aliren-data/web/current`，`/ali/house/api/` 反代到后端。**不要按 `/etc/nginx/` 去找**（宝塔不装在那里，`grep /etc/nginx` 会一无所获）；面板每次改配置会留 `.bak-*` 副本，可据此回退。
 
 ### 后端
 

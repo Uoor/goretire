@@ -22,6 +22,15 @@ npm run typecheck
 npm test          # npm run build && node tests/verify-site.mjs
 ```
 
+`npm test` 是静态门禁。端到端浏览器 QA 是独立脚本，需要本机有 playwright 与 Chrome，且站点已在运行：
+
+```sh
+npm start            # 另开一个终端
+node tests/browser-qa.mjs
+```
+
+缺 playwright 时它会明确提示并跳过，不会误报通过；`PLAYWRIGHT_MODULE` 与 `CHROME_PATH` 可指定非默认安装位置。
+
 生产文件输出到 `dist/`，只生成根级 `index.html` 和 `404.html`，不会为 `/ali` 创建子目录。
 
 ## 部署
