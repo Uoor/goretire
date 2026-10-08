@@ -35,12 +35,12 @@ node tests/browser-qa.mjs
 
 ## 部署
 
-**不要单独发布本目录。** 门户与租房 H5（仓库根的 `frontend/`）由编排脚本汇总成一个产物树、**一条命令发布** —— 脚本内部会自己调 `build-web.mjs`：
+**不要单独发布本目录。** 门户与租房 H5（仓库根的 `frontend/`）由编排脚本汇总成一个产物树、**一条命令发布**。构建在服务器上进行（2026-10-08 从「本地构建 + 上传产物」改过来），所以**改动必须先 commit + push**：
 
 ```sh
-./scripts/deploy-web-remote.sh      # 构建 → 上传 → 切软链（一步）
+./scripts/deploy-web-remote.sh      # 服务器拉代码 → 构建 → 切软链（一步）
 ```
 
-`node scripts/build-web.mjs` 是**只构建、不发布**的入口，用于本地看产物；单独跑它不会上线。
+`node scripts/build-web.mjs` 是**只构建、不发布**的入口，本地跑它只用于自己看产物；发布路径由服务器上的 `scripts/deploy-web-ecs.sh` 调它。
 
 细节见仓库根 `CLAUDE.md` 的「前端（门户 + 租房 H5，统一产物树）」，含构建顺序与 nginx 的两个坑。

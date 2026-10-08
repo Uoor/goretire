@@ -157,13 +157,17 @@ dist/ali/house/                    租房 H5（frontend/，Vue）   → /ali/hou
 ```
 
 ```bash
-./scripts/deploy-web-remote.sh                # 构建 + 发布（构建 → 上传 → 切软链）
-./scripts/deploy-web-remote.sh --skip-build   # 用现有 dist 发布
-./scripts/deploy-web-remote.sh --rollback     # 回滚到上一个版本
-./scripts/deploy-web-remote.sh --current      # 查看当前版本
+./scripts/deploy-web-remote.sh                     # 服务器拉代码 + 构建 + 切换
+./scripts/deploy-web-remote.sh --activate <版本名>  # 只切软链，不构建
+./scripts/deploy-web-remote.sh --rollback          # 回滚到上一个版本
+./scripts/deploy-web-remote.sh --current           # 查看当前版本
 ```
 
-本地 `deploy-web-remote.sh` 通过 SSH 连接 `ecs-alr`，执行远程的 `deploy-web-ecs.sh`。产物放入 `/root/aliren-data/web/releases/<时间戳>/`，软链 `web/current` 切换版本，nginx `location /` 的 root 指向 `web/current`。**门户与 H5 永远同版本，一次回滚退回两者的同一版本。**
+**构建在服务器上进行**（与后端 `deploy-remote.sh` 同构，2026-10-08 从「本地构建 + 上传产物」改过来）：本地脚本只把命令转给 ECS 上的 `deploy-web-ecs.sh`，后者做 前置检查 → `git pull --ff-only` → 两个应用 `npm ci` → `node scripts/build-web.mjs --skip-install` → `mv dist` 到 `/root/aliren-data/web/releases/<时间戳>/` → 切软链 `web/current`（nginx `location /` 的 root 指向它）。**门户与 H5 永远同版本，一次回滚退回两者的同一版本。**
+
+这么改的原因：本地构建会让产物的构建期配置取决于**那台机器** gitignored 的 `frontend/.env`，同一份源码在不同机器上会产出不同结果——2026-10-08 线上登录页失效就是这么来的。既然构建在服务器上，**源码必须先 commit + push**（服务器只 `git pull`）；本地 `node scripts/build-web.mjs` 降级为「只看产物、不发布」。
+
+两个前提：① 服务器 `frontend/.env` 必须存在且 `VITE_DING_APP_KEY` 非空（`deploy-web-ecs.sh` 的 pre_check 会拦）；② 服务器 npm registry 必须是可用的（`/root/.npmrc`，当前为 `https://registry.npmmirror.com`）。另外**不要与后端发布同时执行**，两边都会在 `/root/goretire` 里 `git pull`。
 
 构建顺序不能颠倒：门户的 webpack 配了 `output.clean`，会清空自己的 `dist`，所以**先建门户汇总到根 `dist/`，再建 H5 搬进 `dist/ali/house/`**。
 
@@ -177,7 +181,7 @@ dist/ali/house/                    租房 H5（frontend/，Vue）   → /ali/hou
 
 历史：`root-site/` 原本是独立工程 `goretire`（GitHub `Uoor/goretire`），2026-10-03 并入本仓库。**并入时做了删减，不是逐字节副本** —— 删掉了引用为零的死文件（`src/App.tsx`、`src/data/webpack.config.cjs`、`assets/{ali.css,site.js,content-data.js}`、`Bold_poster_style_*.png`、5 张无主配图、3 张与同名 `.png` 重复的群二维码），把 10 张 bot 配图压到 1200px/q80，并修好了 `tests/verify-site.mjs`。**所以不要从 goretire 整目录覆盖回来**，那会把这些改动全部冲掉。回看历史可以去那个仓库，但新增改动一律落在这里。
 
-改完发布：`./scripts/deploy-web-remote.sh` —— **一条命令**，它内部会调 `scripts/build-web.mjs`（构建 → 上传 → 切软链）。`node scripts/build-web.mjs` 是只构建不发布的入口，单独跑不会上线。要单独跑检查就在 `root-site/` 里 `npm test`（它自己会 build）。
+改完发布：`./scripts/deploy-web-remote.sh` —— **一条命令**。它会 ssh 到 `ecs-alr`，由那边的 `scripts/deploy-web-ecs.sh` 完成 `git pull` + 构建 + 切软链，所以**改动必须先 commit + push**，否则服务器构建的还是旧代码。本地 `node scripts/build-web.mjs` 只构建、不发布，用于自己看产物。要单独跑检查就在 `root-site/` 里 `npm test`（它自己会 build）。
 
 测试断言红了就改断言或改代码，**别"改一个跑一次"** —— 用 `node:assert` 打桩把 82 条断言逐条列出失败项，一次性对齐（做法见提交 `05e148b`）。
 
