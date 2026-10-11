@@ -131,7 +131,8 @@ Sticky / `--card` / Padding 14px 16px 10px / 下边框 `--border`。
 - **发布凸起**：52×52 / Radius 16px / `--primary` + 白 `+` / `box-shadow 0 6px 16px rgba(255,106,0,0.4)` / 上移 18px / 4px `--bg` 描边
 
 ### House Detail
-- **hero**：高 210px / 渐变 `#FFD9C2→#FF9E5E` / 底部白圆点指示器（当前 6px 白，其余 0.5 白）
+- **hero（移动端）**：高 210px / 渐变 `#FFD9C2→#FF9E5E` / 底部白圆点指示器（当前 6px 白，其余 0.5 白）
+- **hero（PC ≥768px，规范）**：宫格照片墙 —— 1 张满铺 / 2 张等分 / 3 张「左 1 大跨 2 行 + 右 2」/ 4 张 2×2 / ≥5 张「左 1 大 + 右 2×2」，第 5 格起盖 `+N`；容器 `aspect-ratio: 16/9` 上限 460px、4px 缝、`--radius-lg`，瓦片 `object-fit: cover`；点击任一张开**深色灯箱**（44px 圆形箭头、`3 / 9` 计数用 `.num`、键盘 ←/→/Esc、点遮罩关闭）。PC 不显示轮播箭头与圆点
 - **主体**：白卡上浮 `margin-top:-16px` / `border-radius: 20px 20px 0 0` / Padding 18px 16px
 - **specs 网格**：3 列 / `--bg` 底 Radius 10px / 值 0.86rem 600 + 键 0.64rem `--fg3`
 - **房东卡**：`1px var(--border)` Radius 12px / 40px 圆渐变头像（首字白 700）/ 昵称 + 右侧"已核实"胶囊
@@ -226,6 +227,7 @@ Sticky / `--card` / Padding 14px 16px 10px / 下边框 `--border`。
 - **横向滚动**：chips、图集（隐藏滚动条）；三列网格固定不滚
 - **字体**：不随屏幕缩放（vw 只作用于布局尺寸，字号用 px 或 rem 控制，规范）
 - 钉钉容器内：hash 路由刷新不 404；`dd.ready` 后调用 JSAPI
+- **PC 端详情图集**：≥768px 用宫格 + 自建灯箱；移动端保持单图轮播 + Vant 预览（Vant 的 Swipe 只绑触摸事件，PC 上鼠标拖不动，且预览无内置箭头，所以 PC 不能用它翻图）
 
 ## 9. Agent Prompt Guide
 

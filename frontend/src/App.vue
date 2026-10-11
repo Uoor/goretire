@@ -21,23 +21,15 @@ import TabBar from '@/modules/houserent/components/TabBar.vue'
 import TopNav from '@/modules/houserent/components/TopNav.vue'
 import MobileDingTalkTip from '@/modules/houserent/components/MobileDingTalkTip.vue'
 import { isDingTalk } from '@/utils/dd'
-import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { useIsPc } from '@/composables/useIsPc'
+import { ref, onMounted } from 'vue'
 
 const route = useRoute()
-const isPc = ref(false)
+const isPc = useIsPc()
 const inDingTalk = ref(false)
 
-function checkViewport() {
-  isPc.value = window.innerWidth >= 768
-}
-
 onMounted(() => {
-  checkViewport()
-  window.addEventListener('resize', checkViewport)
   inDingTalk.value = isDingTalk()
-})
-onBeforeUnmount(() => {
-  window.removeEventListener('resize', checkViewport)
 })
 </script>
 
