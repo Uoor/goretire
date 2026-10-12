@@ -568,7 +568,11 @@ onMounted(load)
   .photo-wall {
     display: grid;
     gap: 4px;
-    /* 固定宽高比避免图片加载时跳动（CLS），再用 max-height 封顶 */
+    /* width: 100% 不能省。只写 aspect-ratio + max-height 时，浏览器会把 max-height
+       透过宽高比「转移」成 max-width：容器缩成 460 × 16/9 ≈ 818px，而块级元素不会
+       自己居中，结果贴左（1440 视口下右侧空 486px）。给出确定宽度后，
+       max-height 只负责封顶高度。 */
+    width: 100%;
     aspect-ratio: 16 / 9;
     max-height: 460px;
     overflow: hidden;
