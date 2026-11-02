@@ -797,7 +797,7 @@
  <!-- ===== 最新岗位 ===== -->
             <section style="padding-top:4px;">
                 <div class="sec-h">💼 最新岗位 <span style="font-size:.75rem;font-weight:400;color:rgba(0,0,0,.35);margin-left:8px;">点击卡片查看详情</span></div>
-                <div class="job-g">
+                <div class="job-g" id="jobGrid">
                     <div class="job-c">
                         <a href="https://alidocs.dingtalk.com/i/nodes/ZX6GRezwJly9P7mNTrjlgZKl8dqbropQ?iframeQuery=record%3D8tveFG3_zrZvW9Ku76&notable_standalone_record_redirect=true" target="_blank" style="flex:1;display:flex;justify-content:space-between;align-items:center;text-decoration:none;color:inherit;min-width:0;">
                             <div>
@@ -875,7 +875,7 @@
             <!-- ===== 分类 + 动态 ===== -->
             <section style="padding-top:4px;">
                 <div class="charts-g">
-                    <div class="chart-c">
+                    <div class="chart-c" id="categoryChart">
                         <h3>📊 岗位分类</h3>
                         <div class="bar-item">
                             <div class="bar-label">技术</div>
@@ -910,7 +910,7 @@
                             <div class="bar-count">1</div>
                         </div>
                     </div>
-                    <div class="chart-c">
+                    <div class="chart-c" id="companyChart">
                         <h3>🏢 招聘企业</h3>
                         <div class="bar-item">
                             <div class="bar-label">蚂蚁国际</div>
@@ -991,8 +991,69 @@
     <footer class="footer">
         <strong>【阿里人·一起提前退休】</strong><br />
         蚂蚁校友创办 · 面向阿里&蚂蚁集团在职/离职员工<br />
-        <span style="opacity:.4;">数据来自钉钉 AI 表格 · 校友自主提交</span>
+        <span style="opacity:.4;">数据来自钉钉 AI 表格 · 校友自主提交 · 实时更新</span>
     </footer>
+
+    <script>
+        // ===== 实时数据：从后端招聘接口拉取多维表数据，失败时保留页面内置的静态兜底 =====
+        (function () {
+            var TAG_STYLES = {
+                '技术': 'tech', '测试': 'data', '数据': 'data',
+                '运营': 'prd', '产品': 'prd', '设计': 'prd', '其他': 'prd',
+                '金融': 'fin', 'Agent': 'agent'
+            };
+            function tagClass(name) { return TAG_STYLES[name] || 'prd'; }
+
+            function esc(s) {
+                return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+                    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+                });
+            }
+
+            function renderBars(elId, items) {
+                var max = Math.max.apply(null, items.map(function (i) { return i.count; })) || 1;
+                document.getElementById(elId).innerHTML = items.map(function (i) {
+                    var pct = Math.round(i.count / max * 100);
+                    return '<div class="bar-item">'
+                        + '<div class="bar-label">' + esc(i.name) + '</div>'
+                        + '<div class="bar-track"><div class="bar-fill" style="width:' + pct + '%;background:linear-gradient(90deg,#FF6A00,#ffa75e);">' + i.count + '</div></div>'
+                        + '<div class="bar-count">' + i.count + '</div>'
+                        + '</div>';
+                }).join('');
+            }
+
+            function renderJobs(jobs) {
+                var reviewUrl = 'https://alidocs.dingtalk.com/notable/share/form/v01r4mlQ5bMQ9gRalxo_uyuOoTB_yjFKlGx?source=link';
+                document.getElementById('jobGrid').innerHTML = jobs.map(function (j) {
+                    var loc = (j.locations || []).join('、');
+                    var urgent = j.urgent ? ' <span style="color:#E85D00;font-size:.6875rem;font-weight:600;">🔥急聘</span>' : '';
+                    return '<div class="job-c">'
+                        + '<a href="' + esc(j.url) + '" target="_blank" style="flex:1;display:flex;justify-content:space-between;align-items:center;text-decoration:none;color:inherit;min-width:0;">'
+                        + '<div><div class="j-title">' + esc(j.title) + urgent + '</div>'
+                        + '<div class="j-meta">' + esc(j.company) + (loc ? ' · ' + esc(loc) : '') + '</div></div>'
+                        + '<span class="j-tag ' + tagClass(j.category) + '">' + esc(j.category) + '</span></a>'
+                        + '<a href="' + reviewUrl + '" target="_blank" class="j-review" title="匿名评价">匿名点评</a>'
+                        + '</div>';
+                }).join('');
+            }
+
+            fetch('/ali/house/api/recruit/jobs').then(function (r) { return r.json(); }).then(function (res) {
+                if (!res || res.code !== 0 || !res.data) return;
+                var d = res.data;
+                if (d.stats) {
+                    var nums = document.querySelectorAll('.hero .stats .stat-num');
+                    if (nums[0]) nums[0].textContent = d.stats.jobs;
+                    if (nums[1]) nums[1].textContent = d.stats.companies;
+                    if (nums[2]) nums[2].textContent = d.stats.categories;
+                }
+                if (d.categories && d.categories.length) renderBars('categoryChart', d.categories);
+                if (d.companies && d.companies.length) renderBars('companyChart', d.companies);
+                if (d.jobs && d.jobs.length) renderJobs(d.jobs);
+            }).catch(function (e) {
+                console.warn('[jobs] 实时数据加载失败，展示静态兜底', e);
+            });
+        })();
+    </script>
 
 </body>
 
