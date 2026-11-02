@@ -106,6 +106,12 @@ if (!skipInstall) {
 step("构建租房 H5 frontend/");
 run("npm", ["run", "build"], houseDir);
 
+step("汇总静态页面 → dist/ali/（jobs 招聘板块等，src: static/ali/）");
+const staticAliDir = path.join(root, "static", "ali");
+if (existsSync(staticAliDir)) {
+  await cp(staticAliDir, path.join(dist, "ali"), { recursive: true });
+}
+
 step("汇总租房 H5 → dist/ali/house/");
 await cp(path.join(houseDir, "dist"), path.join(dist, "ali", "house"), { recursive: true });
 await rm(path.join(houseDir, "dist"), { recursive: true, force: true });
