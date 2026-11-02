@@ -94,6 +94,9 @@ export const portalContent = {
         badge: "仅限阿里校友",
         image: "assets/ali-community-qr.png",
         alt: "一起提前退休总群二维码",
+        // 点击链接直接进群：钉钉组织邀请页深链（与租房 H5 JoinView 的 inviteUrl 同一条）。
+        // 只在配了 joinUrl 的卡片上渲染，而这张群卡在首页会被过滤掉，所以只出现在 /ali。
+        joinUrl: "dingtalk://dingtalkclient/page/link?pc_slide=true&url=https%3A%2F%2Fh5.dingtalk.com%2Finvite-page%2Findex.html%3FcorpId%3Ddinga6f137a9a2238a9635c2f4657eb6378f%26inviteCode%3DXW4gV4n4HWMrRF9%26dtaction%3Dos%26org_name%3D%25E8%25AF%25A0%25E8%25A7%2586%25E6%2596%2587%25E5%258C%2596",
         notes: [
           "在职/离职校友均可钉钉申请入群，已有6000+阿里校友加入",
           "阿里钉/蚂蚁钉申请可快速审批，个人钉申请需备注阿里身份信息"

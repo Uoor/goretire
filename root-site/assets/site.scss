@@ -258,6 +258,10 @@ button, input, textarea, select { font: inherit; }
 .community-invite-card .invite-copy { display: grid; justify-items: center; align-content: center; gap: 12px; }
 .community-invite-card .invite-notes { margin: 0; padding: 0 0 0 18px; color: #756a62; font-size: 13px; line-height: 1.7; text-align: left; list-style: decimal; }
 .community-invite-card .invite-notes li { padding-left: 2px; }
+/* 「点击链接加入社群」：钉钉邀请页深链入口，与旁边的 badge 同色系，不抢二维码的主体地位 */
+.community-invite-card .invite-join-link { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border: 1px solid #ffcfad; border-radius: 999px; background: var(--orange-soft); color: #a93d00; font-size: 14px; font-weight: 750; text-decoration: none; transition: background-color .18s ease-out, border-color .18s ease-out, transform .18s ease-out; }
+.community-invite-card .invite-join-link:hover { border-color: #ffb57e; background: #ffe7d9; transform: translateY(-1px); }
+.community-invite-card .invite-join-link:focus-visible { outline: 3px solid rgba(255, 106, 0, .4); outline-offset: 3px; }
 
 .site-footer { border-top: 1px solid var(--line); background: var(--paper); }
 .footer-inner { display: flex; flex-direction: column; align-items: stretch; gap: 0; padding: 20px 0 12px; }

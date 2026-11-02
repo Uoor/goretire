@@ -32,6 +32,16 @@ function renderNotes(qr: GroupCard) {
   ) : null;
 }
 
+/** 「点击链接直接进群」入口：钉钉组织邀请页深链，只在配了 joinUrl 的卡片上出现 */
+function renderJoinLink(qr: GroupCard) {
+  return "joinUrl" in qr && qr.joinUrl ? (
+    <a className="invite-join-link" href={qr.joinUrl}>
+      <span>点击链接加入社群</span>
+      <span aria-hidden="true">→</span>
+    </a>
+  ) : null;
+}
+
 function renderWechatContent(qr: WechatCard) {
   return (
     <div className="invite-wechat">
@@ -63,6 +73,7 @@ export function buildCommunityInviteSlides(variant: PortalVariant): ReactNode[] 
               <div className="invite-copy">
                 {renderLabelRow(qr)}
                 {renderNotes(qr)}
+                {renderJoinLink(qr)}
               </div>
             </article>
           </div>
@@ -138,6 +149,7 @@ export default function CommunityInviteSection({ variant }: { variant: PortalVar
                   <div className="invite-copy">
                     {renderLabelRow(qr)}
                     {renderNotes(qr)}
+                    {renderJoinLink(qr)}
                   </div>
                 </>
               )}

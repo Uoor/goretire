@@ -64,6 +64,11 @@ for (const id of ["home", "insight", "community", "mutual-aid"]) {
   assert.ok(page.includes(`id="${id}"`), `missing section: ${id}`);
 }
 assert.ok(inviteSection.includes('id="community-invites"'), "missing section: community-invites");
+// 加入社群的「点击链接直接进群」入口（钉钉组织邀请页深链）
+assert.match(content, /dingtalk:\/\/dingtalkclient\/page\/link/);
+assert.match(inviteSection, /invite-join-link/);
+assert.ok(inviteSection.includes("点击链接加入社群"), "missing join-link copy");
+assert.match(styles, /\.invite-join-link/);
 
 for (const copy of [
   "致力于", "拉平信息差、", "提升认知、", "互助避坑、", "善用金融工具，", "探索更自由人生",
